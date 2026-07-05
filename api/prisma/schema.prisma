@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ScheduleType {
+  DAILY
+  WEEKLY
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id           String            @id @default(cuid())
+  email        String            @unique
+  username     String            @unique @db.VarChar(64)
+  passwordHash String
+  fullName     String            @db.VarChar(120)
+  role         UserRole          @default(USER)
+  status       UserStatus        @default(ACTIVE)
+  approvedAt   DateTime?
+  approvedById String?
+  approvedBy   User?             @relation("UserApprovals", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers User[]           @relation("UserApprovals")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  habits       Habit[]
+  completions  HabitCompletion[]
+  projects     Project[]
+  tasks        Task[]
+  reminders    ReminderLog[]
+  ownedWorkspaces       Workspace[]         @relation("WorkspaceOwner")
+  workspaceMemberships  WorkspaceMember[]
+  collabTasksCreated    CollabTask[]        @relation("CollabTaskCreator")
+  collabTasksAssigned   CollabTask[]        @relation("CollabTaskAssignee")
+  comments              Comment[]
+  activityLogs          ActivityLog[]
+  collabProjectMembers  CollabProjectMember[]
+  collabNotifications   CollabNotification[]
+  workGuidesCreated     WorkGuide[]           @relation("WorkGuideCreator")
+}
+
+enum ReminderSourceType {
+  HABIT
+  TASK
+}
+
+model ReminderLog {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceType ReminderSourceType
+  sourceId   String             @db.VarChar(64)
+  title      String             @db.VarChar(200)
+  body       String?            @db.VarChar(500)
+  triggerAt  DateTime
+  readAt     DateTime?
+  createdAt  DateTime           @default(now())
+
+  @@index([userId, readAt])
+  @@index([sourceType, sourceId, triggerAt])
+}
+
+model Habit {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String            @db.VarChar(120)
+  description     String?           @db.VarChar(500)
+  color           String            @default("#22d3ee") @db.VarChar(7)
+  icon            String?           @db.VarChar(32)
+  archived        Boolean           @default(false)
+  scheduleType    ScheduleType      @default(DAILY)
+  scheduleDays    Json              @default("[1,2,3,4,5,6,7]")
+  streakEnabled   Boolean           @default(true)
+  reminderEnabled Boolean           @default(false)
+  reminderTime    String?           @db.VarChar(5)
+  sortOrder       Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  completions     HabitCompletion[]
+
+  @@index([userId, archived])
+}
+
+model HabitCompletion {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  note      String?  @db.VarChar(300)
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(80)
+  color     String   @default("#38bdf8") @db.VarChar(7)
+  sortOrder Int      @default(0)
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+
+  @@index([userId, archived])
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title           String       @db.VarChar(200)
+  description     String?      @db.VarChar(1000)
+  status          TaskStatus   @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+  dueDate         DateTime?    @db.Date
+  dueTime         String?      @db.VarChar(5)
+  reminderEnabled Boolean      @default(false)
+  reminderAt      DateTime?
+  sortOrder       Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([projectId])
+}
+
+// --- ProyecFer (colaboracion) ---
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum CommentTargetType {
+  COLLAB_TASK
+  COLLAB_PROJECT
+  PAGE
+  WORK_GUIDE
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  DELETED
+  STATUS_CHANGED
+  ASSIGNED
+  COMMENTED
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  ROLE_CHANGED
+}
+
+enum BlockType {
+  paragraph
+  heading_1
+  heading_2
+  heading_3
+  bulleted_list
+  numbered_list
+  todo
+  divider
+  callout
+  code
+}
+
+enum DatabasePropertyType {
+  TEXT
+  NUMBER
+  SELECT
+  MULTI_SELECT
+  DATE
+  PERSON
+  CHECKBOX
+  URL
+  RELATION
+}
+
+enum DatabaseViewType {
+  TABLE
+  BOARD
+  CALENDAR
+  GALLERY
+}
+
+model Workspace {
+  id          String            @id @default(cuid())
+  name        String            @db.VarChar(120)
+  description String?           @db.VarChar(500)
+  icon        String?           @db.VarChar(32)
+  ownerId     String
+  owner       User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  archived    Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  members     WorkspaceMember[]
+  projects    CollabProject[]
+  pages       Page[]
+  tasks       CollabTask[]
+  activity    ActivityLog[]
+  workGuides  WorkGuide[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        WorkspaceRole @default(EDITOR)
+  joinedAt    DateTime      @default(now())
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model CollabProject {
+  id          String                @id @default(cuid())
+  workspaceId String
+  workspace   Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String                @db.VarChar(120)
+  description String?               @db.VarChar(1000)
+  color       String                @default("#3b82f6") @db.VarChar(7)
+  archived    Boolean               @default(false)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  tasks       CollabTask[]
+  pages       Page[]
+  members     CollabProjectMember[]
+  activity    ActivityLog[]
+  workGuides  WorkGuide[]
+
+  @@index([workspaceId, archived])
+}
+
+model CollabProjectMember {
+  id        String        @id @default(cuid())
+  projectId String
+  project   CollabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      WorkspaceRole @default(EDITOR)
+
+  @@unique([projectId, userId])
+}
+
+model CollabTask {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     CollabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String        @db.VarChar(200)
+  description String?       @db.VarChar(2000)
+  status      TaskStatus    @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  assigneeId  String?
+  assignee    User?         @relation("CollabTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   User          @relation("CollabTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  dueDate     DateTime?     @db.Date
+  dueTime     String?       @db.VarChar(5)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([projectId])
+  @@index([assigneeId])
+}
+
+model Page {
+  id           String         @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId    String?
+  project      CollabProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentPageId String?
+  parentPage   Page?          @relation("PageTree", fields: [parentPageId], references: [id], onDelete: Cascade)
+  childPages   Page[]         @relation("PageTree")
+  title        String         @db.VarChar(200)
+  icon         String?        @db.VarChar(32)
+  coverUrl     String?        @db.VarChar(500)
+  sortOrder    Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  blocks       Block[]
+  database     Database?
+  databaseRow  DatabaseRow?
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([parentPageId])
+}
+
+model Block {
+  id            String    @id @default(cuid())
+  pageId        String
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type          BlockType @default(paragraph)
+  content       Json      @default("{}")
+  sortOrder     Int       @default(0)
+  parentBlockId String?
+  parentBlock   Block?    @relation("BlockTree", fields: [parentBlockId], references: [id], onDelete: Cascade)
+  childBlocks   Block[]   @relation("BlockTree")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([pageId, sortOrder])
+}
+
+model Database {
+  id         String             @id @default(cuid())
+  pageId     String             @unique
+  page       Page               @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title      String             @db.VarChar(120)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  properties DatabaseProperty[]
+  rows       DatabaseRow[]
+  views      DatabaseView[]
+}
+
+model DatabaseProperty {
+  id         String               @id @default(cuid())
+  databaseId String
+  database   Database             @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String               @db.VarChar(80)
+  type       DatabasePropertyType
+  config     Json                 @default("{}")
+  sortOrder  Int                  @default(0)
+
+  @@index([databaseId])
+}
+
+model DatabaseRow {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  pageId     String   @unique
+  page       Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  values     Json     @default("{}")
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([databaseId])
+}
+
+model DatabaseView {
+  id         String           @id @default(cuid())
+  databaseId String
+  database   Database         @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String           @db.VarChar(80)
+  type       DatabaseViewType @default(TABLE)
+  config     Json             @default("{}")
+  sortOrder  Int              @default(0)
+
+  @@index([databaseId])
+}
+
+model Comment {
+  id              String            @id @default(cuid())
+  targetType      CommentTargetType
+  targetId        String            @db.VarChar(64)
+  authorId        String
+  author          User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body            String            @db.VarChar(2000)
+  parentCommentId String?
+  parentComment   Comment?          @relation("CommentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]         @relation("CommentThread")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([targetType, targetId])
+  @@index([authorId])
+}
+
+model ActivityLog {
+  id          String          @id @default(cuid())
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     CollabProject?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User            @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  action      ActivityAction
+  targetType  String?         @db.VarChar(40)
+  targetId    String?         @db.VarChar(64)
+  metadata    Json            @default("{}")
+  createdAt   DateTime        @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([projectId, createdAt])
+}
+
+enum CollabNotificationType {
+  TASK_ASSIGNED
+  COMMENT_MENTION
+  ROLE_CHANGED
+}
+
+model CollabNotification {
+  id        String                 @id @default(cuid())
+  userId    String
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      CollabNotificationType
+  title     String                 @db.VarChar(200)
+  body      String?                @db.VarChar(500)
+  metadata  Json                   @default("{}")
+  readAt    DateTime?
+  createdAt DateTime               @default(now())
+
+  @@index([userId, readAt])
+}
+
+model WorkGuide {
+  id          String          @id @default(cuid())
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     CollabProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String          @db.VarChar(200)
+  description String?         @db.VarChar(1000)
+  icon        String?         @db.VarChar(32)
+  category    String?         @db.VarChar(80)
+  sortOrder   Int             @default(0)
+  published   Boolean         @default(true)
+  createdById String
+  createdBy   User            @relation("WorkGuideCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  steps       WorkGuideStep[]
+
+  @@index([projectId, sortOrder])
+  @@index([workspaceId])
+}
+
+model WorkGuideStep {
+  id          String    @id @default(cuid())
+  guideId     String
+  guide       WorkGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  title       String    @db.VarChar(200)
+  summary     String?   @db.VarChar(500)
+  content     String?   @db.Text
+  tips        String?   @db.VarChar(1000)
+  durationMin Int?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([guideId, sortOrder])
+}
