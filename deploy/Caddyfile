@@ -1,11 +1,12 @@
-{$DOMAIN} {
-  encode gzip
+# HTTP interno (sin TLS). Expuesto via CADDY_HTTP_PORT (default 8080 en el host).
+# Convive con otros proyectos en la VPS que ya usan el puerto 80 (ej. Dashboard).
 
-  handle /api/* {
-    reverse_proxy api:4001
-  }
+:80 {
+	handle /api/* {
+		reverse_proxy api:4001
+	}
 
-  handle {
-    reverse_proxy web:80
-  }
+	handle {
+		reverse_proxy web:80
+	}
 }

@@ -39,10 +39,11 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "${CADDY_HTTP_PORT:-8080}:80"
+    environment:
+      DOMAIN: ${DOMAIN:-}
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile
+      - ${CADDYFILE:-./deploy/Caddyfile}:/etc/caddy/Caddyfile
       - caddy_data:/data
     depends_on:
       - api

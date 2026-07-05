@@ -1,0 +1,12 @@
+# HTTPS con dominio. Requiere DNS apuntando a la VPS.
+# Usar: CADDYFILE=./deploy/Caddyfile.domain en .env
+
+{$DOMAIN} {
+	handle /api/* {
+		reverse_proxy api:4001
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+}

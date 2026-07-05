@@ -20,15 +20,12 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const allowedOrigins = parseCorsOrigins();
-  const isProd = process.env.NODE_ENV === 'production';
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Same-origin requests (web + API bajo el mismo Caddy) a veces omiten Origin en GET
+      // (p. ej. /auth/me tras login). OriginGuard sigue validando Origin en POST/PUT/PATCH/DELETE.
       if (!origin) {
-        if (isProd) {
-          callback(new Error('Origin header required'), false);
-          return;
-        }
         callback(null, true);
         return;
       }

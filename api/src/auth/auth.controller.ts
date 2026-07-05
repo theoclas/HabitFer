@@ -9,9 +9,15 @@ import { ACCESS_COOKIE } from './jwt.strategy';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
+function cookieSecure(): boolean {
+  if (process.env.COOKIE_SECURE === 'false') return false;
+  if (process.env.COOKIE_SECURE === 'true') return true;
+  return process.env.NODE_ENV === 'production';
+}
+
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: cookieSecure(),
   sameSite: 'strict' as const,
   maxAge: 8 * 60 * 60 * 1000,
   path: '/',

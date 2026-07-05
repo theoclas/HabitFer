@@ -36,6 +36,10 @@ npm run dev
 
 Web en http://localhost:5174
 
+## Produccion (VPS)
+
+Ver **[docs/deploy-vps.md](docs/deploy-vps.md)** — convive con el Dashboard en el puerto 8080.
+
 ## Estructura
 
 - `api/` — NestJS + Prisma + JWT auth
