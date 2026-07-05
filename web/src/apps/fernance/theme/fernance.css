@@ -115,3 +115,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.fern-period-picker__mode .ant-segmented-item-selected {
+  color: var(--accent-fern-light) !important;
+}
