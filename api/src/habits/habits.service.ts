@@ -8,6 +8,7 @@ import {
   getCurrentStreak,
   getLongestStreak,
   isScheduledDay,
+  isCompletableDate,
   parseDateKey,
   parseScheduleDays,
   startOfToday,
@@ -110,6 +111,10 @@ export class HabitsService {
     const existing = await this.ensureOwner(userId, id);
     const date = dto.date ? parseDateKey(dto.date) : startOfToday();
 
+    if (!isCompletableDate(date)) {
+      throw new ForbiddenException('Solo puedes marcar habitos de hoy o de ayer');
+    }
+
     if (!isScheduledDay(existing.scheduleType, existing.scheduleDays, date)) {
       throw new ForbiddenException('Este habito no esta programado para esa fecha');
     }
@@ -170,6 +175,9 @@ export class HabitsService {
   async uncomplete(userId: string, id: string, dateKey: string) {
     await this.ensureOwner(userId, id);
     const date = parseDateKey(dateKey);
+    if (!isCompletableDate(date)) {
+      throw new ForbiddenException('Solo puedes marcar habitos de hoy o de ayer');
+    }
     await this.prisma.habitCompletion.deleteMany({ where: { habitId: id, userId, date } });
     return this.getOne(userId, id);
   }

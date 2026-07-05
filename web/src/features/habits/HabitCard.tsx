@@ -5,13 +5,14 @@ import { habitCardBackground, habitEmoji, habitScheduleLabel } from "./habitUtil
 type Props = {
   habit: Habit | HabitToday;
   loading?: boolean;
+  canToggle?: boolean;
   layout?: "list" | "grid";
   onToggle: (habit: Habit | HabitToday) => void | Promise<void>;
   onOpen?: (habit: Habit | HabitToday) => void;
   onEdit?: (habit: Habit | HabitToday) => void;
 };
 
-export function HabitCard({ habit, loading, layout = "list", onToggle, onOpen, onEdit }: Props) {
+export function HabitCard({ habit, loading, canToggle = true, layout = "list", onToggle, onOpen, onEdit }: Props) {
   const completed = habit.completedToday;
   const isGrid = layout === "grid";
 
@@ -124,9 +125,11 @@ export function HabitCard({ habit, loading, layout = "list", onToggle, onOpen, o
         <button
           type="button"
           aria-label={completed ? "Desmarcar" : "Completar"}
-          disabled={loading}
+          disabled={loading || !canToggle}
+          title={canToggle ? undefined : "Solo puedes marcar habitos de hoy o de ayer"}
           onClick={(e) => {
             e.stopPropagation();
+            if (!canToggle) return;
             void onToggle(habit);
           }}
           style={{
@@ -139,7 +142,8 @@ export function HabitCard({ habit, loading, layout = "list", onToggle, onOpen, o
             fontSize: 22,
             display: "grid",
             placeItems: "center",
-            cursor: loading ? "wait" : "pointer",
+            cursor: loading ? "wait" : canToggle ? "pointer" : "not-allowed",
+            opacity: canToggle ? 1 : 0.45,
             flexShrink: 0,
             transition: "transform 0.15s",
           }}

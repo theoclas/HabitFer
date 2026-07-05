@@ -27,6 +27,13 @@ export function isSameDay(a: Date, b: Date): boolean {
   return toDateKey(a) === toDateKey(b);
 }
 
+/** Solo hoy y ayer se pueden marcar o desmarcar habitos. */
+export function isCompletableDate(date: Date): boolean {
+  const today = startOfToday();
+  const yesterday = addDays(today, -1);
+  return isSameDay(date, today) || isSameDay(date, yesterday);
+}
+
 /** Local calendar today (fallback when client omits ?date). */
 export function localTodayKey(): string {
   const now = new Date();

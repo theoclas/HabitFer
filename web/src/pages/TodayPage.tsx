@@ -15,6 +15,7 @@ import { useAchievements } from "../features/achievements/AchievementContext";
 import { RemindersBell } from "../features/reminders/RemindersBell";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { Habit, HabitToday } from "../types";
+import { canMarkHabitsForDate } from "../utils/dates";
 
 export function TodayPage() {
   const isMobile = useIsMobile();
@@ -29,6 +30,7 @@ export function TodayPage() {
 
   const dateKey = selectedDate.format("YYYY-MM-DD");
   const isToday = selectedDate.isSame(dayjs(), "day");
+  const canMark = canMarkHabitsForDate(dateKey);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,6 +60,10 @@ export function TodayPage() {
   const progressPct = habits.length ? Math.round((doneCount / habits.length) * 100) : 0;
 
   const handleToggle = async (habit: HabitToday | Habit) => {
+    if (!canMark) {
+      message.warning("Solo puedes marcar habitos de hoy o de ayer");
+      return;
+    }
     setTogglingId(habit.id);
     try {
       if (habit.completedToday) {
@@ -102,6 +108,7 @@ export function TodayPage() {
           habit={habit}
           layout={isMobile ? "list" : "grid"}
           loading={togglingId === habit.id}
+          canToggle={canMark}
           onToggle={handleToggle}
           onOpen={openEdit}
           onEdit={openEdit}
@@ -182,6 +189,11 @@ export function TodayPage() {
             <Typography.Title level={4} style={{ marginTop: 0, marginBottom: 16, fontWeight: 700 }}>
               Habitos del dia
             </Typography.Title>
+          )}
+          {!canMark && (
+            <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12, fontSize: 13 }}>
+              Vista de solo lectura — solo puedes marcar habitos de hoy o de ayer
+            </Typography.Text>
           )}
           {habitList}
         </section>

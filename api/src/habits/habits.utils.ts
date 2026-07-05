@@ -1,6 +1,7 @@
 import { ScheduleType } from '@prisma/client';
 import {
   addDays,
+  isCompletableDate,
   isSameDay,
   parseDateKey,
   startOfToday,
@@ -8,7 +9,7 @@ import {
   toIsoWeekday,
 } from '../common/date.utils';
 
-export { addDays, isSameDay, parseDateKey, startOfToday, toDateKey, toIsoWeekday } from '../common/date.utils';
+export { addDays, isCompletableDate, isSameDay, parseDateKey, startOfToday, toDateKey, toIsoWeekday } from '../common/date.utils';
 
 const ISO_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
