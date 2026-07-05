@@ -11,12 +11,14 @@ import {
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { HabitCard } from "../features/habits/HabitCard";
 import { WeekCalendarStrip } from "../features/habits/WeekCalendarStrip";
+import { useAchievements } from "../features/achievements/AchievementContext";
 import { RemindersBell } from "../features/reminders/RemindersBell";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { Habit, HabitToday } from "../types";
 
 export function TodayPage() {
   const isMobile = useIsMobile();
+  const { celebrate } = useAchievements();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [habits, setHabits] = useState<HabitToday[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,8 @@ export function TodayPage() {
       if (habit.completedToday) {
         await uncompleteHabit(habit.id, dateKey);
       } else {
-        await completeHabit(habit.id, dateKey);
+        const result = await completeHabit(habit.id, dateKey);
+        if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
       }
       await load();
     } catch {

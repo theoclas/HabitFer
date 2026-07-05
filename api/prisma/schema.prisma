@@ -52,6 +52,7 @@ model User {
   updatedAt    DateTime          @updatedAt
   habits       Habit[]
   completions  HabitCompletion[]
+  habitAchievements HabitAchievement[]
   projects     Project[]
   tasks        Task[]
   reminders    ReminderLog[]
@@ -105,8 +106,23 @@ model Habit {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   completions     HabitCompletion[]
+  achievements    HabitAchievement[]
 
   @@index([userId, archived])
+}
+
+model HabitAchievement {
+  id            String   @id @default(cuid())
+  habitId       String
+  habit         Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestoneDays Int
+  phraseIndex   Int
+  unlockedAt    DateTime @default(now())
+
+  @@unique([habitId, milestoneDays])
+  @@index([userId, habitId])
 }
 
 model HabitCompletion {

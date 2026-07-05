@@ -1163,3 +1163,171 @@
 .profile-page {
   display: none;
 }
+
+/* Achievement unlock modal */
+.achievement-modal .ant-modal-content {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.achievement-modal__body {
+  text-align: center;
+  padding: 8px 4px 4px;
+}
+
+.achievement-modal__badge {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 16px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.achievement-modal__emoji {
+  font-size: 40px;
+}
+
+.achievement-modal__trophy {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  font-size: 22px;
+  color: #fbbf24;
+  filter: drop-shadow(0 2px 6px rgba(251, 191, 36, 0.5));
+}
+
+.achievement-modal__tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(45, 212, 191, 0.14);
+  color: var(--accent-habit);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.achievement-modal__title {
+  margin: 12px 0 4px !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-display);
+}
+
+.achievement-modal__habit {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.achievement-modal__quote {
+  margin: 0;
+  padding: 20px 18px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--accent-habit);
+  text-align: left;
+}
+
+.achievement-modal__phrase {
+  margin-bottom: 8px !important;
+  font-size: 16px !important;
+  line-height: 1.55 !important;
+  color: var(--text-primary) !important;
+  font-style: italic;
+}
+
+.achievement-modal__author {
+  font-size: 13px;
+}
+
+.achievement-modal__next {
+  display: block;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+/* HabitFer motivational banner */
+.habit-motivation-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.12), rgba(45, 212, 191, 0.04));
+  border-bottom: 1px solid rgba(45, 212, 191, 0.2);
+  animation: habit-motivation-in 0.35s ease-out;
+}
+
+@media (min-width: 768px) {
+  .habit-motivation-banner {
+    padding: 12px 40px;
+  }
+}
+
+@keyframes habit-motivation-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.habit-motivation-banner__icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(45, 212, 191, 0.18);
+  color: var(--accent-habit);
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.habit-motivation-banner__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.habit-motivation-banner__phrase {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.habit-motivation-banner__author {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.habit-motivation-banner__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.habit-motivation-banner__close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}

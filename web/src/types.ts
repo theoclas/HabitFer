@@ -45,6 +45,23 @@ export type HabitToday = Habit & {
   scheduledForDate: string;
 };
 
+export type UnlockedAchievement = {
+  id: string;
+  habitId: string;
+  milestoneDays: number;
+  phraseIndex: number;
+  unlockedAt: string;
+  habitTitle: string;
+  habitColor: string;
+  habitIcon: string | null;
+  label: string;
+};
+
+export type CompleteHabitResponse = {
+  habit: Habit;
+  unlockedAchievement?: UnlockedAchievement;
+};
+
 export type CreateHabitPayload = {
   title: string;
   description?: string;

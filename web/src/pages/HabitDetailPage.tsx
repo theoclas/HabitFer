@@ -7,12 +7,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { completeHabit, fetchHabit, uncompleteHabit } from "../api/client";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { HabitCard } from "../features/habits/HabitCard";
+import { useAchievements } from "../features/achievements/AchievementContext";
 import { habitEmoji } from "../features/habits/habitUtils";
 import type { Habit } from "../types";
 
 export function HabitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { celebrate } = useAchievements();
   const [habit, setHabit] = useState<Habit | null>(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
@@ -42,7 +44,9 @@ export function HabitDetailPage() {
       if (habit.completedToday) {
         setHabit(await uncompleteHabit(habit.id, todayKey));
       } else {
-        setHabit(await completeHabit(habit.id));
+        const result = await completeHabit(habit.id);
+        setHabit(result.habit);
+        if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
       }
     } catch {
       message.error("No se pudo actualizar");

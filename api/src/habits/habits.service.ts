@@ -13,6 +13,8 @@ import {
   startOfToday,
   toDateKey,
 } from './habits.utils';
+import { randomInt } from 'crypto';
+import { getMilestoneLabel, isStreakMilestone } from './achievements.utils';
 
 @Injectable()
 export class HabitsService {
@@ -105,10 +107,10 @@ export class HabitsService {
   }
 
   async complete(userId: string, id: string, dto: CompleteHabitDto) {
-    const habit = await this.ensureOwner(userId, id);
+    const existing = await this.ensureOwner(userId, id);
     const date = dto.date ? parseDateKey(dto.date) : startOfToday();
 
-    if (!isScheduledDay(habit.scheduleType, habit.scheduleDays, date)) {
+    if (!isScheduledDay(existing.scheduleType, existing.scheduleDays, date)) {
       throw new ForbiddenException('Este habito no esta programado para esa fecha');
     }
 
@@ -118,7 +120,51 @@ export class HabitsService {
       update: { note: dto.note?.trim() || null },
     });
 
-    return this.getOne(userId, id);
+    const unlockedAchievement = await this.tryUnlockAchievement(userId, id, date);
+
+    const habit = await this.getOne(userId, id);
+    if (!unlockedAchievement) return { habit };
+
+    return {
+      habit,
+      unlockedAchievement: {
+        ...unlockedAchievement,
+        habitTitle: habit.title,
+        habitColor: habit.color,
+        habitIcon: habit.icon,
+        label: getMilestoneLabel(unlockedAchievement.milestoneDays),
+      },
+    };
+  }
+
+  private async tryUnlockAchievement(userId: string, habitId: string, refDate: Date) {
+    const habit = await this.prisma.habit.findFirst({
+      where: { id: habitId, userId },
+      include: { completions: { select: { date: true } } },
+    });
+    if (!habit?.streakEnabled) return null;
+
+    const keys = new Set(habit.completions.map((c) => toDateKey(c.date)));
+    const streak = getCurrentStreak(habit.scheduleType, habit.scheduleDays, habit.streakEnabled, keys, refDate);
+    if (!isStreakMilestone(streak)) return null;
+
+    const phraseIndex = randomInt(0, 1200);
+
+    try {
+      return await this.prisma.habitAchievement.create({
+        data: { habitId, userId, milestoneDays: streak, phraseIndex },
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async listAchievements(userId: string, habitId: string) {
+    await this.ensureOwner(userId, habitId);
+    return this.prisma.habitAchievement.findMany({
+      where: { habitId, userId },
+      orderBy: { milestoneDays: 'asc' },
+    });
   }
 
   async uncomplete(userId: string, id: string, dateKey: string) {

@@ -12,6 +12,7 @@ import { ProfileModal } from "../../../components/ProfileModal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { RemindersBell } from "../../../features/reminders/RemindersBell";
 import { AppSwitcher } from "../../../platform/AppSwitcher";
+import { MotivationalBanner } from "../components/MotivationalBanner";
 
 const { Content, Sider, Header } = Layout;
 const BASE = "/app/habitfer";
@@ -97,6 +98,7 @@ export function HabitFerShell() {
               <RemindersBell />
             </div>
           </Header>
+          <MotivationalBanner />
           <Content
             className="app-shell__content"
             style={{

@@ -53,7 +53,7 @@ export async function logout() {
   }
 }
 
-import type { CreateHabitPayload, Habit, HabitToday } from "../types";
+import type { CompleteHabitResponse, CreateHabitPayload, Habit, HabitToday } from "../types";
 
 export async function fetchHabits() {
   const { data } = await api.get<Habit[]>("/habits");
@@ -85,7 +85,7 @@ export async function deleteHabit(id: string) {
 }
 
 export async function completeHabit(id: string, date?: string) {
-  const { data } = await api.post<Habit>("/habits/" + id + "/complete", date ? { date } : {});
+  const { data } = await api.post<CompleteHabitResponse>("/habits/" + id + "/complete", date ? { date } : {});
   return data;
 }
 

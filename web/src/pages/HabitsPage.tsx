@@ -3,6 +3,7 @@ import { Button, Empty, Spin, Typography, message } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { completeHabit, fetchHabits, uncompleteHabit } from "../api/client";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
+import { useAchievements } from "../features/achievements/AchievementContext";
 import { CollapsibleHabitSection } from "../features/habits/CollapsibleHabitSection";
 import { RemindersBell } from "../features/reminders/RemindersBell";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -11,6 +12,7 @@ import dayjs from "dayjs";
 
 export function HabitsPage() {
   const isMobile = useIsMobile();
+  const { celebrate } = useAchievements();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -39,7 +41,8 @@ export function HabitsPage() {
       if (habit.completedToday) {
         await uncompleteHabit(habit.id, todayKey);
       } else {
-        await completeHabit(habit.id);
+        const result = await completeHabit(habit.id);
+        if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
       }
       await load();
     } catch {
