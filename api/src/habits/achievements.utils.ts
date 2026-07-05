@@ -21,3 +21,6 @@ export function getMilestoneLabel(days: number): string {
 export function getNextMilestone(streak: number): number | null {
   return getStreakMilestones().find((m) => m > streak) ?? null;
 }
+
+/** Debe coincidir con web/src/data/frases_motivacionales.json (solo logros, no banner alterno). */
+export const PHRASE_COUNT = 884;

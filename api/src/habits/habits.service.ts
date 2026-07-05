@@ -14,7 +14,7 @@ import {
   toDateKey,
 } from './habits.utils';
 import { randomInt } from 'crypto';
-import { getMilestoneLabel, isStreakMilestone } from './achievements.utils';
+import { getMilestoneLabel, isStreakMilestone, PHRASE_COUNT } from './achievements.utils';
 
 @Injectable()
 export class HabitsService {
@@ -148,7 +148,7 @@ export class HabitsService {
     const streak = getCurrentStreak(habit.scheduleType, habit.scheduleDays, habit.streakEnabled, keys, refDate);
     if (!isStreakMilestone(streak)) return null;
 
-    const phraseIndex = randomInt(0, 1200);
+    const phraseIndex = randomInt(0, PHRASE_COUNT);
 
     try {
       return await this.prisma.habitAchievement.create({

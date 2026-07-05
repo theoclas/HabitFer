@@ -1,9 +1,9 @@
 import { CloseOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useMemo, useState } from "react";
-import { pickRandomPhrase } from "../../../features/achievements/phrases";
+import { pickRandomBannerPhrase } from "../../../features/achievements/phrases";
 
 export function MotivationalBanner() {
-  const phrase = useMemo(() => pickRandomPhrase(), []);
+  const phrase = useMemo(() => pickRandomBannerPhrase(), []);
   const [visible, setVisible] = useState(true);
 
   if (!visible) return null;
