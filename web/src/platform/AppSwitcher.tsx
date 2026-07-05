@@ -6,6 +6,7 @@ import { APPS, type AppId, setLastApp } from "./apps";
 
 function detectCurrentApp(pathname: string): AppId {
   if (pathname.startsWith("/app/proyecfer")) return "proyecfer";
+  if (pathname.startsWith("/app/fernance")) return "fernance";
   return "habitfer";
 }
 

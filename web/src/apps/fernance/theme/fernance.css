@@ -1,0 +1,117 @@
+/* Fernance — prosperidad dorada */
+
+:root {
+  --accent-fern: #D4AF37;
+  --accent-fern-light: #F5C542;
+  --accent-fern-dim: rgba(212, 175, 55, 0.16);
+  --accent-fern-glow: rgba(212, 175, 55, 0.35);
+  --fern-bg-deep: #0f0d08;
+  --fern-bg-card: rgba(26, 21, 8, 0.85);
+}
+
+.app-shell--fernance {
+  --shell-glow: rgba(212, 175, 55, 0.1);
+  --shell-glow-2: rgba(245, 197, 66, 0.06);
+}
+
+.app-shell__brand--fern {
+  color: var(--accent-fern-light);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-shell__brand--fern .fern-logo {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 8px var(--accent-fern-glow));
+}
+
+.app-nav-btn--fern.app-nav-btn--active {
+  background: var(--accent-fern-dim);
+  color: var(--accent-fern-light);
+  font-weight: 700;
+}
+
+.mobile-tab-btn--fern.mobile-tab-btn--active {
+  color: var(--accent-fern-light);
+}
+
+.profile-trigger--fern:hover {
+  color: var(--accent-fern-light);
+  background: var(--accent-fern-dim);
+}
+
+.fern-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.fern-summary-card {
+  background: var(--fern-bg-card);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: 0 0 24px rgba(212, 175, 55, 0.06);
+}
+
+.fern-summary-card__label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.fern-summary-card__value {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-fern-light);
+}
+
+.fern-summary-card--available .fern-summary-card__value {
+  color: #86efac;
+}
+
+.fern-summary-card--committed .fern-summary-card__value {
+  color: #fbbf24;
+}
+
+.fern-money-positive {
+  color: #86efac;
+}
+
+.fern-money-negative {
+  color: #f87171;
+}
+
+.fern-projection-panel {
+  margin-top: 24px;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: var(--radius-md);
+  background: var(--fern-bg-card);
+}
+
+.fern-account-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.fern-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .fern-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

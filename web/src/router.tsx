@@ -1,4 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { FernanceShell } from "./apps/fernance/layouts/FernanceShell";
+import { DashboardPage } from "./apps/fernance/pages/DashboardPage";
+import { AccountsPage } from "./apps/fernance/pages/AccountsPage";
+import { IncomesPage } from "./apps/fernance/pages/IncomesPage";
+import { CreditsPage } from "./apps/fernance/pages/CreditsPage";
+import { CreditDetailPage } from "./apps/fernance/pages/CreditDetailPage";
 import { HabitFerShell } from "./apps/habitfer/layouts/HabitFerShell";
 import { ProyecFerShell } from "./apps/proyecfer/layouts/ProyecFerShell";
 import { ProyecFerHomePage } from "./apps/proyecfer/pages/ProyecFerHomePage";
@@ -51,6 +57,13 @@ export function AppRouter() {
           <Route path="workspaces/:workspaceId/pages/:pageId" element={<PageEditorPage />} />
           <Route path="workspaces/:workspaceId/databases/:databaseId" element={<DatabasePage />} />
           <Route path="stats" element={<ProyecFerStatsPage />} />
+        </Route>
+        <Route path="/app/fernance" element={<FernanceShell />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
+          <Route path="incomes" element={<IncomesPage />} />
+          <Route path="credits" element={<CreditsPage />} />
+          <Route path="credits/:id" element={<CreditDetailPage />} />
         </Route>
         <Route path="/app" element={<AppRedirect />} />
         <Route path="/app/habits/*" element={<Navigate to="/app/habitfer/habits" replace />} />

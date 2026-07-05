@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { envValidationSchema } from './config/env.validation';
 import { OriginGuard } from './common/guards/origin.guard';
+import { FernanceModule } from './fernance/fernance.module';
 import { HabitsModule } from './habits/habits.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProyecFerModule } from './proyecfer/proyecfer.module';
@@ -37,6 +38,7 @@ import { UsersModule } from './users/users.module';
     StatsModule,
     UsersModule,
     ProyecFerModule,
+    FernanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

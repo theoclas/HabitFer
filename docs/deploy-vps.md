@@ -132,6 +132,33 @@ docker compose -f docker-compose.prod.yml logs -f --tail 50
 
 El contenedor `api` aplica el schema de Prisma al arrancar (`prisma db push`). Si falla, revisa logs de `api`.
 
+### Actualizar schema tras nuevos módulos (p. ej. Fernance)
+
+Tras desplegar cambios que añaden tablas en `api/prisma/schema.prisma` (como `FinanceAccount`, `Income`, `Credit`, `CreditInstallment` del módulo **Fernance**):
+
+```bash
+cd ~/apps/HabitFer
+git pull origin main
+docker compose -f docker-compose.prod.yml build api web
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Si las tablas no se crean al arrancar, aplica el schema manualmente:
+
+```bash
+docker compose -f docker-compose.prod.yml exec api npx prisma db push
+docker compose -f docker-compose.prod.yml restart api
+```
+
+En desarrollo local:
+
+```bash
+cd api
+npx prisma db push
+```
+
+Luego accede a Fernance en `/app/fernance` desde el App Picker tras iniciar sesión.
+
 ---
 
 ## 5. Primer usuario (administrador)

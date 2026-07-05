@@ -1,4 +1,4 @@
-export type AppId = "habitfer" | "proyecfer";
+export type AppId = "habitfer" | "proyecfer" | "fernance";
 
 export const LAST_APP_KEY = "fersua_last_app";
 
@@ -25,11 +25,18 @@ export const APPS: Record<AppId, AppConfig> = {
     color: "#6366f1",
     basePath: "/app/proyecfer",
   },
+  fernance: {
+    id: "fernance",
+    name: "Fernance",
+    description: "Finanzas personales, ingresos y creditos",
+    color: "#D4AF37",
+    basePath: "/app/fernance",
+  },
 };
 
 export function getLastApp(): AppId | null {
   const v = localStorage.getItem(LAST_APP_KEY);
-  return v === "habitfer" || v === "proyecfer" ? v : null;
+  return v === "habitfer" || v === "proyecfer" || v === "fernance" ? v : null;
 }
 
 export function setLastApp(id: AppId) {

@@ -211,3 +211,86 @@ export async function suspendUser(id: string) {
   const { data } = await api.patch<ManagedUser>("/users/" + id + "/suspend");
   return data;
 }
+
+import type {
+  CreateCreditPayload,
+  CreateFinanceAccountPayload,
+  CreateIncomePayload,
+  Credit,
+  FinanceAccount,
+  FinanceSummary,
+  Income,
+} from "../types/fernance";
+
+export async function fetchFinanceAccounts() {
+  const { data } = await api.get<FinanceAccount[]>("/fernance/accounts");
+  return data;
+}
+
+export async function createFinanceAccount(payload: CreateFinanceAccountPayload) {
+  const { data } = await api.post<FinanceAccount>("/fernance/accounts", payload);
+  return data;
+}
+
+export async function updateFinanceAccount(id: string, payload: Partial<CreateFinanceAccountPayload>) {
+  const { data } = await api.patch<FinanceAccount>("/fernance/accounts/" + id, payload);
+  return data;
+}
+
+export async function deleteFinanceAccount(id: string) {
+  await api.delete("/fernance/accounts/" + id);
+}
+
+export async function fetchIncomes(params?: { accountId?: string; from?: string; to?: string }) {
+  const { data } = await api.get<Income[]>("/fernance/incomes", { params });
+  return data;
+}
+
+export async function createIncome(payload: CreateIncomePayload) {
+  const { data } = await api.post<Income>("/fernance/incomes", payload);
+  return data;
+}
+
+export async function updateIncome(id: string, payload: Partial<CreateIncomePayload>) {
+  const { data } = await api.patch<Income>("/fernance/incomes/" + id, payload);
+  return data;
+}
+
+export async function deleteIncome(id: string) {
+  await api.delete("/fernance/incomes/" + id);
+}
+
+export async function fetchCredits(params?: { accountId?: string; status?: string }) {
+  const { data } = await api.get<Credit[]>("/fernance/credits", { params });
+  return data;
+}
+
+export async function fetchCredit(id: string) {
+  const { data } = await api.get<Credit>("/fernance/credits/" + id);
+  return data;
+}
+
+export async function createCredit(payload: CreateCreditPayload) {
+  const { data } = await api.post<Credit>("/fernance/credits", payload);
+  return data;
+}
+
+export async function updateCredit(id: string, payload: { name?: string; status?: string }) {
+  const { data } = await api.patch<Credit>("/fernance/credits/" + id, payload);
+  return data;
+}
+
+export async function payInstallment(id: string) {
+  const { data } = await api.patch("/fernance/installments/" + id + "/pay");
+  return data;
+}
+
+export async function unpayInstallment(id: string) {
+  const { data } = await api.patch("/fernance/installments/" + id + "/unpay");
+  return data;
+}
+
+export async function fetchFinanceSummary(params?: { accountId?: string; from?: string; to?: string }) {
+  const { data } = await api.get<FinanceSummary>("/fernance/summary", { params });
+  return data;
+}
