@@ -3,6 +3,7 @@ import {
   CheckCircleOutlined,
   FileTextOutlined,
   FolderOutlined,
+  LineChartOutlined,
   TeamOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
@@ -47,6 +48,30 @@ export function WorkspaceKpiGrid({ stats }: Props) {
           </Typography.Title>
         </Card>
       ))}
+      {(stats.dailyTaskCount ?? 0) > 0 && (
+        <Card className="stat-card workspace-kpi-card workspace-kpi-card--progress" styles={{ body: { padding: "18px 20px" } }}>
+          <div className="workspace-kpi-card__head">
+            <span className="workspace-kpi-card__icon" style={{ background: "rgba(99,102,241,0.2)", color: "#a5b4fc" }}>
+              <LineChartOutlined />
+            </span>
+            <Typography.Text type="secondary" className="workspace-kpi-card__label">
+              Rutinas diarias
+            </Typography.Text>
+          </div>
+          <div className="workspace-kpi-card__progress">
+            <Progress
+              type="circle"
+              percent={stats.dailyComplianceRate7d ?? 0}
+              size={72}
+              strokeColor={{ "0%": "#818cf8", "100%": "#34d399" }}
+              trailColor="rgba(255,255,255,0.08)"
+            />
+            <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: "block" }}>
+              {stats.dailyTaskCount} rutinas · 7 dias
+            </Typography.Text>
+          </div>
+        </Card>
+      )}
       {(stats.completionRate ?? 0) >= 0 && stats.totalTasks !== undefined && stats.totalTasks > 0 && (
         <Card className="stat-card workspace-kpi-card workspace-kpi-card--progress" styles={{ body: { padding: "18px 20px" } }}>
           <Typography.Text type="secondary" className="workspace-kpi-card__label">

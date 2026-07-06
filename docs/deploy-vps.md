@@ -134,7 +134,7 @@ El contenedor `api` aplica el schema de Prisma al arrancar (`prisma db push`). S
 
 ### Actualizar schema tras nuevos módulos (p. ej. Fernance)
 
-Tras desplegar cambios que añaden tablas en `api/prisma/schema.prisma` (como `FinanceAccount`, `Income`, `Credit`, `CreditInstallment` del módulo **Fernance**):
+Tras desplegar cambios que añaden tablas en `api/prisma/schema.prisma` (como `FinanceAccount`, `Income`, `Credit`, `CreditInstallment` del módulo **Fernance**, o `CollabTaskCompletion` y campos `kind`/`activeFrom` en **ProyecFer**):
 
 ```bash
 cd ~/apps/HabitFer
@@ -157,7 +157,7 @@ cd api
 npx prisma db push
 ```
 
-Luego accede a Fernance en `/app/fernance` desde el App Picker tras iniciar sesión.
+Luego accede a Fernance en `/app/fernance` o rutinas diarias en ProyecFer (`/app/proyecfer`) desde el App Picker tras iniciar sesión.
 
 ---
 

@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { TaskPriority, TaskStatus } from '@prisma/client';
+import { CollabTaskKind, TaskPriority, TaskStatus } from '@prisma/client';
 
 export class CreateCollabTaskDto {
   @IsString()
@@ -11,6 +11,14 @@ export class CreateCollabTaskDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @IsOptional()
+  @IsEnum(CollabTaskKind)
+  kind?: CollabTaskKind;
+
+  @IsOptional()
+  @IsString()
+  activeFrom?: string;
 
   @IsOptional()
   @IsEnum(TaskStatus)
@@ -44,6 +52,14 @@ export class UpdateCollabTaskDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @IsOptional()
+  @IsEnum(CollabTaskKind)
+  kind?: CollabTaskKind;
+
+  @IsOptional()
+  @IsString()
+  activeFrom?: string | null;
 
   @IsOptional()
   @IsEnum(TaskStatus)

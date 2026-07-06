@@ -94,6 +94,35 @@ export async function deleteCollabTask(taskId: string) {
   await api.delete("/proyecfer/tasks/" + taskId);
 }
 
+export async function completeDailyCollabTask(taskId: string, date: string) {
+  const { data } = await api.post("/proyecfer/tasks/" + taskId + "/complete", { date });
+  return data;
+}
+
+export async function uncompleteDailyCollabTask(taskId: string, date: string) {
+  const { data } = await api.delete("/proyecfer/tasks/" + taskId + "/complete/" + date);
+  return data;
+}
+
+export async function fetchProjectCompliance(
+  projectId: string,
+  params?: { from?: string; to?: string; assigneeId?: string },
+) {
+  const { data } = await api.get<import("../types/proyecfer").ComplianceReport>(
+    "/proyecfer/projects/" + projectId + "/compliance",
+    { params },
+  );
+  return data;
+}
+
+export async function fetchProjectDailyTasks(projectId: string, date?: string) {
+  const { data } = await api.get<import("../types/proyecfer").CollabTask[]>(
+    "/proyecfer/projects/" + projectId + "/daily-tasks",
+    { params: date ? { date } : undefined },
+  );
+  return data;
+}
+
 export async function fetchComments(targetType: string, targetId: string) {
   const { data } = await api.get<CommentItem[]>("/proyecfer/comments", { params: { targetType, targetId } });
   return data;

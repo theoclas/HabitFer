@@ -47,12 +47,20 @@ export type CollabProject = {
   updatedAt: string;
 };
 
+export type CollabTaskKind = "ONE_OFF" | "DAILY";
+
+export type CollabTaskCompletion = {
+  date: string;
+  completedById: string;
+};
+
 export type CollabTask = {
   id: string;
   workspaceId: string;
   projectId: string;
   title: string;
   description: string | null;
+  kind: CollabTaskKind;
   status: TaskStatus;
   priority: TaskPriority;
   assigneeId: string | null;
@@ -61,12 +69,21 @@ export type CollabTask = {
   createdBy?: WorkspaceUser;
   dueDate: string | null;
   dueTime: string | null;
+  activeFrom: string | null;
+  sourceDailyId?: string | null;
+  scheduledDate?: string | null;
+  sourceDaily?: { id: string; title: string } | null;
+  completions?: CollabTaskCompletion[];
+  completedOnDate?: boolean;
+  rate7d?: number;
+  currentStreak?: number;
   createdAt: string;
   updatedAt: string;
 };
 
 export type CollabProjectDetail = CollabProject & {
   tasks: CollabTask[];
+  dailyTemplates?: CollabTask[];
   pages: { id: string; title: string; icon: string | null }[];
   workGuides?: WorkGuideSummary[];
   members: { user: WorkspaceUser; role: WorkspaceRole }[];
@@ -186,6 +203,9 @@ export type ProyecFerStats = {
   openTasks: number;
   doneTasks: number;
   totalTasks?: number;
+  dailyTaskCount?: number;
+  dailyComplianceRate7d?: number;
+  dailyComplianceRate30d?: number;
   totalMembers?: number;
   totalGuides?: number;
   totalPages?: number;
@@ -203,8 +223,45 @@ export type WorkspaceProjectSummary = {
   openTasks: number;
   doneTasks: number;
   totalTasks: number;
+  dailyTaskCount?: number;
+  dailyComplianceRate7d?: number;
   guideCount: number;
   updatedAt: string;
+};
+
+export type ComplianceReport = {
+  from: string;
+  to: string;
+  projectId: string;
+  dailyTaskCount: number;
+  totals: {
+    expectedDays: number;
+    completedDays: number;
+    rate: number;
+    perfectDays: number;
+    rate7d: number;
+    rate30d: number;
+  };
+  tasks: {
+    taskId: string;
+    title: string;
+    assigneeId: string | null;
+    assigneeName: string | null;
+    expectedDays: number;
+    completedDays: number;
+    rate: number;
+    currentStreak: number;
+    lastCompletedDate: string | null;
+    days: { date: string; done: boolean }[];
+  }[];
+  byAssignee: {
+    assigneeId: string | null;
+    assigneeName: string;
+    expectedDays: number;
+    completedDays: number;
+    rate: number;
+  }[];
+  trend: { date: string; expected: number; completed: number; rate: number }[];
 };
 
 export type CollabNotificationItem = {

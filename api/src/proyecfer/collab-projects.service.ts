@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ActivityAction, WorkspaceRole } from '@prisma/client';
+import { ActivityAction, CollabTaskKind, WorkspaceRole } from '@prisma/client';
+import { localTodayKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from './activity.service';
+import { CollabDailyInstancesService } from './collab-daily-instances.service';
 import { PermissionsService } from './permissions.service';
 
 @Injectable()
@@ -10,16 +12,16 @@ export class CollabProjectsService {
     private prisma: PrismaService,
     private permissions: PermissionsService,
     private activity: ActivityService,
+    private dailyInstances: CollabDailyInstancesService,
   ) {}
-
   async list(userId: string, workspaceId: string) {
     await this.permissions.requireWorkspaceRole(userId, workspaceId, WorkspaceRole.VIEWER);
     const projects = await this.prisma.collabProject.findMany({
       where: { workspaceId, archived: false },
       orderBy: { createdAt: 'desc' },
       include: {
-        _count: { select: { tasks: { where: { status: { not: 'DONE' } } } } },
-      },
+          _count: { select: { tasks: { where: { kind: CollabTaskKind.ONE_OFF, status: { not: 'DONE' } } } } },
+        },
     });
     return projects.map((p) => ({ ...p, openTasks: p._count.tasks }));
   }
@@ -47,18 +49,21 @@ export class CollabProjectsService {
 
   async getOne(userId: string, projectId: string) {
     const { project } = await this.permissions.requireProjectAccess(userId, projectId);
+    await this.dailyInstances.ensureForProject(projectId, localTodayKey());
+
     const full = await this.prisma.collabProject.findUnique({
       where: { id: projectId },
       include: {
         tasks: {
-          orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+          where: { kind: { not: CollabTaskKind.DAILY } },
+          orderBy: [{ status: 'asc' }, { scheduledDate: 'desc' }, { createdAt: 'desc' }],
           include: {
             assignee: { select: { id: true, username: true, fullName: true, email: true } },
             createdBy: { select: { id: true, username: true, fullName: true, email: true } },
+            sourceDaily: { select: { id: true, title: true } },
           },
         },
-        pages: { where: { parentPageId: null }, orderBy: { sortOrder: 'asc' } },
-        workGuides: {
+        pages: { where: { parentPageId: null }, orderBy: { sortOrder: 'asc' } },        workGuides: {
           orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
           include: { _count: { select: { steps: true } } },
         },
@@ -69,15 +74,22 @@ export class CollabProjectsService {
     });
     if (!full) throw new NotFoundException('Proyecto no encontrado');
 
-    const workspaceMembers = await this.prisma.workspaceMember.findMany({
-      where: { workspaceId: full.workspaceId },
+    const dailyTemplates = await this.prisma.collabTask.findMany({
+      where: { projectId, kind: CollabTaskKind.DAILY },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        assignee: { select: { id: true, username: true, fullName: true, email: true } },
+      },
+    });
+
+    const workspaceMembers = await this.prisma.workspaceMember.findMany({      where: { workspaceId: full.workspaceId },
       include: { user: { select: { id: true, username: true, fullName: true, email: true } } },
     });
 
     return {
       ...full,
-      members:
-        full.members.length > 0
+      dailyTemplates,
+      members:        full.members.length > 0
           ? full.members
           : workspaceMembers.map((m) => ({ user: m.user, role: m.role })),
     };

@@ -1,7 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ActivityAction, UserStatus, WorkspaceRole } from '@prisma/client';
+import { ActivityAction, CollabTaskKind, UserStatus, WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from './activity.service';
+import { buildWorkspaceDailyRates, projectDailyRate } from './collab-compliance.utils';
 import { PermissionsService } from './permissions.service';
 
 @Injectable()
@@ -159,7 +160,7 @@ export class WorkspacesService {
   async getStats(userId: string, workspaceId: string) {
     await this.permissions.requireWorkspaceRole(userId, workspaceId, WorkspaceRole.VIEWER);
 
-    const [projects, tasks, memberCount, guideCount, pageCount] = await Promise.all([
+    const [projects, tasks, dailyTasks, memberCount, guideCount, pageCount] = await Promise.all([
       this.prisma.collabProject.findMany({
         where: { workspaceId, archived: false },
         orderBy: { updatedAt: 'desc' },
@@ -168,13 +169,22 @@ export class WorkspacesService {
         },
       }),
       this.prisma.collabTask.findMany({
-        where: { workspaceId },
+        where: { workspaceId, kind: CollabTaskKind.ONE_OFF },
         include: { assignee: { select: { id: true, fullName: true } } },
+      }),
+      this.prisma.collabTask.findMany({
+        where: { workspaceId, kind: CollabTaskKind.DAILY },
+        include: {
+          completions: true,
+          assignee: { select: { id: true, fullName: true } },
+        },
       }),
       this.prisma.workspaceMember.count({ where: { workspaceId } }),
       this.prisma.workGuide.count({ where: { workspaceId } }),
       this.prisma.page.count({ where: { workspaceId } }),
     ]);
+
+    const dailyRates = buildWorkspaceDailyRates(dailyTasks);
 
     const byAssignee: Record<string, number> = {};
     const byStatus = { TODO: 0, IN_PROGRESS: 0, DONE: 0 };
@@ -194,6 +204,7 @@ export class WorkspacesService {
 
     const projectSummaries = projects.map((p) => {
       const projectTasks = tasks.filter((t) => t.projectId === p.id);
+      const dailyCount = dailyTasks.filter((t) => t.projectId === p.id).length;
       return {
         id: p.id,
         name: p.name,
@@ -202,6 +213,8 @@ export class WorkspacesService {
         openTasks: projectTasks.filter((t) => t.status !== 'DONE').length,
         doneTasks: projectTasks.filter((t) => t.status === 'DONE').length,
         totalTasks: projectTasks.length,
+        dailyTaskCount: dailyCount,
+        dailyComplianceRate7d: projectDailyRate(dailyTasks, p.id, 7),
         guideCount: p._count.workGuides,
         updatedAt: p.updatedAt,
       };
@@ -212,6 +225,9 @@ export class WorkspacesService {
       openTasks,
       doneTasks,
       totalTasks,
+      dailyTaskCount: dailyRates.dailyTaskCount,
+      dailyComplianceRate7d: dailyRates.rate7d,
+      dailyComplianceRate30d: dailyRates.rate30d,
       totalMembers: memberCount,
       totalGuides: guideCount,
       totalPages: pageCount,

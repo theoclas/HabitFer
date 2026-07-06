@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ActivityService } from './activity.service';
+import { CollabComplianceService } from './collab-compliance.service';
+import { CollabDailyInstancesService } from './collab-daily-instances.service';
 import { CollabProjectsController } from './collab-projects.controller';
 import { CollabProjectsService } from './collab-projects.service';
 import { CollabTasksController } from './collab-tasks.controller';
@@ -35,6 +37,8 @@ import { WorkspacesService } from './workspaces.service';
     WorkspacesService,
     CollabProjectsService,
     CollabTasksService,
+    CollabComplianceService,
+    CollabDailyInstancesService,
     CommentsService,
     PagesService,
     BlocksService,

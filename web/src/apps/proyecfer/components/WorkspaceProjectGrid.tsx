@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { BookOutlined, RightOutlined } from "@ant-design/icons";
+import { BookOutlined, LineChartOutlined, RightOutlined } from "@ant-design/icons";
 import { Card, Empty, Progress, Tag, Typography } from "antd";
 import { Link } from "react-router-dom";
 import type { WorkspaceProjectSummary } from "../../../types/proyecfer";
@@ -30,6 +30,7 @@ export function WorkspaceProjectGrid({ workspaceId, projects }: Props) {
       <div className="workspace-project-grid">
         {projects.map((p) => {
           const pct = p.totalTasks > 0 ? Math.round((p.doneTasks / p.totalTasks) * 100) : 0;
+          const dailyPct = p.dailyComplianceRate7d ?? 0;
           return (
             <Link
               key={p.id}
@@ -57,6 +58,11 @@ export function WorkspaceProjectGrid({ workspaceId, projects }: Props) {
                 <div className="workspace-project-card__stats">
                   <span>{p.openTasks} abiertas</span>
                   <span>{p.doneTasks} hechas</span>
+                  {(p.dailyTaskCount ?? 0) > 0 && (
+                    <span>
+                      <LineChartOutlined /> {dailyPct}% rutinas
+                    </span>
+                  )}
                   {p.guideCount > 0 && (
                     <span>
                       <BookOutlined /> {p.guideCount} guias
@@ -69,7 +75,17 @@ export function WorkspaceProjectGrid({ workspaceId, projects }: Props) {
                     size="small"
                     strokeColor={p.color}
                     trailColor="rgba(255,255,255,0.08)"
-                    format={(n) => `${n}%`}
+                    format={(n) => `${n}% unicas`}
+                  />
+                )}
+                {(p.dailyTaskCount ?? 0) > 0 && (
+                  <Progress
+                    percent={dailyPct}
+                    size="small"
+                    strokeColor="#818cf8"
+                    trailColor="rgba(255,255,255,0.08)"
+                    format={(n) => `${n}% rutinas`}
+                    style={{ marginTop: 6 }}
                   />
                 )}
               </div>

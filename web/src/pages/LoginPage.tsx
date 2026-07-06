@@ -1,7 +1,9 @@
-import { Button, Card, Form, Input, Typography, message } from "antd";
+import { Button, Form, Input, Typography, message } from "antd";
+import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { isAxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../api/client";
+import { AuthLayout } from "../components/AuthLayout";
 import { useAuth } from "../contexts/AuthContext";
 
 export function LoginPage() {
@@ -25,29 +27,25 @@ export function LoginPage() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <Card styles={{ body: { padding: "28px 28px 24px" } }}>
-          <Typography.Title level={2} className="auth-brand">Fersua</Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-            Habitos personales y proyectos colaborativos en un solo lugar
-          </Typography.Paragraph>
-          <Form form={form} layout="vertical" onFinish={onFinish} size="large">
-            <Form.Item name="login" label="Email o usuario" rules={[{ required: true }]}>
-              <Input autoComplete="username" placeholder="tu@email.com" />
-            </Form.Item>
-            <Form.Item name="password" label="Contrasena" rules={[{ required: true }]}>
-              <Input.Password autoComplete="current-password" placeholder="••••••••" />
-            </Form.Item>
-            <Button type="primary" htmlType="submit" block size="large" style={{ marginTop: 8 }}>
-              Entrar
-            </Button>
-          </Form>
-          <Typography.Paragraph style={{ marginTop: 20, marginBottom: 0, textAlign: "center" }}>
-            No tienes cuenta? <Link to="/register">Registrate</Link>
-          </Typography.Paragraph>
-        </Card>
-      </div>
-    </div>
+    <AuthLayout title="Bienvenido de nuevo" subtitle="Inicia sesion para acceder a tus apps">
+      <Form form={form} layout="vertical" onFinish={onFinish} size="large" className="auth-form">
+        <Form.Item name="login" label="Email o usuario" rules={[{ required: true }]}>
+          <Input prefix={<UserOutlined style={{ color: "#64748b" }} />} autoComplete="username" placeholder="tu@email.com" />
+        </Form.Item>
+        <Form.Item name="password" label="Contrasena" rules={[{ required: true }]}>
+          <Input.Password
+            prefix={<LockOutlined style={{ color: "#64748b" }} />}
+            autoComplete="current-password"
+            placeholder="Tu contrasena"
+          />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" block size="large" className="auth-submit-btn">
+          Entrar a Fersua
+        </Button>
+      </Form>
+      <Typography.Paragraph className="auth-footer-link">
+        No tienes cuenta? <Link to="/register">Crear cuenta gratis</Link>
+      </Typography.Paragraph>
+    </AuthLayout>
   );
 }

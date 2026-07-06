@@ -1,5 +1,5 @@
-import { BarChartOutlined } from "@ant-design/icons";
-import { Card, Empty, Select, Typography } from "antd";
+import { BarChartOutlined, LineChartOutlined } from "@ant-design/icons";
+import { Card, Empty, Progress, Select, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHero } from "../../../components/PageHero";
@@ -58,6 +58,26 @@ export function ProyecFerStatsPage() {
                 <Typography.Text type="secondary">Completadas</Typography.Text>
                 <Typography.Title level={2} style={{ margin: "4px 0 0", color: "#34d399" }}>{stats.doneTasks}</Typography.Title>
               </Card>
+              {(stats.dailyTaskCount ?? 0) > 0 && (
+                <Card className="stat-card">
+                  <Typography.Text type="secondary">
+                    <LineChartOutlined /> Cumplimiento rutinas (7d)
+                  </Typography.Text>
+                  <Typography.Title level={2} style={{ margin: "8px 0 0", color: "#a5b4fc" }}>
+                    {stats.dailyComplianceRate7d ?? 0}%
+                  </Typography.Title>
+                  <Progress
+                    percent={stats.dailyComplianceRate7d ?? 0}
+                    size="small"
+                    strokeColor="#818cf8"
+                    showInfo={false}
+                    style={{ marginTop: 8 }}
+                  />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {stats.dailyTaskCount} rutinas activas
+                  </Typography.Text>
+                </Card>
+              )}
             </div>
           )}
           {chartData.length > 0 && (

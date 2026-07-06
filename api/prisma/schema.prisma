@@ -60,6 +60,7 @@ model User {
   workspaceMemberships  WorkspaceMember[]
   collabTasksCreated    CollabTask[]        @relation("CollabTaskCreator")
   collabTasksAssigned   CollabTask[]        @relation("CollabTaskAssignee")
+  collabTaskCompletions CollabTaskCompletion[]
   comments              Comment[]
   activityLogs          ActivityLog[]
   collabProjectMembers  CollabProjectMember[]
@@ -206,6 +207,8 @@ enum ActivityAction {
   MEMBER_ADDED
   MEMBER_REMOVED
   ROLE_CHANGED
+  COMPLETED
+  UNCOMPLETED
 }
 
 enum BlockType {
@@ -303,6 +306,11 @@ model CollabProjectMember {
   @@unique([projectId, userId])
 }
 
+enum CollabTaskKind {
+  ONE_OFF
+  DAILY
+}
+
 model CollabTask {
   id          String        @id @default(cuid())
   workspaceId String
@@ -311,6 +319,7 @@ model CollabTask {
   project     CollabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title       String        @db.VarChar(200)
   description String?       @db.VarChar(2000)
+  kind        CollabTaskKind @default(ONE_OFF)
   status      TaskStatus    @default(TODO)
   priority    TaskPriority  @default(MEDIUM)
   assigneeId  String?
@@ -319,13 +328,35 @@ model CollabTask {
   createdBy   User          @relation("CollabTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
   dueDate     DateTime?     @db.Date
   dueTime     String?       @db.VarChar(5)
+  activeFrom  DateTime?     @db.Date
+  sourceDailyId String?
+  sourceDaily   CollabTask?  @relation("DailyInstances", fields: [sourceDailyId], references: [id], onDelete: Cascade)
+  instances     CollabTask[] @relation("DailyInstances")
+  scheduledDate DateTime?   @db.Date
   sortOrder   Int           @default(0)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  completions CollabTaskCompletion[]
 
+  @@unique([sourceDailyId, scheduledDate])
   @@index([workspaceId, status])
   @@index([projectId])
   @@index([assigneeId])
+  @@index([projectId, kind])
+  @@index([sourceDailyId, scheduledDate])
+}
+
+model CollabTaskCompletion {
+  id            String     @id @default(cuid())
+  taskId        String
+  task          CollabTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  date          DateTime   @db.Date
+  completedById String
+  completedBy   User       @relation(fields: [completedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
+
+  @@unique([taskId, date])
+  @@index([taskId, date])
 }
 
 model Page {

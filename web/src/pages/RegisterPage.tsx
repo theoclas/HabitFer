@@ -1,7 +1,9 @@
-import { Button, Card, Form, Input, Result, Typography, message } from "antd";
+import { Button, Form, Input, Result, Typography, message } from "antd";
+import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { register } from "../api/client";
+import { AuthLayout } from "../components/AuthLayout";
 import { useAuth } from "../contexts/AuthContext";
 
 export function RegisterPage() {
@@ -27,58 +29,52 @@ export function RegisterPage() {
 
   if (pending) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <Card styles={{ body: { padding: "28px" } }}>
-            <Result
-              status="info"
-              title="Solicitud enviada"
-              subTitle="Tu cuenta fue creada y esta pendiente de aprobacion por un administrador. Recibiras acceso cuando sea aprobada."
-              extra={<Link to="/login"><Button type="primary">Ir a iniciar sesion</Button></Link>}
-            />
-          </Card>
-        </div>
-      </div>
+      <AuthLayout title="Solicitud enviada" subtitle="Tu cuenta esta pendiente de aprobacion">
+        <Result
+          status="info"
+          title="Revisa tu correo"
+          subTitle="Un administrador revisara tu solicitud. Podras iniciar sesion cuando sea aprobada."
+          extra={
+            <Link to="/login">
+              <Button type="primary" className="auth-submit-btn">
+                Ir a iniciar sesion
+              </Button>
+            </Link>
+          }
+        />
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <Card styles={{ body: { padding: "28px 28px 24px" } }}>
-          <Typography.Title level={2} className="auth-brand">Crear cuenta</Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-            Registrate y espera la aprobacion del administrador para acceder
-          </Typography.Paragraph>
-          <Form layout="vertical" onFinish={onFinish} size="large">
-            <Form.Item name="fullName" label="Nombre" rules={[{ required: true }]}>
-              <Input placeholder="Tu nombre" />
-            </Form.Item>
-            <Form.Item name="username" label="Usuario" rules={[{ required: true }]}>
-              <Input placeholder="usuario" />
-            </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
-              <Input placeholder="tu@email.com" />
-            </Form.Item>
-            <Form.Item
-              name="password"
-              label="Contrasena"
-              rules={[
-                { required: true, min: 12 },
-                { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, message: "Mayuscula, minuscula y numero" },
-              ]}
-            >
-              <Input.Password placeholder="Min. 12 caracteres" />
-            </Form.Item>
-            <Button type="primary" htmlType="submit" block size="large" style={{ marginTop: 8 }}>
-              Registrarme
-            </Button>
-          </Form>
-          <Typography.Paragraph style={{ marginTop: 20, marginBottom: 0, textAlign: "center" }}>
-            Ya tienes cuenta? <Link to="/login">Inicia sesion</Link>
-          </Typography.Paragraph>
-        </Card>
-      </div>
-    </div>
+    <AuthLayout title="Crear cuenta" subtitle="Unete a Fersua y organiza tu vida y proyectos" wide>
+      <Form layout="vertical" onFinish={onFinish} size="large" className="auth-form">
+        <Form.Item name="fullName" label="Nombre completo" rules={[{ required: true }]}>
+          <Input prefix={<UserOutlined style={{ color: "#64748b" }} />} placeholder="Tu nombre" />
+        </Form.Item>
+        <Form.Item name="username" label="Usuario" rules={[{ required: true }]}>
+          <Input prefix={<UserOutlined style={{ color: "#64748b" }} />} placeholder="usuario" />
+        </Form.Item>
+        <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
+          <Input prefix={<MailOutlined style={{ color: "#64748b" }} />} placeholder="tu@email.com" />
+        </Form.Item>
+        <Form.Item
+          name="password"
+          label="Contrasena"
+          rules={[
+            { required: true, min: 12 },
+            { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, message: "Mayuscula, minuscula y numero" },
+          ]}
+        >
+          <Input.Password prefix={<LockOutlined style={{ color: "#64748b" }} />} placeholder="Min. 12 caracteres" />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" block size="large" className="auth-submit-btn">
+          Registrarme
+        </Button>
+      </Form>
+      <Typography.Paragraph className="auth-footer-link">
+        Ya tienes cuenta? <Link to="/login">Inicia sesion</Link>
+      </Typography.Paragraph>
+    </AuthLayout>
   );
 }

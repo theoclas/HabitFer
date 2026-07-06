@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ActivityAction, CollabNotificationType, TaskPriority, TaskStatus, WorkspaceRole } from '@prisma/client';
+import { ActivityAction, CollabNotificationType, CollabTaskKind, TaskPriority, TaskStatus, WorkspaceRole } from '@prisma/client';
+import { localTodayKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from './activity.service';
+import { CollabDailyInstancesService } from './collab-daily-instances.service';
 import { CollabNotificationsService } from './notifications.service';
 import { PermissionsService } from './permissions.service';
 
@@ -12,6 +14,7 @@ export class CollabTasksService {
     private permissions: PermissionsService,
     private activity: ActivityService,
     private notifications: CollabNotificationsService,
+    private dailyInstances: CollabDailyInstancesService,
   ) {}
 
   async create(
@@ -20,6 +23,8 @@ export class CollabTasksService {
     data: {
       title: string;
       description?: string;
+      kind?: CollabTaskKind;
+      activeFrom?: string;
       status?: TaskStatus;
       priority?: TaskPriority;
       assigneeId?: string;
@@ -30,18 +35,29 @@ export class CollabTasksService {
     const { project } = await this.permissions.requireProjectAccess(userId, projectId, WorkspaceRole.EDITOR);
     if (data.assigneeId) await this.ensureWorkspaceMember(data.assigneeId, project.workspaceId);
 
+    const isDaily = data.kind === CollabTaskKind.DAILY;
+    const activeFrom = isDaily
+      ? data.activeFrom
+        ? new Date(data.activeFrom)
+        : new Date(localTodayKey())
+      : data.activeFrom
+        ? new Date(data.activeFrom)
+        : undefined;
+
     const task = await this.prisma.collabTask.create({
       data: {
         workspaceId: project.workspaceId,
         projectId,
         title: data.title.trim(),
         description: data.description?.trim(),
-        status: data.status ?? TaskStatus.TODO,
+        kind: data.kind ?? CollabTaskKind.ONE_OFF,
+        status: isDaily ? TaskStatus.TODO : (data.status ?? TaskStatus.TODO),
         priority: data.priority ?? TaskPriority.MEDIUM,
         assigneeId: data.assigneeId,
         createdById: userId,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        dueTime: data.dueTime,
+        dueDate: isDaily ? undefined : data.dueDate ? new Date(data.dueDate) : undefined,
+        dueTime: isDaily ? undefined : data.dueTime,
+        activeFrom,
       },
       include: {
         assignee: { select: { id: true, username: true, fullName: true } },
@@ -76,6 +92,11 @@ export class CollabTasksService {
         );
       }
     }
+
+    if (isDaily) {
+      await this.dailyInstances.ensureForProject(projectId, localTodayKey());
+    }
+
     return task;
   }
 
@@ -85,6 +106,8 @@ export class CollabTasksService {
     data: {
       title?: string;
       description?: string;
+      kind?: CollabTaskKind;
+      activeFrom?: string | null;
       status?: TaskStatus;
       priority?: TaskPriority;
       assigneeId?: string | null;
@@ -102,6 +125,13 @@ export class CollabTasksService {
       data: {
         title: data.title?.trim(),
         description: data.description?.trim(),
+        kind: data.kind,
+        activeFrom:
+          data.activeFrom === null
+            ? null
+            : data.activeFrom
+              ? new Date(data.activeFrom)
+              : undefined,
         status: data.status,
         priority: data.priority,
         assigneeId: data.assigneeId === null ? null : data.assigneeId,
@@ -114,6 +144,9 @@ export class CollabTasksService {
     });
 
     if (data.status && data.status !== task.status) {
+      if (task.sourceDailyId) {
+        await this.dailyInstances.syncFromInstance(taskId, data.status, userId);
+      }
       await this.activity.log({
         workspaceId: task.workspaceId,
         projectId: task.projectId,

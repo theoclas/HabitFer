@@ -1,4 +1,4 @@
-import { BookOutlined, FileTextOutlined, PlusOutlined } from "@ant-design/icons";
+import { BookOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Card, Empty, Form, Input, Modal, Select, Tabs, Tag, Typography, message } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -17,6 +17,7 @@ import {
 } from "../../../api/proyecfer";
 import { CommentPanel } from "../components/CommentPanel";
 import { CollabTaskForm, formValuesToCollabTaskPayload } from "../components/CollabTaskForm";
+import { ProjectComplianceTab } from "../components/compliance/ProjectComplianceTab";
 import type { CollabProjectDetail, CollabTask, WorkGuideSummary } from "../../../types/proyecfer";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -135,6 +136,14 @@ export function CollabProjectPage() {
     stepCount: g._count?.steps ?? g.stepCount ?? 0,
   }));
 
+  const dailyTemplates = project.dailyTemplates ?? [];
+  const taskList = project.tasks;
+
+  const openCreateTask = (kind: "ONE_OFF" | "DAILY" = "ONE_OFF") => {
+    form.setFieldsValue({ kind, status: "TODO", priority: "MEDIUM", dueDate: undefined });
+    setDrawerOpen(true);
+  };
+
   const tabItems = [
     {
       key: "guides",
@@ -186,19 +195,41 @@ export function CollabProjectPage() {
     },
     {
       key: "tasks",
-      label: `Tareas (${project.tasks.length})`,
+      label: `Tareas (${taskList.length})`,
       children: (
         <div>
           <div className="page-header">
             <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontWeight: 700 }}>Tareas</h3>
-            <Button type="primary" className="btn-proyec" icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)}>
-              Nueva tarea
-            </Button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Button icon={<PlusOutlined />} onClick={() => openCreateTask("DAILY")}>
+                Programar diaria
+              </Button>
+              <Button type="primary" className="btn-proyec" icon={<PlusOutlined />} onClick={() => openCreateTask("ONE_OFF")}>
+                Nueva tarea
+              </Button>
+            </div>
           </div>
-          {project.tasks.length === 0 ? (
-            <Empty description="Sin tareas" />
+
+          {dailyTemplates.length > 0 && (
+            <div className="daily-templates-bar">
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                Rutinas activas — se genera una tarea pendiente cada dia:
+              </Typography.Text>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {dailyTemplates.map((t) => (
+                  <Tag key={t.id} color="purple">
+                    {t.title}
+                    {t.assignee ? ` · ${t.assignee.fullName}` : ""}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {taskList.length === 0 ? (
+            <Empty description="Sin tareas. Programa una rutina diaria o crea una tarea unica." />
           ) : (
-            project.tasks.map((task) => (
+            taskList.map((task) => (
               <Card
                 key={task.id}
                 size="small"
@@ -206,16 +237,21 @@ export function CollabProjectPage() {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <InlineEditableText
-                      value={task.title}
-                      strong
-                      editable={canEdit}
-                      onSave={(title) => handleTaskTitleSave(task, title)}
-                    />
+                    {task.sourceDailyId ? (
+                      <Typography.Text strong>{task.title}</Typography.Text>
+                    ) : (
+                      <InlineEditableText
+                        value={task.title}
+                        strong
+                        editable={canEdit}
+                        onSave={(title) => handleTaskTitleSave(task, title)}
+                      />
+                    )}
                     {task.description && (
                       <div><Typography.Text type="secondary">{task.description}</Typography.Text></div>
                     )}
                     <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {task.sourceDailyId && <Tag color="purple">Rutina diaria</Tag>}
                       {task.assignee && <Tag color="geekblue">{task.assignee.fullName}</Tag>}
                       <Tag color={PRIORITY_COLORS[task.priority]}>{task.priority}</Tag>
                       <Tag>{STATUS_LABELS[task.status]}</Tag>
@@ -224,6 +260,7 @@ export function CollabProjectPage() {
                   <Select
                     size="small"
                     value={task.status}
+                    disabled={!canEdit}
                     onChange={(v) => void handleStatusChange(task, v)}
                     style={{ minWidth: 130 }}
                     options={[
@@ -238,6 +275,22 @@ export function CollabProjectPage() {
           )}
         </div>
       ),
+    },
+    {
+      key: "compliance",
+      label: (
+        <span>
+          <LineChartOutlined /> Cumplimiento{dailyTemplates.length > 0 ? ` (${dailyTemplates.length})` : ""}
+        </span>
+      ),
+      children: projectId ? (
+        <ProjectComplianceTab
+          projectId={projectId}
+          members={members}
+          canEdit={canEdit}
+          onCreateRoutine={() => openCreateTask("DAILY")}
+        />
+      ) : null,
     },
     {
       key: "pages",
