@@ -12,6 +12,7 @@ import { HabitsModule } from './habits/habits.module';
 import { MoodsModule } from './moods/moods.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProyecFerModule } from './proyecfer/proyecfer.module';
+import { PushModule } from './push/push.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     HabitsModule,
     MoodsModule,
     TasksModule,
+    PushModule,
     RemindersModule,
     StatsModule,
     UsersModule,

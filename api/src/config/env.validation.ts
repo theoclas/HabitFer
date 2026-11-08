@@ -6,4 +6,8 @@ export const envValidationSchema = Joi.object({
   DATABASE_URL: Joi.string().required(),
   JWT_SECRET: Joi.string().min(process.env.NODE_ENV === 'production' ? 32 : 8).required(),
   CORS_ORIGINS: Joi.string().optional(),
+  // Notificaciones push (Web Push). Sin estas llaves la app funciona, pero no envia push.
+  VAPID_PUBLIC_KEY: Joi.string().allow('').optional(),
+  VAPID_PRIVATE_KEY: Joi.string().allow('').optional(),
+  VAPID_SUBJECT: Joi.string().allow('').optional(),
 });

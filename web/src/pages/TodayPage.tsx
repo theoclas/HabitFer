@@ -3,21 +3,17 @@ import { Button, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  completeHabit,
-  fetchHabitsToday,
-  fetchMoods,
-  fetchStatsOverview,
-  fetchTasksToday,
-  uncompleteHabit,
-} from "../api/client";
+import { fetchHabitsToday, fetchMoods, fetchStatsOverview, fetchTasksToday } from "../api/client";
 import { Flame, PERFECT_STAGE } from "../apps/habitfer/components/Flame";
 import { MoodPicker } from "../apps/habitfer/components/MoodPicker";
 import { NoteSheet } from "../apps/habitfer/components/NoteSheet";
 import { ProgressOrb } from "../apps/habitfer/components/ProgressOrb";
 import { LevelBar } from "../apps/habitfer/components/StatsWidgets";
 import { TodayTasks } from "../apps/habitfer/components/TodayTasks";
+import { InstallCard } from "../apps/habitfer/components/InstallCard";
 import { HABITS_CHANGED_EVENT } from "../apps/habitfer/effects";
+import { toggleHabitRemote } from "../apps/habitfer/offline";
+import { setAppBadge } from "../apps/habitfer/pwa";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { useAchievements } from "../features/achievements/AchievementContext";
 import { HabitCard } from "../features/habits/HabitCard";
@@ -162,6 +158,10 @@ export function TodayPage() {
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0;
   const hasNotes = habits.some((h) => h.note);
 
+  useEffect(() => {
+    if (isToday && !loading) setAppBadge(total - doneCount);
+  }, [isToday, loading, total, doneCount]);
+
   const ringProgress = useMemo(
     () => (loading || total === 0 ? overview?.progressByDate ?? {} : { ...(overview?.progressByDate ?? {}), [dateKey]: progressPct }),
     [loading, total, overview, dateKey, progressPct],
@@ -200,14 +200,16 @@ export function TodayPage() {
     habitsRef.current = optimistic;
     setHabits(optimistic);
     try {
-      if (willComplete) {
-        const result = await completeHabit(habit.id, dateKey);
-        if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
-        maybeCelebratePerfectDay();
-      } else {
-        await uncompleteHabit(habit.id, dateKey);
-      }
+      const res = await toggleHabitRemote(habit.id, dateKey, willComplete);
       pendingRef.current.delete(habit.id);
+      if (res.queued) {
+        // Sin señal: el check se queda y el cambio se envia solo cuando vuelva la conexion.
+        message.open({ key: "hf-offline", type: "info", content: "Sin conexión: lo guardé y lo envío cuando vuelva la señal" });
+        if (willComplete) maybeCelebratePerfectDay();
+        return;
+      }
+      if ("completed" in res && res.completed.unlockedAchievement) celebrate(res.completed.unlockedAchievement);
+      if (willComplete) maybeCelebratePerfectDay();
       if (pendingRef.current.size === 0) void load({ silent: true });
     } catch {
       pendingRef.current.delete(habit.id);
@@ -346,6 +348,7 @@ export function TodayPage() {
       )}
       {isToday && <TodayTasks tasks={tasks} onChange={setTasks} />}
       <MoodPicker date={dateKey} value={mood} editable={canMark} onChange={setMoodValue} />
+      {isToday && <InstallCard />}
     </div>
   );
 

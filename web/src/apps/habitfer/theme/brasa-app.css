@@ -1,0 +1,70 @@
+/* =========================================================================
+   HabitFer · Brasa: app instalable (instalar, sin conexión, notificaciones)
+   ========================================================================= */
+
+/* ---------- Invitación a instalar ---------- */
+.hf-install {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 22px;
+  padding: 14px 40px 14px 14px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--hf-ember-soft), var(--hf-surface) 70%);
+  border: 1px solid color-mix(in srgb, var(--hf-ember) 30%, transparent);
+}
+.hf-install img { border-radius: 12px; display: block; }
+.hf-install__text { display: grid; gap: 2px; min-width: 0; }
+.hf-install__text b { font: 800 15px var(--hf-display); color: var(--hf-fg); }
+.hf-install__text > span { font-size: 12.5px; color: var(--hf-muted); line-height: 1.4; }
+.hf-install__text strong { color: var(--hf-fg); }
+.hf-install__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--hf-muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.hf-install__close:hover { background: var(--hf-line); color: var(--hf-fg); }
+
+/* ---------- Sin conexión ---------- */
+.hf-offline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font: 600 12.5px var(--hf-body);
+  color: var(--hf-fg);
+  background: color-mix(in srgb, var(--hf-ember) 14%, var(--hf-surface));
+  border-bottom: 1px solid var(--hf-line);
+}
+.hf-offline i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff6b6b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+}
+.hf-offline.is-syncing i { background: var(--hf-blue); box-shadow: 0 0 0 3px var(--hf-blue-soft); animation: hf-pulse 1.2s ease-in-out infinite; }
+@keyframes hf-pulse { 50% { opacity: 0.35; } }
+
+/* ---------- Notificaciones ---------- */
+.hf-notif { padding: 14px 0; border-bottom: 1px solid var(--hf-line); }
+.hf-notif:first-child { padding-top: 4px; }
+.hf-notif__head { display: flex; align-items: center; gap: 10px; color: var(--hf-fg); }
+.hf-notif__head b { font: 800 15px var(--hf-display); }
+.hf-notif__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hf-offline.is-syncing i { animation: none; }
+}

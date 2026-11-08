@@ -78,6 +78,24 @@ model User {
   incomes               Income[]
   credits               Credit[]
   dayMoods              DayMood[]
+  pushSubscriptions     PushSubscription[]
+  /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
+  habitSummaryTime      String?             @db.VarChar(5)
+}
+
+/// Suscripcion Web Push de un dispositivo (telefono o computador).
+model PushSubscription {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint   String    @unique @db.VarChar(700)
+  p256dh     String    @db.VarChar(200)
+  auth       String    @db.VarChar(100)
+  userAgent  String?   @db.VarChar(300)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([userId])
 }
 
 /// Animo del dia (1 a 5) para cruzarlo con la constancia en Estadisticas.
@@ -96,6 +114,7 @@ model DayMood {
 enum ReminderSourceType {
   HABIT
   TASK
+  SUMMARY
 }
 
 model ReminderLog {
@@ -128,7 +147,10 @@ model Habit {
   timeOfDay       TimeOfDay         @default(ANYTIME)
   streakEnabled   Boolean           @default(true)
   reminderEnabled Boolean           @default(false)
+  /// Primera hora de aviso (se mantiene por compatibilidad); la lista completa va en reminderTimes.
   reminderTime    String?           @db.VarChar(5)
+  /// Todas las horas de aviso (HH:mm), hasta 4.
+  reminderTimes   Json              @default("[]")
   sortOrder       Int               @default(0)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

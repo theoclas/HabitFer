@@ -51,6 +51,12 @@ export async function logout() {
     await api.post("/auth/logout");
   } finally {
     localStorage.removeItem("habitfer_token");
+    // Datos guardados para usar sin conexion: no deben quedar para la siguiente sesion.
+    try {
+      void window.caches?.delete("hf-api").catch(() => undefined);
+    } catch {
+      /* sin cache */
+    }
   }
 }
 
@@ -198,6 +204,40 @@ export async function markReminderRead(id: string) {
 
 export async function markAllRemindersRead() {
   await api.post("/reminders/read-all");
+}
+
+/* ---------- Notificaciones push ---------- */
+
+export async function fetchPushPublicKey() {
+  const { data } = await api.get<{ publicKey: string | null }>("/push/public-key");
+  return data;
+}
+
+export async function subscribePush(payload: { endpoint: string; keys: { p256dh: string; auth: string }; userAgent?: string }) {
+  const { data } = await api.post<{ ok: boolean; devices: number }>("/push/subscribe", payload);
+  return data;
+}
+
+export async function unsubscribePush(endpoint: string) {
+  const { data } = await api.post<{ ok: boolean; devices: number }>("/push/unsubscribe", { endpoint });
+  return data;
+}
+
+export type PushSettings = { enabled: boolean; devices: number; summaryTime: string | null };
+
+export async function fetchPushSettings() {
+  const { data } = await api.get<PushSettings>("/push/settings");
+  return data;
+}
+
+export async function updatePushSettings(payload: { summaryTime: string | null }) {
+  const { data } = await api.patch<PushSettings>("/push/settings", payload);
+  return data;
+}
+
+export async function sendTestPush() {
+  const { data } = await api.post<{ sent: number; removed: number }>("/push/test");
+  return data;
 }
 
 import type { HabitStatsDetail, StatsOverview, TaskStatsSummary } from "../types";

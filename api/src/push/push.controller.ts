@@ -1,0 +1,98 @@
+import { Body, Controller, Get, HttpException, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { TaskStatus, UserStatus } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
+import { HabitsService } from '../habits/habits.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { TasksService } from '../tasks/tasks.service';
+import { PushActionDto, PushSettingsDto, SubscribeDto, UnsubscribeDto } from './push.dto';
+import { PushService } from './push.service';
+
+@Controller('push')
+@UseGuards(JwtAuthGuard)
+export class PushController {
+  constructor(
+    private push: PushService,
+    private habits: HabitsService,
+    private tasks: TasksService,
+    private prisma: PrismaService,
+  ) {}
+
+  @Get('public-key')
+  publicKey() {
+    return { publicKey: this.push.getPublicKey() };
+  }
+
+  @Get('settings')
+  async settings(@CurrentUser() user: AuthUserPayload) {
+    const row = await this.prisma.user.findUnique({ where: { id: user.userId }, select: { habitSummaryTime: true } });
+    return {
+      enabled: this.push.enabled,
+      devices: await this.push.devices(user.userId),
+      summaryTime: row?.habitSummaryTime ?? null,
+    };
+  }
+
+  @Patch('settings')
+  async updateSettings(@CurrentUser() user: AuthUserPayload, @Body() dto: PushSettingsDto) {
+    if (dto.summaryTime !== undefined) {
+      await this.prisma.user.update({ where: { id: user.userId }, data: { habitSummaryTime: dto.summaryTime ?? null } });
+    }
+    return this.settings(user);
+  }
+
+  @Post('subscribe')
+  subscribe(@CurrentUser() user: AuthUserPayload, @Body() dto: SubscribeDto) {
+    return this.push.subscribe(user.userId, dto);
+  }
+
+  @Post('unsubscribe')
+  unsubscribe(@CurrentUser() user: AuthUserPayload, @Body() dto: UnsubscribeDto) {
+    return this.push.unsubscribe(user.userId, dto.endpoint);
+  }
+
+  @Post('test')
+  test(@CurrentUser() user: AuthUserPayload) {
+    return this.push.sendToUser(user.userId, {
+      title: '🔥 HabitFer',
+      body: 'Así te van a llegar los recordatorios.',
+      tag: 'hf-test',
+      url: '/app/habitfer',
+    });
+  }
+
+  /**
+   * Boton "Hecho" de la notificacion: lo llama el service worker sin sesion,
+   * con el token de un solo proposito que viajo dentro del push.
+   */
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Post('action')
+  async action(@Body() dto: PushActionDto) {
+    const claims = this.push.verifyActionToken(dto.token);
+    const owner = await this.prisma.user.findUnique({ where: { id: claims.sub }, select: { status: true } });
+    if (owner?.status !== UserStatus.ACTIVE) throw new UnauthorizedException();
+
+    try {
+      if (claims.act === 'habit-done') {
+        const result = await this.habits.complete(claims.sub, claims.tid, { date: claims.d });
+        return {
+          ok: true,
+          kind: 'habit',
+          title: result.habit.title,
+          streak: result.habit.currentStreak,
+          achievement: result.unlockedAchievement
+            ? { days: result.unlockedAchievement.milestoneDays, label: result.unlockedAchievement.label }
+            : null,
+        };
+      }
+      const task = await this.tasks.updateTask(claims.sub, claims.tid, { status: TaskStatus.DONE });
+      return { ok: true, kind: 'task', title: task.title };
+    } catch (err) {
+      if (err instanceof HttpException && err.getStatus() < 500) return { ok: false, message: err.message };
+      throw err;
+    }
+  }
+}

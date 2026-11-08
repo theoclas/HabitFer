@@ -262,6 +262,60 @@ Caddy obtendrá el certificado Let's Encrypt automáticamente.
 
 ---
 
+## 9. HabitFer como app instalable (lo que está en producción)
+
+HabitFer se publica en **https://habitfer.fersuastudio.com**: el nginx del host (el mismo de
+`dashboard` y `booking`) termina el HTTPS y pasa todo al Caddy de HabitFer en el puerto 8080.
+Con HTTPS la app se puede instalar en el teléfono, abre sin conexión y recibe notificaciones push.
+
+### 9.1 Dominio y certificado (una vez, requiere sudo)
+
+1. DNS en Hostinger: registro **A**, nombre `habitfer`, valor `177.7.40.130`.
+2. Sitio de nginx y certificado:
+
+```bash
+sudo cp ~/apps/HabitFer/deploy/host-nginx/habitfer.conf /etc/nginx/sites-available/habitfer.conf
+sudo ln -s /etc/nginx/sites-available/habitfer.conf /etc/nginx/sites-enabled/habitfer.conf
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d habitfer.fersuastudio.com --redirect
+```
+
+### 9.2 Variables
+
+`.env` (raíz):
+
+```env
+VITE_API_URL=/api
+```
+
+`api/.env.prod`:
+
+```env
+CORS_ORIGINS=https://habitfer.fersuastudio.com,http://177.7.40.130:8080
+COOKIE_SECURE=true
+VAPID_PUBLIC_KEY=...   # npx web-push generate-vapid-keys
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=https://habitfer.fersuastudio.com
+```
+
+Con `VITE_API_URL=/api` la misma compilación sirve por la IP y por el dominio.
+`COOKIE_SECURE=true` no rompe el acceso por IP: ahí la sesión viaja en la cabecera `Authorization`.
+
+### 9.3 Instalar en el teléfono
+
+- **iPhone (Safari):** Compartir → «Agregar a inicio». Notificaciones: iOS 16.4 o más reciente,
+  abriendo la app desde el ícono y activándolas en el menú de la luna → Notificaciones.
+- **Android (Chrome):** el aviso «Instalar app» o el menú ⋮ → Instalar aplicación.
+
+### 9.4 Cómo se actualiza
+
+El service worker (`web/sw/sw.template.js`, generado como `dist/sw.js` por `scripts/build-sw.mjs`)
+guarda la app para usarla sin conexión. Cada despliegue genera una versión nueva; al abrir la app el
+teléfono la descarga y recarga una vez sola. `sw.js` e `index.html` se sirven sin caché
+(`web/deploy/nginx.conf`).
+
+---
+
 ## Solución de problemas
 
 ### `curl localhost:8080` falla / timeout en el navegador

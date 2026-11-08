@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Layout } from "antd";
+import { Button, ConfigProvider, Layout, message } from "antd";
 import {
   CalendarOutlined,
   CheckSquareOutlined,
@@ -8,7 +8,7 @@ import {
   TrophyOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { HabitEditorDrawer } from "../../../components/HabitEditorDrawer";
 import { ProfileModal } from "../../../components/ProfileModal";
@@ -19,11 +19,16 @@ import { AppSwitcher } from "../../../platform/AppSwitcher";
 import { DisplayMenu } from "../components/DisplayMenu";
 import { Flame, FLAME_STAGES } from "../components/Flame";
 import { MotivationalBanner } from "../components/MotivationalBanner";
+import { NotificationsSheet } from "../components/NotificationsSheet";
+import { OfflineChip } from "../components/OfflineChip";
 import { notifyHabitsChanged } from "../effects";
+import { flushQueue, queuedCount } from "../offline";
+import { resyncPush } from "../push";
 import { brasaThemeFor } from "../theme/brasaTheme";
 import { useHfTheme } from "../theme/useHfTheme";
 import "../theme/brasa.css";
 import "../theme/brasa-data.css";
+import "../theme/brasa-app.css";
 import "../theme/brasa-day.css";
 
 const { Content, Sider, Header } = Layout;
@@ -66,8 +71,41 @@ export function HabitFerShell() {
   const { pref, mode, setPref } = useHfTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [creatorOpen, setCreatorOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const selectedKey = navItems.find((item) => isNavActive(location.pathname, item.key))?.key ?? BASE;
   const onToday = selectedKey === BASE && !location.pathname.startsWith(`${BASE}/habits/`);
+
+  // Acceso directo "Nuevo habito" del icono de la app: /app/habitfer?nuevo=1
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("nuevo") === "1") {
+      setCreatorOpen(true);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate]);
+
+  // Lo marcado sin conexion se envia al volver la señal (y al abrir o volver a la app).
+  useEffect(() => {
+    const flush = async () => {
+      const sent = await flushQueue();
+      if (sent > 0) message.success(sent === 1 ? "Se envió el cambio que hiciste sin conexión" : `Se enviaron ${sent} cambios que hiciste sin conexión`);
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void flush();
+    };
+    void flush();
+    void resyncPush();
+    window.addEventListener("online", flush);
+    document.addEventListener("visibilitychange", onVisible);
+    const timer = window.setInterval(() => {
+      if (queuedCount() > 0) void flush();
+    }, 30000);
+    return () => {
+      window.removeEventListener("online", flush);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const go = (key: string) => navigate(key, { viewTransition: true });
   const openProfile = () => setProfileOpen(true);
@@ -117,7 +155,11 @@ export function HabitFerShell() {
             <Layout style={{ background: "transparent" }}>
               <Header
                 className="app-shell__header"
-                style={{ padding: isMobile ? "0 16px" : "0 40px", height: isMobile ? 56 : 64 }}
+                style={{
+                  // Instalada en iPhone la barra de estado queda encima: se suma su alto.
+                  padding: isMobile ? "env(safe-area-inset-top, 0px) 16px 0" : "0 40px",
+                  height: isMobile ? "calc(56px + env(safe-area-inset-top, 0px))" : 64,
+                }}
               >
                 {isMobile && onToday ? (
                   <Brand />
@@ -128,13 +170,14 @@ export function HabitFerShell() {
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <AppSwitcher />
-                  <DisplayMenu pref={pref} mode={mode} onPref={setPref} />
+                  <DisplayMenu pref={pref} mode={mode} onPref={setPref} onNotifications={() => setNotifOpen(true)} />
                   <RemindersBell />
                   <button type="button" className="profile-trigger profile-trigger--habit" onClick={openProfile} aria-label="Perfil">
                     <UserOutlined />
                   </button>
                 </div>
               </Header>
+              <OfflineChip />
               <MotivationalBanner />
               <Content
                 className="app-shell__content"
@@ -167,6 +210,7 @@ export function HabitFerShell() {
             </Layout>
           </Layout>
           <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+          <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
           <HabitEditorDrawer
             open={creatorOpen}
             habit={null}

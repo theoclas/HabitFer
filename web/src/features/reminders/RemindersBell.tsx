@@ -1,4 +1,4 @@
-import { BellOutlined, CheckOutlined, FireOutlined, CheckSquareOutlined } from "@ant-design/icons";
+import { BellOutlined, CheckOutlined, CheckSquareOutlined, FireOutlined, MoonOutlined } from "@ant-design/icons";
 import { Badge, Button, Drawer, Empty, List, Space, Typography, message } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
@@ -50,7 +50,13 @@ export function RemindersBell() {
     try {
       await markReminderRead(item.id);
       setOpen(false);
-      navigate(item.sourceType === "HABIT" ? "/app/habitfer/habits/" + item.sourceId : "/app/habitfer/tasks");
+      navigate(
+        item.sourceType === "HABIT"
+          ? "/app/habitfer/habits/" + item.sourceId
+          : item.sourceType === "SUMMARY"
+            ? "/app/habitfer"
+            : "/app/habitfer/tasks",
+      );
       void refreshCount();
     } catch {
       message.error("No se pudo marcar como leido");
@@ -97,7 +103,15 @@ export function RemindersBell() {
             renderItem={(item) => (
               <List.Item style={{ cursor: "pointer" }} onClick={() => void handleOpenItem(item)}>
                 <List.Item.Meta
-                  avatar={item.sourceType === "HABIT" ? <FireOutlined style={{ color: "#FF7A1A" }} /> : <CheckSquareOutlined style={{ color: "#4FD1E8" }} />}
+                  avatar={
+                    item.sourceType === "HABIT" ? (
+                      <FireOutlined style={{ color: "#FF7A1A" }} />
+                    ) : item.sourceType === "SUMMARY" ? (
+                      <MoonOutlined style={{ color: "#F5B841" }} />
+                    ) : (
+                      <CheckSquareOutlined style={{ color: "#4FD1E8" }} />
+                    )
+                  }
                   title={item.title}
                   description={
                     <Space direction="vertical" size={0}>

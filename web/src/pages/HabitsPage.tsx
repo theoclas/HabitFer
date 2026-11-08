@@ -2,7 +2,8 @@
 import { Button, message } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeHabit, fetchHabits, uncompleteHabit } from "../api/client";
+import { fetchHabits } from "../api/client";
+import { toggleHabitRemote } from "../apps/habitfer/offline";
 import { HABITS_CHANGED_EVENT } from "../apps/habitfer/effects";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { useAchievements } from "../features/achievements/AchievementContext";
@@ -57,13 +58,17 @@ export function HabitsPage() {
     pendingRef.current.add(habit.id);
     setHabits((prev) => prev.map((h) => (h.id === habit.id ? applyOptimisticToggle(h, willComplete) : h)));
     try {
+      const res = await toggleHabitRemote(habit.id, day, willComplete);
+      if (res.queued) {
+        message.open({ key: "hf-offline", type: "info", content: "Sin conexión: lo guardé y lo envío cuando vuelva la señal" });
+        return;
+      }
       let fresh: Habit;
-      if (willComplete) {
-        const result = await completeHabit(habit.id, day);
-        if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
-        fresh = result.habit;
+      if ("completed" in res) {
+        if (res.completed.unlockedAchievement) celebrate(res.completed.unlockedAchievement);
+        fresh = res.completed.habit;
       } else {
-        fresh = await uncompleteHabit(habit.id, day);
+        fresh = res.uncompleted;
       }
       setHabits((prev) => prev.map((h) => (h.id === habit.id ? fresh : h)));
     } catch {

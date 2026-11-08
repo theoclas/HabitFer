@@ -1,5 +1,16 @@
 import { ScheduleType, TimeOfDay } from '@prisma/client';
-import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength, ArrayMinSize } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateHabitDto {
   @IsString()
@@ -47,4 +58,11 @@ export class CreateHabitDto {
   @IsString()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
   reminderTime?: string;
+
+  /** Todas las horas de aviso (HH:mm); reemplaza a reminderTime cuando viene. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(4)
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { each: true })
+  reminderTimes?: string[];
 }

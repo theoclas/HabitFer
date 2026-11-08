@@ -1,0 +1,40 @@
+{
+  "id": "/app/habitfer",
+  "name": "HabitFer",
+  "short_name": "HabitFer",
+  "description": "Hábitos, rachas y tareas. Cada hábito es una llama.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/app/habitfer?origen=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0908",
+  "theme_color": "#0B0908",
+  "categories": ["productivity", "lifestyle", "health"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Hoy",
+      "short_name": "Hoy",
+      "url": "/app/habitfer",
+      "icons": [{ "src": "/icons/shortcut-today.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Nuevo hábito",
+      "short_name": "Nuevo",
+      "url": "/app/habitfer?nuevo=1",
+      "icons": [{ "src": "/icons/shortcut-new.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "Estadísticas",
+      "short_name": "Stats",
+      "url": "/app/habitfer/stats",
+      "icons": [{ "src": "/icons/shortcut-stats.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ]
+}

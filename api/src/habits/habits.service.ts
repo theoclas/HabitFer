@@ -15,6 +15,7 @@ import {
   toDateKey,
 } from './habits.utils';
 import { randomInt } from 'crypto';
+import { habitReminderTimes, normalizeReminderTimes } from '../reminders/reminder-text.utils';
 import { buildDays, earliestKey, toHistoryHabit } from '../stats/history.utils';
 import { computeSpecials } from './specials.utils';
 import {
@@ -99,15 +100,29 @@ export class HabitsService {
         timeOfDay: dto.timeOfDay ?? TimeOfDay.ANYTIME,
         streakEnabled: dto.streakEnabled ?? true,
         reminderEnabled: dto.reminderEnabled ?? false,
-        reminderTime: dto.reminderEnabled ? dto.reminderTime ?? null : null,
+        ...this.reminderFields(dto.reminderEnabled ?? false, dto.reminderTimes, dto.reminderTime),
       },
       include: { completions: { select: { date: true } } },
     });
     return this.toView(habit);
   }
 
+  /**
+   * Horas de aviso: se guarda la lista completa y la primera tambien en reminderTime
+   * (los habitos viejos solo tienen esa). Apagar el recordatorio borra ambas.
+   */
+  private reminderFields(enabled: boolean, times?: string[], single?: string) {
+    if (!enabled) return { reminderTime: null, reminderTimes: [] as string[] };
+    const list = normalizeReminderTimes(times ?? (single ? [single] : []));
+    return { reminderTime: list[0] ?? null, reminderTimes: list };
+  }
+
   async update(userId: string, id: string, dto: UpdateHabitDto) {
-    await this.ensureOwner(userId, id);
+    const existing = await this.ensureOwner(userId, id);
+    const touchesReminder = dto.reminderEnabled !== undefined || dto.reminderTimes !== undefined || dto.reminderTime !== undefined;
+    const reminder = touchesReminder
+      ? this.reminderFields(dto.reminderEnabled ?? existing.reminderEnabled, dto.reminderTimes, dto.reminderTime)
+      : {};
     const habit = await this.prisma.habit.update({
       where: { id },
       data: {
@@ -120,7 +135,7 @@ export class HabitsService {
         timeOfDay: dto.timeOfDay,
         streakEnabled: dto.streakEnabled,
         reminderEnabled: dto.reminderEnabled,
-        reminderTime: dto.reminderEnabled === false ? null : dto.reminderTime,
+        ...reminder,
         archived: dto.archived,
       },
       include: { completions: { select: { date: true } } },
@@ -273,6 +288,7 @@ export class HabitsService {
       streakEnabled: habit.streakEnabled,
       reminderEnabled: habit.reminderEnabled,
       reminderTime: habit.reminderTime,
+      reminderTimes: habitReminderTimes(habit),
       sortOrder: habit.sortOrder,
       createdAt: habit.createdAt,
       updatedAt: habit.updatedAt,

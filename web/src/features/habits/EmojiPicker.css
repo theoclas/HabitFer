@@ -22,8 +22,8 @@
   place-items: center;
   font-size: 36px;
   border-radius: 16px;
-  background: #1a1a24;
-  border: 1px solid #2a2a3a;
+  background: var(--hf-raised, #221c18);
+  border: 1px solid var(--hf-line-strong, rgba(255, 236, 222, 0.15));
 }
 
 .emoji-picker__header-text {
@@ -34,13 +34,13 @@
 .emoji-picker__label {
   display: block;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--hf-muted, #9c8d82);
 }
 
 .emoji-picker__more-btn {
-  background: #2dd4bf !important;
-  border-color: #2dd4bf !important;
-  color: #0a0a0f !important;
+  background: var(--hf-ember, #ff7a1a) !important;
+  border-color: var(--hf-ember, #ff7a1a) !important;
+  color: var(--hf-ink, #1a0c04) !important;
   margin-top: 8px;
 }
 
@@ -48,7 +48,7 @@
   margin: 0 0 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--hf-faint, #6f625a);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -87,7 +87,7 @@
   line-height: 1;
   border-radius: 14px;
   border: 2px solid transparent;
-  background: #1a1a24;
+  background: var(--hf-raised, #221c18);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -96,8 +96,8 @@
 }
 
 .emoji-strip__btn--selected {
-  border-color: #2dd4bf;
-  background: rgba(45, 212, 191, 0.15);
+  border-color: var(--hf-ember, #ff7a1a);
+  background: var(--hf-ember-soft, rgba(255, 122, 26, 0.14));
 }
 
 .emoji-strip__btn:active {
@@ -128,7 +128,7 @@
   line-height: 1;
   border-radius: 12px;
   border: 2px solid transparent;
-  background: #1a1a24;
+  background: var(--hf-raised, #221c18);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -136,8 +136,8 @@
 }
 
 .emoji-grid__btn--selected {
-  border-color: #2dd4bf;
-  background: rgba(45, 212, 191, 0.15);
+  border-color: var(--hf-ember, #ff7a1a);
+  background: var(--hf-ember-soft, rgba(255, 122, 26, 0.14));
 }
 
 .emoji-grid__btn:active {
@@ -159,8 +159,8 @@
   padding: 12px 14px;
   margin-bottom: 12px;
   border-radius: 14px;
-  background: #12121a;
-  border: 1px solid #2a2a3a;
+  background: var(--hf-surface, #171311);
+  border: 1px solid var(--hf-line-strong, rgba(255, 236, 222, 0.15));
   flex-shrink: 0;
   max-width: 100%;
 }
@@ -173,7 +173,7 @@
 
 .emoji-picker__selected-hint {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--hf-muted, #9c8d82);
 }
 
 .emoji-picker__segmented {

@@ -1,4 +1,5 @@
-import { ColorPicker, Form, Input, Segmented, Select, Switch, TimePicker } from "antd";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { Button, ColorPicker, Form, Input, Segmented, Select, Switch, TimePicker } from "antd";
 import dayjs from "dayjs";
 import type { CreateHabitPayload, Habit, ScheduleType, TimeOfDay } from "../../types";
 import { EmojiPicker } from "./EmojiPicker";
@@ -20,6 +21,8 @@ const DAY_OPTIONS = [
   { value: 7, label: "Dom" },
 ];
 
+const MAX_REMINDERS = 4;
+
 export type HabitFormValues = {
   title: string;
   description?: string;
@@ -30,7 +33,8 @@ export type HabitFormValues = {
   timeOfDay: TimeOfDay;
   streakEnabled: boolean;
   reminderEnabled: boolean;
-  reminderTime?: dayjs.Dayjs;
+  /** Hasta 4 horas de aviso. */
+  reminderTimes?: (dayjs.Dayjs | null | undefined)[];
 };
 
 type Props = {
@@ -38,7 +42,13 @@ type Props = {
   initial?: Habit | null;
 };
 
+function initialTimes(habit?: Habit | null): dayjs.Dayjs[] {
+  const list = habit?.reminderTimes?.length ? habit.reminderTimes : habit?.reminderTime ? [habit.reminderTime] : [];
+  return list.map((t) => dayjs(t, "HH:mm"));
+}
+
 export function habitToFormValues(habit?: Habit | null): HabitFormValues {
+  const times = initialTimes(habit);
   return {
     title: habit?.title ?? "",
     description: habit?.description ?? "",
@@ -49,11 +59,14 @@ export function habitToFormValues(habit?: Habit | null): HabitFormValues {
     timeOfDay: habit?.timeOfDay ?? "ANYTIME",
     streakEnabled: habit?.streakEnabled ?? true,
     reminderEnabled: habit?.reminderEnabled ?? false,
-    reminderTime: habit?.reminderTime ? dayjs(habit.reminderTime, "HH:mm") : undefined,
+    reminderTimes: times.length ? times : [undefined],
   };
 }
 
 export function formValuesToPayload(values: HabitFormValues): CreateHabitPayload {
+  const times = values.reminderEnabled
+    ? [...new Set((values.reminderTimes ?? []).filter((t): t is dayjs.Dayjs => Boolean(t)).map((t) => t.format("HH:mm")))].sort()
+    : [];
   return {
     title: values.title,
     description: values.description,
@@ -63,14 +76,16 @@ export function formValuesToPayload(values: HabitFormValues): CreateHabitPayload
     scheduleDays: values.scheduleType === "WEEKLY" ? values.scheduleDays : [1, 2, 3, 4, 5, 6, 7],
     timeOfDay: values.timeOfDay ?? "ANYTIME",
     streakEnabled: values.streakEnabled,
-    reminderEnabled: values.reminderEnabled,
-    reminderTime: values.reminderEnabled && values.reminderTime ? values.reminderTime.format("HH:mm") : undefined,
+    reminderEnabled: values.reminderEnabled && times.length > 0,
+    reminderTime: times[0],
+    reminderTimes: times,
   };
 }
 
 export function HabitForm({ form, initial }: Props) {
   const scheduleType = Form.useWatch("scheduleType", form);
   const icon = Form.useWatch("icon", form);
+  const reminderEnabled = Form.useWatch("reminderEnabled", form);
 
   return (
     <Form form={form} layout="vertical" initialValues={habitToFormValues(initial)}>
@@ -106,18 +121,47 @@ export function HabitForm({ form, initial }: Props) {
       <Form.Item name="streakEnabled" label="Contar racha" valuePropName="checked">
         <Switch />
       </Form.Item>
-      <Form.Item name="reminderEnabled" label="Recordatorio" valuePropName="checked">
+      <Form.Item
+        name="reminderEnabled"
+        label="Recordatorio"
+        valuePropName="checked"
+        extra={reminderEnabled ? "Solo te avisa si a esa hora todavía no lo has hecho." : undefined}
+      >
         <Switch />
       </Form.Item>
-      <Form.Item noStyle shouldUpdate={(p, c) => p.reminderEnabled !== c.reminderEnabled}>
-        {() =>
-          form.getFieldValue("reminderEnabled") ? (
-            <Form.Item name="reminderTime" label="Hora del recordatorio" rules={[{ required: true }]}>
-              <TimePicker format="HH:mm" size="large" style={{ width: "100%" }} />
-            </Form.Item>
-          ) : null
-        }
-      </Form.Item>
+      {reminderEnabled && (
+        <Form.List name="reminderTimes">
+          {(fields, { add, remove }) => (
+            <div style={{ display: "grid", gap: 8, marginBottom: 20 }}>
+              {fields.map((field, index) => (
+                <div key={field.key} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <Form.Item
+                    {...field}
+                    style={{ flex: 1, marginBottom: 0 }}
+                    rules={index === 0 ? [{ required: true, message: "Elige una hora" }] : []}
+                  >
+                    <TimePicker
+                      format="HH:mm"
+                      size="large"
+                      style={{ width: "100%" }}
+                      placeholder={index === 0 ? "Hora del aviso" : "Otra hora"}
+                      inputReadOnly
+                    />
+                  </Form.Item>
+                  {fields.length > 1 && (
+                    <Button size="large" icon={<DeleteOutlined />} aria-label="Quitar esta hora" onClick={() => remove(field.name)} />
+                  )}
+                </div>
+              ))}
+              {fields.length < MAX_REMINDERS && (
+                <Button type="dashed" icon={<PlusOutlined />} onClick={() => add(undefined)}>
+                  Agregar otra hora
+                </Button>
+              )}
+            </div>
+          )}
+        </Form.List>
+      )}
     </Form>
   );
 }

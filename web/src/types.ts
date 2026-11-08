@@ -33,6 +33,8 @@ export type Habit = {
   streakEnabled: boolean;
   reminderEnabled: boolean;
   reminderTime: string | null;
+  /** Todas las horas de aviso (HH:mm). */
+  reminderTimes: string[];
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -88,6 +90,7 @@ export type CreateHabitPayload = {
   streakEnabled?: boolean;
   reminderEnabled?: boolean;
   reminderTime?: string;
+  reminderTimes?: string[];
 };
 
 export type SpecialAchievement = {
@@ -166,7 +169,7 @@ export type CreateProjectPayload = {
 
 export type ReminderItem = {
   id: string;
-  sourceType: "HABIT" | "TASK";
+  sourceType: "HABIT" | "TASK" | "SUMMARY";
   sourceId: string;
   title: string;
   body: string | null;

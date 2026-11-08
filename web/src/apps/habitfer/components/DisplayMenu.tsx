@@ -1,10 +1,16 @@
-import { CheckOutlined, MoonOutlined, SoundOutlined, SunOutlined } from "@ant-design/icons";
-import { Dropdown, type MenuProps } from "antd";
+import { BellOutlined, CheckOutlined, DownloadOutlined, MoonOutlined, SoundOutlined, SunOutlined } from "@ant-design/icons";
+import { Dropdown, Modal, type MenuProps } from "antd";
 import { useState } from "react";
 import { playTick, setSoundEnabled, soundEnabled } from "../effects";
+import { useInstallState } from "../pwa";
 import type { HfThemeMode, HfThemePref } from "../theme/useHfTheme";
 
-type Props = { pref: HfThemePref; mode: HfThemeMode; onPref: (p: HfThemePref) => void };
+type Props = {
+  pref: HfThemePref;
+  mode: HfThemeMode;
+  onPref: (p: HfThemePref) => void;
+  onNotifications: () => void;
+};
 
 const OPTIONS: { key: HfThemePref; label: string }[] = [
   { key: "night", label: "Noche" },
@@ -12,9 +18,10 @@ const OPTIONS: { key: HfThemePref; label: string }[] = [
   { key: "auto", label: "Automático (como el teléfono)" },
 ];
 
-/** Tema (noche, dia o automatico) y sonido al marcar. */
-export function DisplayMenu({ pref, mode, onPref }: Props) {
+/** Ajustes de la app: tema, sonido, notificaciones e instalacion. */
+export function DisplayMenu({ pref, mode, onPref, onNotifications }: Props) {
   const [sound, setSound] = useState(soundEnabled);
+  const { canPrompt, iosManual, promptInstall } = useInstallState();
 
   const items: MenuProps["items"] = [
     {
@@ -27,11 +34,15 @@ export function DisplayMenu({ pref, mode, onPref }: Props) {
       })),
     },
     { type: "divider" },
+    { key: "notifications", icon: <BellOutlined />, label: "Notificaciones…" },
     {
       key: "sound",
       icon: <SoundOutlined />,
       label: sound ? "Sonido al marcar: activado" : "Sonido al marcar: apagado",
     },
+    ...(canPrompt || iosManual
+      ? [{ key: "install", icon: <DownloadOutlined />, label: canPrompt ? "Instalar app" : "Instalar en iPhone…" }]
+      : []),
   ];
 
   const onClick: MenuProps["onClick"] = ({ key }) => {
@@ -42,12 +53,26 @@ export function DisplayMenu({ pref, mode, onPref }: Props) {
       if (next) playTick();
       return;
     }
+    if (key === "notifications") {
+      onNotifications();
+      return;
+    }
+    if (key === "install") {
+      if (canPrompt) void promptInstall();
+      else
+        Modal.info({
+          title: "Instalar HabitFer en iPhone",
+          content: "En Safari toca Compartir (el cuadro con la flecha hacia arriba) y luego «Agregar a inicio». Después ábrela desde el ícono.",
+          okText: "Entendido",
+        });
+      return;
+    }
     onPref(key as HfThemePref);
   };
 
   return (
     <Dropdown menu={{ items, onClick }} trigger={["click"]} placement="bottomRight">
-      <button type="button" className="profile-trigger profile-trigger--habit" aria-label="Tema y sonido">
+      <button type="button" className="profile-trigger profile-trigger--habit" aria-label="Ajustes de la app">
         {mode === "day" ? <SunOutlined /> : <MoonOutlined />}
       </button>
     </Dropdown>

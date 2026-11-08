@@ -3,7 +3,8 @@ import { Button, Skeleton, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { completeHabit, fetchHabit, fetchHabitAchievements, fetchStatsRange, uncompleteHabit } from "../api/client";
+import { fetchHabit, fetchHabitAchievements, fetchStatsRange } from "../api/client";
+import { toggleHabitRemote } from "../apps/habitfer/offline";
 import { Flame, flameStage } from "../apps/habitfer/components/Flame";
 import { MonthCalendar } from "../apps/habitfer/components/MonthCalendar";
 import { NoteSheet } from "../apps/habitfer/components/NoteSheet";
@@ -120,15 +121,19 @@ export function HabitDetailPage() {
     pendingRef.current = true;
     setHabit(applyOptimisticToggle(original, willComplete));
     try {
-      if (willComplete) {
-        const result = await completeHabit(original.id, day);
-        setHabit(result.habit);
-        if (result.unlockedAchievement) {
-          celebrate(result.unlockedAchievement);
+      const res = await toggleHabitRemote(original.id, day, willComplete);
+      if (res.queued) {
+        message.open({ key: "hf-offline", type: "info", content: "Sin conexión: lo guardé y lo envío cuando vuelva la señal" });
+        return;
+      }
+      if ("completed" in res) {
+        setHabit(res.completed.habit);
+        if (res.completed.unlockedAchievement) {
+          celebrate(res.completed.unlockedAchievement);
           setAchievements(await fetchHabitAchievements(original.id).catch(() => achievements));
         }
       } else {
-        setHabit(await uncompleteHabit(original.id, day));
+        setHabit(res.uncompleted);
       }
       fetchStatsRange({ from: `${year}-01-01`, to: `${year}-12-31`, habitId: original.id }).then(setYearData).catch(() => undefined);
     } catch {
@@ -171,7 +176,9 @@ export function HabitDetailPage() {
             <div className="hf-detail-hero__sub">
               {habitScheduleLabel(habit)}
               {momento ? ` · ${momento}` : ""}
-              {habit.reminderEnabled && habit.reminderTime ? ` · aviso ${habit.reminderTime}` : ""}
+              {habit.reminderEnabled && (habit.reminderTimes?.length || habit.reminderTime)
+                ? ` · aviso ${(habit.reminderTimes?.length ? habit.reminderTimes : [habit.reminderTime]).join(", ")}`
+                : ""}
             </div>
           </div>
         </div>
