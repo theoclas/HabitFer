@@ -17,8 +17,9 @@ function walk(dir) {
 }
 
 // Fuera de la cache inicial: el propio sw, mapas de fuentes, pantallas de arranque de iPhone
-// (iOS las pide solo al instalar) y la imagen grande del login.
-const SKIP = [/^sw\.js$/, /\.map$/, /^icons\/splash-/, /^fersua-auth-hero\.png$/];
+// (iOS las pide solo al instalar), la imagen grande del login y el lector de códigos de barras
+// (WebAssembly, ~1 MB: se baja la primera vez que se escanea y desde ahí queda en la cache).
+const SKIP = [/^sw\.js$/, /\.map$/, /^icons\/splash-/, /^fersua-auth-hero\.png$/, /\.wasm$/];
 
 const files = walk(dist)
   .map((p) => relative(dist, p).split(sep).join("/"))

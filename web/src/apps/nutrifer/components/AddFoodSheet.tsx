@@ -1,4 +1,5 @@
 import {
+  BarcodeOutlined,
   CameraOutlined,
   DeleteOutlined,
   EditOutlined,
@@ -8,6 +9,7 @@ import {
   StarFilled,
   StarOutlined,
   ThunderboltOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import { Button, Checkbox, Drawer, Input, message, type InputRef } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,8 +23,11 @@ import {
   fetchShortcuts,
   foodDetail,
   logSavedMeal,
+  lookupBarcode,
   removeEntries,
   repeatEntry,
+  saveOff,
+  searchOff,
   setFavorite,
   understandText,
   uploadPhoto,
@@ -30,13 +35,30 @@ import {
 } from "../api";
 import { defaultAmount, inMeal, lastAmount, thingsText } from "../format";
 import { forgetPhoto, useFoodSearch, usePhotoUrl } from "../hooks";
-import { kcalText, usualChoice } from "../math";
+import { gramsText, kcalText, usualChoice } from "../math";
 import { shrinkPhoto } from "../photo";
-import type { AmountChoice, BatchItem, Entry, FavoriteFood, FoodDetail, FoodResult, MealSlot, PendingPhoto, Remaining, SavedMealView, Shortcuts, TextItem } from "../types";
+import type {
+  AmountChoice,
+  BarcodeResult,
+  BatchItem,
+  Entry,
+  FavoriteFood,
+  FoodDetail,
+  FoodResult,
+  MealSlot,
+  OffHit,
+  PendingPhoto,
+  Remaining,
+  SavedMealView,
+  Shortcuts,
+  TextItem,
+} from "../types";
 import { AmountEditor } from "./AmountEditor";
+import { BarcodeScanner } from "./BarcodeScanner";
 import { CreateFoodForm } from "./CreateFoodForm";
 import { FoodRow } from "./FoodRow";
 import { QuickEntryForm } from "./QuickEntryForm";
+import { Seals } from "./Seals";
 import { TextReview } from "./TextReview";
 import { GlassIcon } from "./WaterCard";
 import { notifyUndo } from "./undo";
@@ -61,11 +83,16 @@ type Props = {
 type View =
   | { kind: "home" }
   | { kind: "detail"; food: FoodDetail }
-  | { kind: "create" }
+  /** Crear: desde «¿No está?» o con lo que se sabe de un código de barras. */
+  | { kind: "create"; barcode?: string; name?: string; brand?: string | null; note?: string }
   | { kind: "quick" }
   | { kind: "saved"; saved: SavedMealView }
   | { kind: "write" }
-  | { kind: "review"; items: TextItem[] };
+  | { kind: "review"; items: TextItem[] }
+  /** Buscando lo que se escaneó. */
+  | { kind: "looking"; code: string }
+  /** Empacados de Open Food Facts por nombre o marca. */
+  | { kind: "off"; q: string; hits: OffHit[] | null; failed?: string };
 
 /** Ejemplos para el primer uso: un toque los copia en el cuadro. */
 const EXAMPLES = ["Desayuné dos arepas con queso y un tinto", "Almorcé arroz, fríjoles, carne asada, maduro y aguacate", "Un pocillo de chocolate y un pandebono"];
@@ -115,6 +142,8 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
   const [quickBusy, setQuickBusy] = useState<string | null>(null);
   const [picked, setPicked] = useState<Record<string, boolean>>({});
   const [text, setText] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
+  const [offBusy, setOffBusy] = useState<string | null>(null);
 
   const loadShortcuts = useCallback(() => {
     if (!meal) return;
@@ -135,6 +164,11 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
     return () => window.clearTimeout(t);
   }, [open, meal, photo, loadShortcuts]);
 
+  // Al cerrar la hoja también se cierra el escáner (y se apaga la cámara).
+  useEffect(() => {
+    if (!open) setScanOpen(false);
+  }, [open]);
+
   const home = () => {
     setView({ kind: "home" });
     window.setTimeout(() => inputRef.current?.focus(), 50);
@@ -144,8 +178,10 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
     setOpening(id);
     try {
       setView({ kind: "detail", food: await foodDetail(id) });
+      return true;
     } catch (err) {
       message.error(apiErrorMessage(err, "No se pudo abrir ese alimento"));
+      return false;
     } finally {
       setOpening(null);
     }
@@ -237,6 +273,64 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
     } catch (err) {
       setView({ kind: "detail", food });
       message.error(apiErrorMessage(err, "No se pudo cambiar"));
+    }
+  };
+
+  /* ---------- Código de barras y empacados ---------- */
+
+  /** Lo que respondió el código: abrir el producto o crearlo con lo que se sabe. Falso si no se pudo abrir. */
+  const showLookup = async (r: BarcodeResult): Promise<boolean> => {
+    if (r.status === "found") {
+      const ok = await openFood(r.foodId);
+      if (ok && r.from === "off") message.success("Lo encontré en Open Food Facts y quedó guardado");
+      return ok;
+    }
+    setView(
+      r.status === "no-table"
+        ? {
+            kind: "create",
+            barcode: r.code,
+            name: r.name ?? "",
+            brand: r.brand,
+            note: "Open Food Facts conoce este producto, pero sin tabla nutricional. Cópiala del empaque y queda guardado con su código.",
+          }
+        : { kind: "create", barcode: r.code, note: "No conozco este código. Créalo con la tabla del empaque: la próxima vez que lo escanees, sale solo." },
+    );
+    return true;
+  };
+
+  const onBarcode = async (code: string) => {
+    setScanOpen(false);
+    setView({ kind: "looking", code });
+    try {
+      if (!(await showLookup(await lookupBarcode(code)))) home();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo buscar el código"));
+      home();
+    }
+  };
+
+  const searchPackaged = async (term: string) => {
+    setView({ kind: "off", q: term, hits: null });
+    try {
+      const hits = await searchOff(term);
+      setView((v) => (v.kind === "off" && v.q === term ? { kind: "off", q: term, hits } : v));
+    } catch (err) {
+      const failed = apiErrorMessage(err, "Open Food Facts no respondió. Prueba otra vez en un rato.");
+      setView((v) => (v.kind === "off" && v.q === term ? { kind: "off", q: term, hits: [], failed } : v));
+    }
+  };
+
+  /** Un empacado de la búsqueda: si ya está guardado se abre; si no, se trae y se guarda. */
+  const pickOff = async (h: OffHit) => {
+    setOffBusy(h.code);
+    try {
+      if (h.foodId) await openFood(h.foodId);
+      else await showLookup(await saveOff(h.code));
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo traer ese producto"));
+    } finally {
+      setOffBusy(null);
     }
   };
 
@@ -406,12 +500,76 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
   } else if (view.kind === "create") {
     body = (
       <CreateFoodForm
-        initialName={term}
+        key={view.barcode ?? "new"}
+        initialName={view.barcode ? (view.name ?? "") : term}
+        barcode={view.barcode}
+        brand={view.brand}
+        note={view.note}
         onCancel={home}
         onCreated={(food) => {
           void openFood(food.id);
         }}
       />
+    );
+  } else if (view.kind === "looking") {
+    body = (
+      <div className="nf-looking" role="status">
+        <LoadingOutlined />
+        <b>Buscando el código {view.code}…</b>
+        <span>Primero en tu base y, si no está, en Open Food Facts.</span>
+      </div>
+    );
+  } else if (view.kind === "off") {
+    const { q: offQ, hits, failed } = view;
+    body = (
+      <div className="nf-detail">
+        <button type="button" className="nf-back" onClick={home}>
+          ‹ Volver a la búsqueda
+        </button>
+        <header>
+          <h3 className="nf-detail__name">Empacados con «{offQ}»</h3>
+          <p className="nf-detail__source">
+            Productos de Colombia en Open Food Facts, una base abierta que arma la gente con los empaques. Revisa los datos con la tabla del producto.
+          </p>
+        </header>
+        {hits === null ? (
+          <div className="nf-empty">
+            <LoadingOutlined /> Buscando en Open Food Facts…
+          </div>
+        ) : failed ? (
+          <div className="nf-empty">{failed}</div>
+        ) : hits.length === 0 ? (
+          <div className="nf-empty">No encontré empacados con «{offQ}». Escanea el código de barras o créalo con la tabla del empaque.</div>
+        ) : (
+          <div className="nf-results">
+            {hits.map((h) => (
+              <div className="nf-result" key={h.code}>
+                <button type="button" className="nf-result__main" disabled={offBusy !== null} onClick={() => void pickOff(h)}>
+                  <span className="nf-result__name">{h.name}</span>
+                  <span className="nf-result__meta">
+                    <span className="nf-badge nf-badge--off">Empacado</span>
+                    {h.check && <span className="nf-badge nf-badge--check">Revisar</span>}
+                    {h.portion ? `${h.portion.label} · ${gramsText(h.portion.grams)} ${h.liquid ? "ml" : "g"}` : h.liquid ? "100 ml" : "100 g"}
+                  </span>
+                </button>
+                <span className="nf-result__side">
+                  <span className="nf-result__kcal">
+                    {offBusy === h.code ? <LoadingOutlined /> : kcalText(h.kcalPortion ?? h.kcal100)} <small>kcal</small>
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="nf-actions">
+          <Button size="large" onClick={() => setView({ kind: "create" })}>
+            Crearlo
+          </Button>
+          <Button size="large" type="primary" icon={<BarcodeOutlined />} onClick={() => setScanOpen(true)}>
+            Escanear el código
+          </Button>
+        </div>
+      </div>
     );
   } else if (view.kind === "quick") {
     body = <QuickEntryForm busy={busy} onCancel={home} submitLabel={(k) => (k > 0 ? `Agregar · ${kcalText(k)} kcal` : "Agregar")} onSubmit={(v) => void saveQuick(v)} />;
@@ -460,7 +618,14 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
         <header className="nf-detail__head">
           <div style={{ minWidth: 0 }}>
             <h3 className="nf-detail__name">{food.name}</h3>
-            <p className="nf-detail__source">{food.sourceLabel}</p>
+            <p className="nf-detail__source">
+              {food.sourceLabel}
+              {food.barcode && (
+                <span className="nf-code">
+                  <BarcodeOutlined /> {food.barcode}
+                </span>
+              )}
+            </p>
           </div>
           <button
             type="button"
@@ -473,6 +638,14 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
             {food.favorite ? <StarFilled /> : <StarOutlined />}
           </button>
         </header>
+        {food.seals && food.seals.length > 0 && <Seals seals={food.seals} />}
+        {food.check && (
+          <p className="nf-warn">
+            <WarningOutlined />
+            <span>Estos datos no cuadran del todo: las calorías no coinciden con la proteína, los carbohidratos y la grasa. Revísalos con la tabla del empaque.</span>
+          </p>
+        )}
+        {food.estimated && !food.check && <p className="nf-small-note">Las calorías se calcularon con los macros: el producto no las traía.</p>}
         {food.usual && <p className="nf-usual-note">Empieza con lo que anotaste la última vez.</p>}
         <AmountEditor
           key={food.id}
@@ -502,34 +675,47 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
           />
         </div>
         {term ? (
-          results === null ? (
-            <div className="nf-empty">Buscando…</div>
-          ) : results.length === 0 ? (
-            <div className="nf-empty">No encontré «{term}». Prueba con otra palabra o créalo abajo.</div>
-          ) : (
-            <div className="nf-results">
-              {results.map((r) => {
-                const amount = defaultAmount(r);
-                return (
-                  <FoodRow
-                    key={r.id}
-                    food={r}
-                    amount={amount}
-                    opening={opening === r.id}
-                    quickBusy={quickBusy === r.id}
-                    onOpen={() => void openFood(r.id)}
-                    onQuick={() => void quickAdd(r)}
-                    quickLabel={`Agregar ${r.name}, ${amount.text}`}
-                  />
-                );
-              })}
-            </div>
-          )
+          <>
+            {results === null ? (
+              <div className="nf-empty">Buscando…</div>
+            ) : results.length === 0 ? (
+              <div className="nf-empty">No encontré «{term}» en la base. Si es de paquete, búscalo en Open Food Facts; si no, créalo abajo.</div>
+            ) : (
+              <div className="nf-results">
+                {results.map((r) => {
+                  const amount = defaultAmount(r);
+                  return (
+                    <FoodRow
+                      key={r.id}
+                      food={r}
+                      amount={amount}
+                      opening={opening === r.id}
+                      quickBusy={quickBusy === r.id}
+                      onOpen={() => void openFood(r.id)}
+                      onQuick={() => void quickAdd(r)}
+                      quickLabel={`Agregar ${r.name}, ${amount.text}`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {term.length >= 2 && results !== null && (
+              <button type="button" className="nf-off-link" onClick={() => void searchPackaged(term)}>
+                <BarcodeOutlined />
+                <span>
+                  ¿Es de paquete? Busca «{term}» en Open Food Facts
+                </span>
+              </button>
+            )}
+          </>
         ) : (
           <>
             <div className="nf-quickbar">
               <button type="button" className="nf-quickbar__btn nf-quickbar__btn--main" onClick={() => setView({ kind: "write" })}>
                 <EditOutlined /> Escribe o dicta
+              </button>
+              <button type="button" className="nf-quickbar__btn" onClick={() => setScanOpen(true)}>
+                <BarcodeOutlined /> Código de barras
               </button>
               <button type="button" className="nf-quickbar__btn" disabled={busy} onClick={() => fileRef.current?.click()}>
                 {busy ? <LoadingOutlined /> : <CameraOutlined />} Foto para después
@@ -646,24 +832,28 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
   }
 
   return (
-    <Drawer
-      title={photo ? `Foto de ${where}` : `Agregar a ${where}`}
-      open={open}
-      onClose={onClose}
-      placement={isMobile ? "bottom" : "right"}
-      size={isMobile ? "92dvh" : 520}
-      rootClassName="nf-drawer"
-      styles={{
-        body: {
-          paddingBottom: isMobile ? "max(24px, env(safe-area-inset-bottom))" : 24,
-          paddingLeft: isMobile ? "max(16px, env(safe-area-inset-left))" : undefined,
-          paddingRight: isMobile ? "max(16px, env(safe-area-inset-right))" : undefined,
-          overflowX: "hidden",
-        },
-        wrapper: isMobile ? { maxWidth: "100vw" } : undefined,
-      }}
-    >
-      {body}
-    </Drawer>
+    <>
+      <Drawer
+        title={photo ? `Foto de ${where}` : `Agregar a ${where}`}
+        open={open}
+        onClose={onClose}
+        placement={isMobile ? "bottom" : "right"}
+        size={isMobile ? "92dvh" : 520}
+        rootClassName="nf-drawer"
+        styles={{
+          body: {
+            paddingBottom: isMobile ? "max(24px, env(safe-area-inset-bottom))" : 24,
+            paddingLeft: isMobile ? "max(16px, env(safe-area-inset-left))" : undefined,
+            paddingRight: isMobile ? "max(16px, env(safe-area-inset-right))" : undefined,
+            overflowX: "hidden",
+          },
+          wrapper: isMobile ? { maxWidth: "100vw" } : undefined,
+        }}
+      >
+        {body}
+      </Drawer>
+      {/* Aparte (no dentro de la hoja) para que la hoja no se corra al abrirlo. */}
+      <BarcodeScanner open={scanOpen} onClose={() => setScanOpen(false)} onCode={(code) => void onBarcode(code)} />
+    </>
   );
 }

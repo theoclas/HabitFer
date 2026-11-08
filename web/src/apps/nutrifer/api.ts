@@ -1,7 +1,9 @@
 import { api } from "../../api/client";
 import type {
   AmountChoice,
+  BarcodeResult,
   BatchItem,
+  OffHit,
   DayView,
   Entry,
   FavoriteFood,
@@ -55,6 +57,10 @@ export type NewFood = {
   fiber?: number;
   sugar?: number;
   sodium?: number;
+  satFat?: number;
+  sweetener?: boolean;
+  brand?: string;
+  barcode?: string;
 };
 
 export async function createFood(payload: NewFood) {
@@ -118,6 +124,24 @@ export type CopyInput = { fromDate: string; fromMeal?: MealSlot; toDate: string;
 
 export async function copyEntries(payload: CopyInput) {
   const { data } = await api.post<{ entries: Entry[]; kcal: number }>("/nutrition/copy", payload);
+  return data;
+}
+
+/* ---------- Código de barras y empacados ---------- */
+
+export async function lookupBarcode(code: string) {
+  const { data } = await api.get<BarcodeResult>(`/nutrition/barcode/${encodeURIComponent(code)}`);
+  return data;
+}
+
+export async function searchOff(q: string) {
+  const { data } = await api.get<OffHit[]>("/nutrition/off/search", { params: { q } });
+  return data;
+}
+
+/** Guardar en la base un empacado que salió en la búsqueda de Open Food Facts. */
+export async function saveOff(code: string) {
+  const { data } = await api.post<BarcodeResult>(`/nutrition/off/${encodeURIComponent(code)}`);
   return data;
 }
 

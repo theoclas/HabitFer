@@ -10,6 +10,9 @@ export type Prep = "COCIDO" | "ASADO" | "SUDADO" | "FRITO";
 
 export type Portion = { id: string; label: string; grams: number };
 
+/** Sellos de advertencia de los empaques colombianos (Resolución 810), calculados. */
+export type Seal = "AZUCARES" | "SODIO" | "GRASAS_SATURADAS" | "GRASAS_TRANS" | "EDULCORANTE";
+
 export type FoodResult = {
   id: string;
   name: string;
@@ -19,6 +22,27 @@ export type FoodResult = {
   portion: Portion | null;
   kcalPortion: number | null;
   isDish: boolean;
+  seals?: Seal[];
+};
+
+/** Lo que responde el código de barras. */
+export type BarcodeResult =
+  | { status: "found"; foodId: string; from: "base" | "off"; check: boolean }
+  | { status: "no-table"; code: string; name: string | null; brand: string | null }
+  | { status: "unknown"; code: string };
+
+/** Un empacado de Open Food Facts encontrado por nombre (todavía puede no estar guardado). */
+export type OffHit = {
+  code: string;
+  name: string;
+  brand: string | null;
+  kcal100: number;
+  portion: { label: string; grams: number } | null;
+  kcalPortion: number | null;
+  /** Bebida: la medida va en ml. */
+  liquid: boolean;
+  check: boolean;
+  foodId: string | null;
 };
 
 /** Lo que se anotó la última vez, para repetirlo igual con un toque. */
@@ -77,6 +101,12 @@ export type FoodDetail = {
   own: boolean;
   favorite?: boolean;
   usual?: UsualAmount | null;
+  barcode?: string | null;
+  seals?: Seal[];
+  /** Los datos (de Open Food Facts) no cuadran: revisar con el empaque. */
+  check?: boolean;
+  /** Las calorías se calcularon con los macros. */
+  estimated?: boolean;
   per100: Per100;
   extra: { key: string; label: string; unit: string; value: number }[];
   portions: (Portion & { isDefault: boolean })[];

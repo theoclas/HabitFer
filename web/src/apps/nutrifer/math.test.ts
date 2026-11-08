@@ -148,6 +148,10 @@ test("textos de las filas", () => {
   const r = { id: "a", name: "Arepa", category: null, source: "TCAC" as const, kcal100: 157, portion: { id: "peq", label: "Arepa pequeña", grams: 56 }, kcalPortion: 88, isDish: false };
   assert.deepEqual(defaultAmount(r), { text: "1 arepa pequeña · 56 g", kcal: 88 });
   assert.deepEqual(defaultAmount({ ...r, portion: null, kcalPortion: null }), { text: "100 g", kcal: 157 });
+  // Una medida que ya dice el peso no se repite.
+  assert.deepEqual(defaultAmount({ ...r, portion: { id: "c", label: "100 g", grams: 100 }, kcalPortion: 157 }), { text: "100 g", kcal: 157 });
+  assert.deepEqual(lastAmount({ entryId: "e", portionLabel: "100 g", quantity: 1, grams: 100, kcal: 450 }), { text: "100 g", kcal: 450 });
+  assert.deepEqual(lastAmount({ entryId: "e", portionLabel: "100 g", quantity: 2, grams: 200, kcal: 900 }), { text: "2 × 100 g · 200 g", kcal: 900 });
   assert.equal(portionText("2 huevos", 1), "2 huevos");
   assert.equal(portionText("2 huevos", 2), "2 × 2 huevos");
   assert.equal(portionText("Pocillo", 1.5), "1½ × pocillo");

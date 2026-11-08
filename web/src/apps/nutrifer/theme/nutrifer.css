@@ -1218,11 +1218,232 @@
   .nf-entry:hover .nf-entry__chev { color: var(--nf-accent); }
 }
 
+/* =========================================================================
+   Fase 3 · código de barras, empacados y sellos
+   ========================================================================= */
+
+/* «Escribe o dicta» ocupa la fila de arriba; debajo, los cuatro atajos de a dos. */
+.nf-quickbar__btn--main { grid-column: 1 / -1; padding: 13px 12px; font-size: 0.95rem; }
+
+/* Escáner: la cámara con un marco ancho (los códigos son anchos) y una línea que barre. */
+.nf-scan {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #0B100D;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.nf-scan video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.nf-scan.is-live video { opacity: 1; }
+.nf-scan__msg {
+  position: relative;
+  margin: 0;
+  padding: 0 28px;
+  color: #DCE6DF;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.nf-scan__frame {
+  position: absolute;
+  inset: 26% 9%;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 999px rgba(5, 8, 6, 0.42);
+}
+.nf-scan__laser {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 50%;
+  height: 2px;
+  border-radius: 2px;
+  background: #FF5A4E;
+  box-shadow: 0 0 14px 2px rgba(255, 90, 78, 0.75);
+  animation: nf-laser 1.5s ease-in-out infinite alternate;
+}
+@keyframes nf-laser {
+  from { top: 14%; }
+  to { top: 86%; }
+}
+
+/* Buscando el código. */
+.nf-looking {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 56px 16px;
+  text-align: center;
+  color: var(--nf-muted);
+  font-size: 0.88rem;
+}
+.nf-looking .anticon { font-size: 28px; color: var(--nf-accent); }
+.nf-looking b { color: var(--nf-ink); font-size: 1rem; font-variant-numeric: tabular-nums; }
+
+/* «¿Es de paquete?» al final de la búsqueda. */
+.nf-off-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--nf-line);
+  border-radius: 14px;
+  background: var(--nf-surface);
+  color: var(--nf-ink);
+  font: 600 0.9rem/1.3 var(--nf-text);
+  text-align: center;
+  cursor: pointer;
+}
+.nf-off-link:hover { border-color: var(--nf-accent); }
+.nf-off-link .anticon { color: var(--nf-maiz); flex: none; }
+.nf-off-link span { overflow-wrap: anywhere; }
+.nf-result__main:disabled { cursor: progress; }
+
+.nf-badge--off { color: var(--nf-ink); }
+.nf-badge--check { color: var(--nf-lulo); }
+
+/* El código de barras de un producto. */
+.nf-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.nf-code-chip {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--nf-sunk);
+  color: var(--nf-ink);
+  font: 600 0.84rem/1 var(--nf-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Avisos dentro de la hoja. */
+.nf-warn,
+.nf-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--nf-ink);
+}
+.nf-warn { background: var(--nf-sunk); background: color-mix(in srgb, var(--nf-lulo) 13%, var(--nf-surface)); margin: -4px 0 14px; }
+.nf-warn .anticon { color: var(--nf-lulo); margin-top: 3px; flex: none; }
+.nf-note { background: var(--nf-accent-soft); }
+.nf-note .anticon { color: var(--nf-accent); margin-top: 3px; flex: none; }
+.nf-small-note { margin: -6px 0 12px; font-size: 0.8rem; color: var(--nf-muted); }
+
+/* Los octágonos negros (con su filo blanco) de la Resolución 810. */
+.nf-seals { display: grid; gap: 7px; margin: -4px 0 16px; }
+.nf-seals__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.nf-seal,
+.nf-seal-mini {
+  --nf-oct: polygon(29.3% 0, 70.7% 0, 100% 29.3%, 100% 70.7%, 70.7% 100%, 29.3% 100%, 0 70.7%, 0 29.3%);
+  position: relative;
+  isolation: isolate;
+  clip-path: var(--nf-oct);
+  background: #0A0A0A;
+  color: #FFFFFF;
+  text-align: center;
+}
+.nf-seal {
+  width: 80px;
+  height: 80px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px;
+  font-family: var(--nf-text);
+  text-transform: uppercase;
+  line-height: 1.02;
+}
+.nf-seal::before,
+.nf-seal::after,
+.nf-seal-mini::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  clip-path: var(--nf-oct);
+}
+.nf-seal::before { inset: 3px; background: #FFFFFF; }
+.nf-seal::after { inset: 5px; background: #0A0A0A; }
+.nf-seal small { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.04em; }
+.nf-seal b { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.nf-seals__note { margin: 0; font-size: 0.74rem; color: var(--nf-faint); }
+
+/* En las listas: un octágono chiquito con cuántos sellos tiene. */
+.nf-seal-mini {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  font: 800 0.66rem/1 var(--nf-text);
+  flex: none;
+}
+.nf-seal-mini::after { inset: 1.5px; background: #0A0A0A; }
+:root[data-nf-theme="dark"] .nf-seal-mini { background: #D5DED8; }
+
+/* Crear: «Más datos del empaque». */
+.nf-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px dashed var(--nf-line);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--nf-ink);
+  font: 600 0.92rem/1.25 var(--nf-text);
+  text-align: left;
+  cursor: pointer;
+}
+.nf-more:hover { border-color: var(--nf-accent); }
+.nf-more small { display: block; margin-top: 3px; font-weight: 500; font-size: 0.78rem; color: var(--nf-muted); }
+.nf-more .anticon { color: var(--nf-muted); transition: transform 0.2s ease; flex: none; }
+.nf-more.is-open .anticon { transform: rotate(180deg); }
+
+/* En el computador la hoja es más ancha: los sellos un poco más grandes. */
+@media (min-width: 1024px) {
+  .nf-seal { width: 88px; height: 88px; }
+  .nf-seal small { font-size: 0.54rem; }
+  .nf-seal b { font-size: 0.64rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nf-ring__fill,
   .nf-bar > i,
   .nf-list__chev,
   .nf-week__bar i,
   .nf-meal,
+  .nf-more .anticon,
   .nf-list--tiles > .nf-list__row { transition: none; }
+  .nf-scan__laser { animation: none; }
 }

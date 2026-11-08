@@ -532,6 +532,41 @@ export class CreateFoodDto {
   @Min(0)
   @Max(50000)
   sodium?: number;
+
+  /** Lo de los empacados (para los sellos de advertencia). */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  satFat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  transFat?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  sweetener?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  brand?: string;
+
+  /** Código de barras del empaque (de 8 a 14 números). */
+  @IsOptional()
+  @Matches(/^\d{8,14}$/, { message: 'El código de barras son de 8 a 14 números.' })
+  barcode?: string;
+}
+
+/** Buscar empacados en Open Food Facts. */
+export class OffSearchDto {
+  @IsString()
+  @MinLength(2, { message: 'Escribe al menos dos letras.' })
+  @MaxLength(80)
+  q!: string;
 }
 
 export class ProfileDto {

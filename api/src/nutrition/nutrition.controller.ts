@@ -9,6 +9,7 @@ import {
   CreateEntryDto,
   CreateFoodDto,
   DayQueryDto,
+  OffSearchDto,
   PhotoDto,
   ProfileDto,
   QuickEntryDto,
@@ -24,6 +25,7 @@ import {
   WaterDto,
 } from './nutrition.dto';
 import { MealPhotosService } from './meal-photos.service';
+import { BarcodeService } from './packaged/barcode.service';
 import { ProfileService } from './profile.service';
 import { RecipesService } from './recipes.service';
 import { SavedMealsService } from './saved-meals.service';
@@ -41,7 +43,28 @@ export class NutritionController {
     private recipes: RecipesService,
     private text: FoodTextService,
     private photos: MealPhotosService,
+    private barcodes: BarcodeService,
   ) {}
+
+  /* ---------- Código de barras y empacados (Open Food Facts) ---------- */
+
+  /** Código de barras → alimento (de la base o de Open Food Facts, que se guarda). */
+  @Get('barcode/:code')
+  barcode(@CurrentUser() user: AuthUserPayload, @Param('code') code: string) {
+    return this.barcodes.lookup(user.userId, code);
+  }
+
+  /** Empacados colombianos por nombre o marca en Open Food Facts. */
+  @Get('off/search')
+  offSearch(@CurrentUser() user: AuthUserPayload, @Query() query: OffSearchDto) {
+    return this.barcodes.search(user.userId, query.q);
+  }
+
+  /** Guardar un producto de Open Food Facts que salió en la búsqueda (por su código). */
+  @Post('off/:code')
+  offSave(@CurrentUser() user: AuthUserPayload, @Param('code') code: string) {
+    return this.barcodes.lookup(user.userId, code);
+  }
 
   /* ---------- Escribe o dicta (sin IA) y fotos para después ---------- */
 

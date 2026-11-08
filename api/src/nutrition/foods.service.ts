@@ -4,6 +4,7 @@ import { addDays, startOfToday } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { amountText } from './entry.utils';
 import type { CreateFoodDto } from './nutrition.dto';
+import { computeSeals, type Seal } from './packaged/seals';
 import { normalize, rank, withoutWords, wordsOf, type SearchItem } from './search.utils';
 
 const SUMMARY_SELECT = {
@@ -16,6 +17,10 @@ const SUMMARY_SELECT = {
   protein: true,
   fat: true,
   carbs: true,
+  sugar: true,
+  satFat: true,
+  sodium: true,
+  nutrients: true,
   priority: true,
   portions: { where: { isDefault: true }, take: 1, select: { id: true, label: true, grams: true } },
   _count: { select: { parts: true } },
@@ -29,10 +34,23 @@ export const SOURCE_LABELS: Record<FoodSource, string> = {
   P18: 'Preparación tradicional medida por el ICBF y la Universidad Nacional',
   DISH: 'Plato armado por partes con la tabla del ICBF',
   USDA: 'USDA FoodData Central',
-  OFF: 'Open Food Facts',
+  OFF: 'Open Food Facts (base abierta; revisa con el empaque)',
   USER: 'Creado por ti',
   RECIPE: 'Receta tuya',
 };
+
+/** Lo extra que se guarda de un empacado (por 100 g). */
+type PackagedExtra = { transFat?: number | null; sweetener?: boolean; check?: boolean; estimated?: boolean };
+
+const extraOf = (nutrients: Prisma.JsonValue): PackagedExtra =>
+  nutrients && typeof nutrients === 'object' && !Array.isArray(nutrients) ? (nutrients as PackagedExtra) : {};
+
+/** Los sellos solo tienen sentido en lo empacado (Open Food Facts o lo que uno crea con la tabla del empaque). */
+function sealsOf(f: { source: FoodSource; kcal: number; sugar: number | null; satFat: number | null; sodium: number | null; nutrients: Prisma.JsonValue }): Seal[] {
+  if (f.source !== FoodSource.OFF && f.source !== FoodSource.USER) return [];
+  const extra = extraOf(f.nutrients);
+  return computeSeals({ kcal: f.kcal, sugar: f.sugar, satFat: f.satFat, sodium: f.sodium, transFat: extra.transFat, sweetener: extra.sweetener });
+}
 
 /** Lo que se anotó la última vez de un alimento, para repetirlo igual con un toque. */
 export type LastAmount = { entryId: string; portionLabel: string | null; quantity: number; grams: number | null; kcal: number; amount: string };
@@ -71,6 +89,7 @@ const EXTRA_NUTRIENTS: { key: string; label: string; unit: string }[] = [
   { key: 'vitA', label: 'Vitamina A', unit: 'µg' },
   { key: 'vitC', label: 'Vitamina C', unit: 'mg' },
   { key: 'cholesterol', label: 'Colesterol', unit: 'mg' },
+  { key: 'transFat', label: 'Grasas trans', unit: 'g' },
 ];
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -84,6 +103,8 @@ export type FoodResult = {
   portion: { id: string; label: string; grams: number } | null;
   kcalPortion: number | null;
   isDish: boolean;
+  /** Sellos de advertencia de un empacado (vacío en lo demás). */
+  seals: Seal[];
 };
 
 function toResult(row: SummaryRow): FoodResult {
@@ -97,6 +118,7 @@ function toResult(row: SummaryRow): FoodResult {
     portion: p ? { id: p.id, label: p.label, grams: p.grams } : null,
     kcalPortion: p ? Math.round((row.kcal * p.grams) / 100) : null,
     isDish: row._count.parts > 0,
+    seals: sealsOf(row),
   };
 }
 
@@ -121,6 +143,11 @@ export class FoodsService implements OnModuleInit {
 
   async onModuleInit() {
     await this.refresh(true).catch((err) => this.logger.error(`No se pudo cargar la base de alimentos: ${(err as Error).message}`));
+  }
+
+  /** Que la próxima búsqueda revise la base compartida ya (se acaba de guardar un empacado). */
+  invalidate() {
+    this.checkedAt = 0;
   }
 
   /** Recarga la base compartida si cambió (se revisa como mucho cada 2 minutos). */
@@ -319,6 +346,11 @@ export class FoodsService implements OnModuleInit {
         satFat: food.satFat == null ? null : r1(food.satFat),
         sodium: food.sodium == null ? null : Math.round(food.sodium),
       },
+      barcode: food.barcode,
+      /** Sellos de advertencia calculados (Resolución 810), y si los datos no cuadran o se estimaron. */
+      seals: sealsOf(food),
+      check: extraOf(food.nutrients).check === true,
+      estimated: extraOf(food.nutrients).estimated === true,
       extra: EXTRA_NUTRIENTS.filter((n) => typeof extra[n.key] === 'number').map((n) => ({ ...n, value: r1(extra[n.key] as number) })),
       portions: food.portions.map((p) => ({ id: p.id, label: p.label, grams: p.grams, isDefault: p.isDefault })),
       parts: food.parts.map((p) => ({
@@ -338,19 +370,27 @@ export class FoodsService implements OnModuleInit {
     const f = 100 / grams;
     const label = dto.portionLabel?.trim() || (dto.portionGrams ? 'Porción' : '100 g');
     const name = dto.name.trim();
+    const brand = dto.brand?.trim() || null;
+    const packaged = dto.transFat != null || dto.sweetener !== undefined;
     const row = await this.prisma.food.create({
       data: {
         source: FoodSource.USER,
         name,
-        searchText: wordsOf(name).join(' '),
+        searchText: wordsOf(name, brand).join(' '),
         ownerId: userId,
+        brand,
+        barcode: dto.barcode ?? null,
         kcal: dto.kcal * f,
         protein: dto.protein * f,
         fat: dto.fat * f,
         carbs: dto.carbs * f,
         fiber: dto.fiber == null ? null : dto.fiber * f,
         sugar: dto.sugar == null ? null : dto.sugar * f,
+        satFat: dto.satFat == null ? null : dto.satFat * f,
         sodium: dto.sodium == null ? null : dto.sodium * f,
+        ...(packaged
+          ? { nutrients: { transFat: dto.transFat == null ? null : dto.transFat * f, sweetener: dto.sweetener === true } as Prisma.InputJsonValue }
+          : {}),
         portions: { create: [{ label, grams, isDefault: true }] },
       },
       select: SUMMARY_SELECT,

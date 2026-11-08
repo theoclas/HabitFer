@@ -2,10 +2,12 @@ import { LoadingOutlined, PlusOutlined, StarFilled } from "@ant-design/icons";
 import type { AmountLine } from "../format";
 import { kcalText } from "../math";
 import type { FoodResult } from "../types";
+import { SealCount } from "./Seals";
 
 function Badge({ food }: { food: FoodResult }) {
   if (food.source === "RECIPE") return <span className="nf-badge nf-badge--recipe">Receta</span>;
   if (food.source === "USER") return <span className="nf-badge nf-badge--own">Tuyo</span>;
+  if (food.source === "OFF") return <span className="nf-badge nf-badge--off">Empacado</span>;
   if (food.isDish || food.source === "DISH") return <span className="nf-badge nf-badge--dish">Plato</span>;
   if (food.source === "P18") return <span className="nf-badge">ICBF</span>;
   return null;
@@ -34,6 +36,7 @@ export function FoodRow({ food, amount, favorite, opening, quickBusy, onOpen, on
         </span>
         <span className="nf-result__meta">
           <Badge food={food} />
+          <SealCount seals={food.seals} />
           {amount.text}
         </span>
       </button>

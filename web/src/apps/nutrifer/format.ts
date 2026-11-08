@@ -13,6 +13,9 @@ export function portionText(label: string, quantity: number): string {
   return /^[\d½¼¾]/.test(l) ? l : `1 ${l}`;
 }
 
+/** Una medida que ya dice el peso («100 g», «330 ml»): no se repite («100 g · 100 g»). */
+const saysWeight = (label: string) => /^\d+(?:[.,]\d+)?\s*(?:g|ml)$/i.test(label.trim());
+
 /** «1 arepa pequeña · 56 g» o «2 × pocillo»: lo que se anotó la última vez. */
 export function lastAmount(last: LastAmount): AmountLine {
   const { portionLabel, quantity, grams, kcal } = last;
@@ -20,12 +23,16 @@ export function lastAmount(last: LastAmount): AmountLine {
   if (last.amount) return { text: last.amount, kcal };
   if (!portionLabel) return { text: grams != null ? `${Math.round(grams)} g` : "100 g", kcal };
   const amount = portionText(portionLabel, quantity);
-  return { text: grams != null ? `${amount} · ${Math.round(grams)} g` : amount, kcal };
+  if (grams == null || (quantity === 1 && saysWeight(portionLabel))) return { text: amount, kcal };
+  return { text: `${amount} · ${Math.round(grams)} g`, kcal };
 }
 
 /** La medida por defecto del alimento (o 100 g). */
 export function defaultAmount(food: FoodResult): AmountLine {
-  if (food.portion) return { text: `${portionText(food.portion.label, 1)} · ${Math.round(food.portion.grams)} g`, kcal: food.kcalPortion ?? food.kcal100 };
+  if (food.portion) {
+    const amount = portionText(food.portion.label, 1);
+    return { text: saysWeight(food.portion.label) ? amount : `${amount} · ${Math.round(food.portion.grams)} g`, kcal: food.kcalPortion ?? food.kcal100 };
+  }
   return { text: "100 g", kcal: food.kcal100 };
 }
 
