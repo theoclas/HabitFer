@@ -10,6 +10,7 @@ import { EmailRemindersService } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
 import { loadHistory } from '../stats/history.loader';
+import { WhatsappRemindersService } from '../whatsapp/whatsapp-reminders.service';
 import { computeInsights } from '../stats/insights.utils';
 import { computeProgress } from '../stats/progress.utils';
 import { buildCoachContext, coachWeek, type CoachContext } from './coach-context';
@@ -38,6 +39,7 @@ export class CoachService {
     private push: PushService,
     config: ConfigService,
     private emails: EmailRemindersService,
+    private whatsapp: WhatsappRemindersService,
   ) {
     const apiKey = config.get<string>('ANTHROPIC_API_KEY')?.trim();
     this.client = apiKey ? new Anthropic({ apiKey, maxRetries: 2, timeout: 120_000 }) : null;
@@ -74,6 +76,7 @@ export class CoachService {
             url: '/app/habitfer?coach=1',
           });
           await this.emails.coach(u.id, msg.text);
+          await this.whatsapp.coach(u.id, msg.text);
         } catch (err) {
           this.logger.warn(`Coach: no se pudo escribir a ${u.id}: ${(err as Error).message}`);
         }

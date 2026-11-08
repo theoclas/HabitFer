@@ -17,8 +17,11 @@ api.interceptors.request.use((config) => {
 
 let authRedirectPending = false;
 
-/** Páginas que funcionan sin sesión: ahí un 401 no manda al login (/accion es el botón de los correos). */
-const NO_LOGIN_REDIRECT = ["/login", "/register", "/accion"];
+/**
+ * Páginas que funcionan sin sesión: ahí un 401 no manda al login (/accion es el botón «Hecho» de los
+ * correos y /a/<código> el enlace corto de WhatsApp).
+ */
+const NO_LOGIN_REDIRECT = ["/login", "/register", "/accion", "/a/"];
 
 api.interceptors.response.use(
   (response) => response,
@@ -406,6 +409,72 @@ export async function updateEmailReminders(level: EmailLevel) {
 
 export async function sendTestEmail() {
   const { data } = await api.post<{ ok: boolean; address: string }>("/email-reminders/test");
+  return data;
+}
+
+/* ---------- Avisos por WhatsApp ---------- */
+
+/** Estado del celular que envía (el servicio wa): open = conectado; offline = el servicio no responde. */
+export type WaSenderState = "starting" | "qr" | "connecting" | "open" | "idle" | "error" | "offline";
+export type WhatsappSender = { state: WaSenderState; phone: string | null; error: string | null; qr?: string | null };
+export type WhatsappSettings = {
+  /** El servidor tiene WhatsApp configurado. */
+  available: boolean;
+  sender: WhatsappSender;
+  level: EmailLevel;
+  numbers: { id: string; phone: string }[];
+  maxNumbers: number;
+  summaryTime: string | null;
+  isAdmin: boolean;
+};
+
+export async function fetchWhatsapp() {
+  const { data } = await api.get<WhatsappSettings>("/whatsapp");
+  return data;
+}
+
+export async function updateWhatsappLevel(level: EmailLevel) {
+  const { data } = await api.patch<WhatsappSettings>("/whatsapp", { level });
+  return data;
+}
+
+export async function addWhatsappNumber(phone: string) {
+  const { data } = await api.post<WhatsappSettings>("/whatsapp/numbers", { phone });
+  return data;
+}
+
+export async function removeWhatsappNumber(id: string) {
+  const { data } = await api.delete<WhatsappSettings>("/whatsapp/numbers/" + id);
+  return data;
+}
+
+export async function sendTestWhatsapp() {
+  const { data } = await api.post<{ sent: number; total: number; errors: string[] }>("/whatsapp/test");
+  return data;
+}
+
+/** Solo el admin: estado del celular que envía, con el QR para vincularlo. */
+export async function fetchWhatsappSender() {
+  const { data } = await api.get<WhatsappSender>("/whatsapp/sender");
+  return data;
+}
+
+export async function startWhatsappSender() {
+  const { data } = await api.post<WhatsappSender>("/whatsapp/sender/start");
+  return data;
+}
+
+export async function logoutWhatsappSender() {
+  const { data } = await api.post<WhatsappSender>("/whatsapp/sender/logout");
+  return data;
+}
+
+/** Enlace corto de WhatsApp (/a/<código>): lo mismo que el fragmento de /accion. Sin sesión. */
+export async function resolveShortLink(code: string) {
+  const { data } = await axios.get<{ t: string; n: string; l: string }>(`${API_URL}/push/link/${encodeURIComponent(code)}`, {
+    withCredentials: true,
+    timeout: 20000,
+  });
   return data;
 }
 

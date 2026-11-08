@@ -16,6 +16,7 @@ import {
 import { apiErrorMessage } from "../format";
 import { disablePush, enablePush, pushState, type PushState } from "../push";
 import { isIos, isStandalone } from "../pwa";
+import { WhatsappSection } from "./WhatsappSection";
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -220,6 +221,8 @@ export function NotificationsSheet({ open, onClose }: Props) {
           </div>
         )}
       </section>
+
+      <WhatsappSection open={open} summaryTime={settings?.summaryTime ?? null} />
 
       <p className="hf-note" style={{ marginTop: 14 }}>
         Los avisos de cada hábito se configuran en el hábito: Editar → Recordatorio (hasta 4 horas).

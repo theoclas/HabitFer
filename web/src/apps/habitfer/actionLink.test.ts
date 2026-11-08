@@ -29,6 +29,11 @@ test("los espacios codificados como + se leen como espacios (así los arma la AP
   const link = parseActionHash("#t=abc.def.ghi&n=Tomar+agua&l=Marcar+como+hecho", NOW);
   assert.equal(link?.title, "Tomar agua");
   assert.equal(link?.label, "Marcar como hecho");
+  assert.equal(link?.source, "mail");
+});
+
+test("el enlace corto de WhatsApp llega con s=wa", () => {
+  assert.equal(parseActionHash("#t=abc.def.ghi&n=Leer&l=Marcar+como+hecho&s=wa", NOW)?.source, "whatsapp");
 });
 
 test("sin token no hay enlace", () => {

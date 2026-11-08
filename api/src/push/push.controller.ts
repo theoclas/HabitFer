@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpException, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  GoneException,
+  HttpException,
+  Param,
+  Patch,
+  Post,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { TaskStatus, UserStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -7,6 +18,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { HabitsService } from '../habits/habits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
+import { ActionLinksService } from './action-links.service';
 import { PushActionDto, PushSettingsDto, SubscribeDto, UnsubscribeDto } from './push.dto';
 import { PushService } from './push.service';
 
@@ -18,7 +30,21 @@ export class PushController {
     private habits: HabitsService,
     private tasks: TasksService,
     private prisma: PrismaService,
+    private links: ActionLinksService,
   ) {}
+
+  /**
+   * Enlace corto de WhatsApp (/a/<código>): devuelve lo mismo que el fragmento de /accion.
+   * Sin sesión, como el botón «Hecho». 410 si ya venció.
+   */
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Get('link/:code')
+  async link(@Param('code') code: string) {
+    const link = await this.links.resolve(code);
+    if (!link) throw new GoneException('Este enlace ya venció (duran 36 horas). Márcalo desde la app.');
+    return link;
+  }
 
   @Get('public-key')
   publicKey() {

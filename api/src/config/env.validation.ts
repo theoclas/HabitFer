@@ -19,6 +19,9 @@ export const envValidationSchema = Joi.object({
   SMTP_USER: Joi.string().allow('').optional(),
   SMTP_PASS: Joi.string().allow('').optional(),
   MAIL_FROM: Joi.string().allow('').optional(),
-  /** Direccion publica de la app, para los enlaces de los correos. */
+  /** Direccion publica de la app, para los enlaces de los correos y de WhatsApp. */
   APP_URL: Joi.string().allow('').optional(),
+  // Avisos por WhatsApp: el servicio wa (celular vinculado). Sin WA_TOKEN queda apagado.
+  WA_URL: Joi.string().allow('').optional(),
+  WA_TOKEN: Joi.string().allow('').optional(),
 });

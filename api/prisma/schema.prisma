@@ -99,14 +99,42 @@ model User {
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
   habitSummaryTime      String?                @db.VarChar(5)
   /// Que avisos llegan tambien por correo (a User.email).
-  emailReminders        EmailReminders         @default(OFF)
+  emailReminders        ReminderLevel          @default(OFF)
+  /// Que avisos llegan tambien por WhatsApp (a sus WhatsappNumber, maximo 2).
+  whatsappReminders     ReminderLevel          @default(OFF)
+  whatsappNumbers       WhatsappNumber[]
 }
 
-/// Avisos por correo: OFF nada; SUMMARY el resumen de la noche y el coach; ALL ademas cada recordatorio.
-enum EmailReminders {
+/// Nivel de avisos de un canal (correo o WhatsApp): OFF nada; SUMMARY el resumen de la noche y el coach;
+/// ALL ademas cada recordatorio de habitos y tareas.
+enum ReminderLevel {
   OFF
   SUMMARY
   ALL
+}
+
+/// Numero de WhatsApp que recibe los avisos de un usuario (maximo 2 por usuario).
+model WhatsappNumber {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Solo digitos, con indicativo de pais: 573001234567.
+  phone     String   @db.VarChar(20)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, phone])
+}
+
+/// Enlace corto del boton «Hecho» de WhatsApp: /a/<code> lleva a /accion con el token completo (36 h).
+model ActionLink {
+  code      String   @id @db.VarChar(16)
+  token     String   @db.Text
+  title     String   @db.VarChar(120)
+  label     String   @db.VarChar(60)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
 }
 
 /// Suscripcion Web Push de un dispositivo (telefono o computador).

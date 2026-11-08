@@ -14,7 +14,7 @@ function configWith(key?: string) {
 }
 
 function serviceWith(create: jest.Mock) {
-  const service = new CoachService({} as never, {} as never, configWith('sk-ant-prueba'), {} as never);
+  const service = new CoachService({} as never, {} as never, configWith('sk-ant-prueba'), {} as never, {} as never);
   (service as unknown as { client: unknown }).client = { beta: { messages: { create } } };
   return service;
 }
@@ -80,7 +80,7 @@ describe('CoachService.ask', () => {
   });
 
   it('sin ANTHROPIC_API_KEY el coach queda apagado', async () => {
-    const service = new CoachService({} as never, {} as never, configWith(undefined), {} as never);
+    const service = new CoachService({} as never, {} as never, configWith(undefined), {} as never, {} as never);
     expect(service.enabled).toBe(false);
     await expect(ask(service)).rejects.toThrow('El coach no está activado en este servidor.');
   });

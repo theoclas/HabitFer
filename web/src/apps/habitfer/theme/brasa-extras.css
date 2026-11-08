@@ -760,3 +760,39 @@
 .hf-stepper__quick { flex-wrap: wrap; }
 .hf-stepper__quick button { white-space: nowrap; }
 .hf-stepper__quick button.is-focus { border-color: color-mix(in srgb, var(--hf-ember) 55%, transparent); color: var(--hf-ember); }
+
+/* ---------- Avisos por WhatsApp (Notificaciones) ---------- */
+.hf-wa-numbers { display: grid; gap: 6px; margin-top: 12px; }
+.hf-wa-numbers:empty { display: none; }
+.hf-wa-number {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--hf-line);
+  border-radius: 12px;
+  background: var(--hf-raised);
+  color: var(--hf-fg);
+  font-variant-numeric: tabular-nums;
+}
+.hf-wa-number > .anticon { color: #25d366; }
+.hf-wa-number__phone { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.hf-wa-add { display: flex; gap: 8px; margin-top: 12px; }
+.hf-wa-add .ant-input { flex: 1; min-width: 0; }
+.hf-wa-steps { margin: 0 0 14px; padding-left: 20px; color: var(--hf-fg); line-height: 1.5; }
+.hf-wa-steps li + li { margin-top: 4px; }
+.hf-wa-qr {
+  display: grid;
+  place-items: center;
+  width: 280px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  margin: 0 auto 10px;
+  padding: 10px;
+  border-radius: 16px;
+  /* El QR va siempre sobre blanco, también en el tema de noche: la cámara lo lee mejor. */
+  background: #ffffff;
+}
+.hf-wa-qr img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.hf-wa-qr__wait { display: grid; justify-items: center; gap: 10px; padding: 0 16px; color: #6a5b50; text-align: center; font-size: 14px; }
+.hf-wa-qr__wait .anticon { font-size: 26px; color: #e8620c; }

@@ -25,6 +25,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ActionPage } from "./pages/ActionPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ShortLinkPage } from "./pages/ShortLinkPage";
 import { StatsPage } from "./pages/StatsPage";
 import { TasksPage } from "./pages/TasksPage";
 import { TodayPage } from "./pages/TodayPage";
@@ -41,6 +42,8 @@ export function AppRouter() {
       <Route path="/register" element={<RegisterPage />} />
       {/* Botón «Hecho» de los correos: funciona sin sesión, con el token del enlace. */}
       <Route path="/accion" element={<ActionPage />} />
+      {/* Enlace corto de los avisos por WhatsApp: lleva a /accion. */}
+      <Route path="/a/:code" element={<ShortLinkPage />} />
       <Route element={<RequireAuth />}>
         <Route path="/app/picker" element={<AppPickerPage />} />
         <Route path="/app/profile" element={<ProfilePage />} />

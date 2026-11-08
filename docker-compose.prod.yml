@@ -22,11 +22,28 @@ services:
     environment:
       # "Hoy", las rachas y los recordatorios usan la hora local del contenedor.
       TZ: ${TZ:-America/Bogota}
+      # Avisos por WhatsApp: la api le habla al servicio wa con este token (vive en el .env de la raiz).
+      WA_URL: http://wa:4010
+      WA_TOKEN: ${WA_TOKEN:-}
     depends_on:
       - db
     networks:
       - internal
       - web
+
+  # WhatsApp: un celular vinculado (como WhatsApp Web) que envia los avisos. Sin puertos publicos.
+  wa:
+    build:
+      context: ./wa
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      WA_TOKEN: ${WA_TOKEN:-}
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - habitfer_wa:/data
+    networks:
+      - internal
 
   web:
     build:
@@ -61,3 +78,4 @@ networks:
 volumes:
   habitfer_db:
   caddy_data:
+  habitfer_wa:

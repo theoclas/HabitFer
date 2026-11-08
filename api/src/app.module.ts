@@ -20,6 +20,7 @@ import { RemindersModule } from './reminders/reminders.module';
 import { StatsModule } from './stats/stats.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UsersModule } from './users/users.module';
     TasksModule,
     PushModule,
     MailModule,
+    WhatsappModule,
     RemindersModule,
     StatsModule,
     ExportModule,

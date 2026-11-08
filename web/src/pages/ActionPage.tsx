@@ -93,7 +93,7 @@ export function ActionPage() {
     const busy = phase.kind === "busy";
     content = (
       <>
-        <p className="hf-action__kicker">Desde tu correo</p>
+        <p className="hf-action__kicker">{link.source === "whatsapp" ? "Desde WhatsApp" : "Desde tu correo"}</p>
         <h1>{title}</h1>
         {expired ? (
           <p role="alert">{EXPIRED}</p>

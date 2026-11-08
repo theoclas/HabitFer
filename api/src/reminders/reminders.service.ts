@@ -14,6 +14,7 @@ import { toDateKey } from '../habits/habits.utils';
 import { EmailRemindersService } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
+import { WhatsappRemindersService } from '../whatsapp/whatsapp-reminders.service';
 import { loadPauses } from '../stats/history.loader';
 import { toHistoryHabit, type PauseRange } from '../stats/history.utils';
 import {
@@ -34,12 +35,28 @@ export class RemindersService {
    * nunca crean el mismo recordatorio dos veces ni mandan dos push iguales.
    */
   private queue: Promise<unknown> = Promise.resolve();
+  /**
+   * Correo y WhatsApp salen en su propia fila, sin frenar la ronda: WhatsApp espera un rato entre
+   * mensajes y la campana de la app (que también revisa los avisos) no debe quedarse esperando.
+   */
+  private outbox: Promise<unknown> = Promise.resolve();
 
   constructor(
     private prisma: PrismaService,
     private push: PushService,
     private emails: EmailRemindersService,
+    private whatsapp: WhatsappRemindersService,
   ) {}
+
+  /** Pone un envío de correo o WhatsApp en la fila (nunca lanza). */
+  private later(job: () => Promise<unknown>) {
+    this.outbox = this.outbox.then(job).catch((err) => this.logger.warn(`Fallo un aviso externo: ${(err as Error).message}`));
+  }
+
+  /** Para las pruebas: espera a que salga lo que está en la fila. */
+  flushOutbox(): Promise<unknown> {
+    return this.outbox;
+  }
 
   @Cron(CronExpression.EVERY_MINUTE)
   async handleCron() {
@@ -164,14 +181,17 @@ export class RemindersService {
         ],
         data: { kind: 'habit', token },
       });
-      // Correo (si el usuario lo pidio): mismo token, el boton abre /accion en la web.
-      await this.emails.habit(habit.userId, {
+      // Correo y WhatsApp (si el usuario los pidio): mismo token; el boton abre /accion en la web.
+      const external = {
         icon: habit.icon,
         title: habit.title,
         body,
         token,
         actionLabel: addTitle ? addTitle.replace(/^\+/, 'Sumar ') : 'Marcar como hecho',
-      });
+      };
+      const owner = habit.userId;
+      this.later(() => this.emails.habit(owner, external));
+      this.later(() => this.whatsapp.habit(owner, external));
     }
 
     const tasks = await this.prisma.task.findMany({
@@ -206,7 +226,9 @@ export class RemindersService {
         ],
         data: { kind: 'task', token },
       });
-      await this.emails.task(task.userId, { title: task.title, body, token });
+      const external = { title: task.title, body, token };
+      this.later(() => this.emails.task(task.userId, external));
+      this.later(() => this.whatsapp.task(task.userId, external));
     }
 
     // Resumen nocturno: lo que falta hoy y la racha en riesgo.
@@ -246,13 +268,15 @@ export class RemindersService {
     });
     if (!created) return;
     await this.push.sendToUser(userId, { ...text, tag: `summary-${todayKey}`, url: '/app/habitfer' });
-    // El correo trae la lista completa (el push solo cabe en dos lineas).
-    await this.emails.summary(userId, {
+    // El correo y WhatsApp traen la lista completa (el push solo cabe en dos lineas).
+    const digest = {
       ...text,
       items: pending.map((p) =>
         p.streakEnabled && p.streak > 0 ? `${p.title} · racha de ${p.streak} ${p.streak === 1 ? 'día' : 'días'}` : p.title,
       ),
-    });
+    };
+    this.later(() => this.emails.summary(userId, digest));
+    this.later(() => this.whatsapp.summary(userId, digest));
   }
 
   /** Crea el recordatorio si no existe uno igual en este minuto. Devuelve true si lo creo. */

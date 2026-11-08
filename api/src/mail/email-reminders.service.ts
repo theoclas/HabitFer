@@ -1,6 +1,7 @@
 import { BadGatewayException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import { EmailReminders, UserStatus } from '@prisma/client';
+import { UserStatus, type ReminderLevel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { levelAllows, type ReminderKind } from '../reminders/reminder-level';
 import {
   actionLink,
   coachMail,
@@ -12,15 +13,12 @@ import {
 } from './mail-templates';
 import { MailService } from './mail.service';
 
+type Kind = ReminderKind;
+
 /** reminder: cada aviso de habitos y tareas (solo con ALL). digest: resumen de la noche y coach (SUMMARY o ALL). */
-type Kind = 'reminder' | 'digest';
+export const wantsEmail = levelAllows;
 
-export function wantsEmail(level: EmailReminders, kind: Kind): boolean {
-  if (kind === 'digest') return level !== EmailReminders.OFF;
-  return level === EmailReminders.ALL;
-}
-
-function firstName(u: { fullName: string | null; username: string }): string {
+export function firstName(u: { fullName: string | null; username: string }): string {
   return (u.fullName?.trim().split(/\s+/)[0] || u.username || '').slice(0, 40);
 }
 
@@ -106,7 +104,7 @@ export class EmailRemindersService {
     };
   }
 
-  async update(userId: string, level: EmailReminders) {
+  async update(userId: string, level: ReminderLevel) {
     await this.prisma.user.update({ where: { id: userId }, data: { emailReminders: level } });
     return this.settings(userId);
   }

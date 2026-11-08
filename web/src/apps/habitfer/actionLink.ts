@@ -18,6 +18,8 @@ export type ActionLink = {
   date: string | null;
   /** El token ya venció (se sabe sin preguntarle al servidor). */
   expired: boolean;
+  /** De dónde viene el enlace: los correos no traen `s`; el enlace corto de WhatsApp trae `s=wa`. */
+  source: "mail" | "whatsapp";
 };
 
 const KINDS: readonly ActionKind[] = ["habit-done", "habit-add", "task-done"];
@@ -53,6 +55,7 @@ export function parseActionHash(hash: string, now = Date.now()): ActionLink | nu
     act,
     date,
     expired: exp !== null && exp * 1000 <= now,
+    source: params.get("s") === "wa" ? "whatsapp" : "mail",
   };
 }
 

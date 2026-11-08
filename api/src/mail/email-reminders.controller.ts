@@ -1,14 +1,14 @@
 import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { EmailReminders } from '@prisma/client';
+import { ReminderLevel } from '@prisma/client';
 import { IsEnum } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
 import { EmailRemindersService } from './email-reminders.service';
 
 export class EmailRemindersDto {
-  @IsEnum(EmailReminders, { message: 'level debe ser OFF, SUMMARY o ALL.' })
-  level!: EmailReminders;
+  @IsEnum(ReminderLevel, { message: 'level debe ser OFF, SUMMARY o ALL.' })
+  level!: ReminderLevel;
 }
 
 /** Avisos por correo del usuario: que le llega y un correo de prueba. */
