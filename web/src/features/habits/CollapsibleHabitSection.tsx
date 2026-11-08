@@ -61,21 +61,21 @@ export function CollapsibleHabitSection({
           justifyContent: "space-between",
           gap: 12,
           padding: "10px 4px",
-          marginBottom: collapsed ? 0 : 12,
+          marginBottom: collapsed ? 0 : 6,
           border: "none",
           background: "transparent",
           cursor: "pointer",
-          color: "#94a3b8",
+          color: "var(--hf-muted)",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
           {title}
         </span>
         {collapsed ? <DownOutlined style={{ fontSize: 12 }} /> : <UpOutlined style={{ fontSize: 12 }} />}
       </button>
 
       {!collapsed && (
-        <div className={layout === "grid" ? "habit-grid" : undefined}>
+        <div className={`hf-list${layout === "grid" ? " hf-list--grid" : ""}`}>
           {habits.map((habit) => (
             <HabitCard
               key={habit.id + id}

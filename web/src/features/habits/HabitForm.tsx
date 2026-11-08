@@ -1,7 +1,14 @@
-import { ColorPicker, Form, Input, Select, Switch, TimePicker } from "antd";
+import { ColorPicker, Form, Input, Segmented, Select, Switch, TimePicker } from "antd";
 import dayjs from "dayjs";
-import type { CreateHabitPayload, Habit, ScheduleType } from "../../types";
+import type { CreateHabitPayload, Habit, ScheduleType, TimeOfDay } from "../../types";
 import { EmojiPicker } from "./EmojiPicker";
+
+export const TIME_OF_DAY_OPTIONS: { value: TimeOfDay; label: string }[] = [
+  { value: "ANYTIME", label: "Cualquiera" },
+  { value: "MORNING", label: "Mañana" },
+  { value: "AFTERNOON", label: "Tarde" },
+  { value: "EVENING", label: "Noche" },
+];
 
 const DAY_OPTIONS = [
   { value: 1, label: "Lun" },
@@ -20,6 +27,7 @@ export type HabitFormValues = {
   icon?: string | null;
   scheduleType: ScheduleType;
   scheduleDays: number[];
+  timeOfDay: TimeOfDay;
   streakEnabled: boolean;
   reminderEnabled: boolean;
   reminderTime?: dayjs.Dayjs;
@@ -38,6 +46,7 @@ export function habitToFormValues(habit?: Habit | null): HabitFormValues {
     icon: habit?.icon ?? "✨",
     scheduleType: habit?.scheduleType ?? "DAILY",
     scheduleDays: habit?.scheduleDays ?? [1, 2, 3, 4, 5, 6, 7],
+    timeOfDay: habit?.timeOfDay ?? "ANYTIME",
     streakEnabled: habit?.streakEnabled ?? true,
     reminderEnabled: habit?.reminderEnabled ?? false,
     reminderTime: habit?.reminderTime ? dayjs(habit.reminderTime, "HH:mm") : undefined,
@@ -52,6 +61,7 @@ export function formValuesToPayload(values: HabitFormValues): CreateHabitPayload
     icon: values.icon || null,
     scheduleType: values.scheduleType,
     scheduleDays: values.scheduleType === "WEEKLY" ? values.scheduleDays : [1, 2, 3, 4, 5, 6, 7],
+    timeOfDay: values.timeOfDay ?? "ANYTIME",
     streakEnabled: values.streakEnabled,
     reminderEnabled: values.reminderEnabled,
     reminderTime: values.reminderEnabled && values.reminderTime ? values.reminderTime.format("HH:mm") : undefined,
@@ -90,6 +100,9 @@ export function HabitForm({ form, initial }: Props) {
           <Select mode="multiple" size="large" options={DAY_OPTIONS} />
         </Form.Item>
       )}
+      <Form.Item name="timeOfDay" label="Momento del día" extra="En Hoy se agrupa en Mañana, Tarde o Noche, con el momento actual primero.">
+        <Segmented block options={TIME_OF_DAY_OPTIONS} />
+      </Form.Item>
       <Form.Item name="streakEnabled" label="Contar racha" valuePropName="checked">
         <Switch />
       </Form.Item>

@@ -54,7 +54,7 @@ export async function logout() {
   }
 }
 
-import type { CompleteHabitResponse, CreateHabitPayload, Habit, HabitToday } from "../types";
+import type { AchievementsSummary, CompleteHabitResponse, CreateHabitPayload, Habit, HabitToday } from "../types";
 
 export async function fetchHabits() {
   const { data } = await api.get<Habit[]>("/habits");
@@ -63,6 +63,11 @@ export async function fetchHabits() {
 
 export async function fetchHabitsToday(date?: string) {
   const { data } = await api.get<HabitToday[]>("/habits/today", { params: date ? { date } : undefined });
+  return data;
+}
+
+export async function fetchAchievementsSummary() {
+  const { data } = await api.get<AchievementsSummary>("/habits/achievements");
   return data;
 }
 

@@ -12,6 +12,14 @@ enum ScheduleType {
   WEEKLY
 }
 
+/// Momento del dia en que se agrupa el habito en la pantalla Hoy.
+enum TimeOfDay {
+  ANYTIME
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
 enum TaskStatus {
   TODO
   IN_PROGRESS
@@ -103,6 +111,7 @@ model Habit {
   archived        Boolean           @default(false)
   scheduleType    ScheduleType      @default(DAILY)
   scheduleDays    Json              @default("[1,2,3,4,5,6,7]")
+  timeOfDay       TimeOfDay         @default(ANYTIME)
   streakEnabled   Boolean           @default(true)
   reminderEnabled Boolean           @default(false)
   reminderTime    String?           @db.VarChar(5)

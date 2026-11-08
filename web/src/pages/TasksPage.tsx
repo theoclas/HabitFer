@@ -152,9 +152,7 @@ export function TasksPage() {
 
   return (
     <div>
-      <div className="page-header">
-        {isMobile && <Typography.Title level={2} className="page-header__title" style={{ margin: 0 }}>Tareas</Typography.Title>}
-        {!isMobile && <Typography.Text type="secondary">{tasks.length} tareas en la vista actual</Typography.Text>}
+      <div className="page-header">        {!isMobile && <Typography.Text type="secondary">{tasks.length} tareas en la vista actual</Typography.Text>}
         <div className="page-header__actions">
           <Button icon={<FolderAddOutlined />} onClick={() => setProjectDrawer(true)}>Proyecto</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Nueva</Button>

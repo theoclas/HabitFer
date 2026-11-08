@@ -8,6 +8,8 @@ import {
   toDateKey,
 } from '../habits/habits.utils';
 import { PrismaService } from '../prisma/prisma.service';
+import { localDateKey } from '../common/date.utils';
+import { computePerfectStreak } from './perfect-days.utils';
 import { addDays, dayLabel, lastNDays, localDayStart, startOfToday, toDateKey as statsDateKey } from './stats.utils';
 
 @Injectable()
@@ -56,6 +58,16 @@ export class StatsService {
       .sort((a, b) => b.currentStreak - a.currentStreak)
       .slice(0, 5);
 
+    const perfect = computePerfectStreak(
+      habits.map((h) => ({
+        scheduleType: h.scheduleType,
+        scheduleDays: h.scheduleDays,
+        createdKey: localDateKey(h.createdAt),
+        completionKeys: new Set(h.completions.map((c) => toDateKey(c.date))),
+      })),
+      today,
+    );
+
     const weekStart = addDays(today, -6);
     const tasksDoneWeek = await this.prisma.task.count({
       where: { userId, status: TaskStatus.DONE, updatedAt: { gte: localDayStart(weekStart) } },
@@ -83,6 +95,8 @@ export class StatsService {
         weekCompletionRate: totalScheduledWeek ? Math.round((totalCompletedWeek / totalScheduledWeek) * 100) : 0,
         daily: completionByDay,
         topStreaks,
+        perfectStreak: perfect.streak,
+        todayPerfect: perfect.todayPerfect,
       },
       tasks: {
         open: tasksOpen,

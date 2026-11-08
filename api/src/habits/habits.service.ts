@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Habit, ScheduleType } from '@prisma/client';
+import { Habit, ScheduleType, TimeOfDay } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompleteHabitDto } from './dto/complete-habit.dto';
 import { CreateHabitDto } from './dto/create-habit.dto';
@@ -15,7 +15,13 @@ import {
   toDateKey,
 } from './habits.utils';
 import { randomInt } from 'crypto';
-import { getMilestoneLabel, isStreakMilestone, PHRASE_COUNT } from './achievements.utils';
+import {
+  getMilestoneLabel,
+  getNextMilestone,
+  getStreakMilestones,
+  isStreakMilestone,
+  PHRASE_COUNT,
+} from './achievements.utils';
 
 @Injectable()
 export class HabitsService {
@@ -71,6 +77,7 @@ export class HabitsService {
         icon: dto.icon?.trim() || null,
         scheduleType: dto.scheduleType ?? ScheduleType.DAILY,
         scheduleDays: dto.scheduleDays ?? [1, 2, 3, 4, 5, 6, 7],
+        timeOfDay: dto.timeOfDay ?? TimeOfDay.ANYTIME,
         streakEnabled: dto.streakEnabled ?? true,
         reminderEnabled: dto.reminderEnabled ?? false,
         reminderTime: dto.reminderEnabled ? dto.reminderTime ?? null : null,
@@ -91,6 +98,7 @@ export class HabitsService {
         icon: dto.icon === undefined ? undefined : dto.icon?.trim() || null,
         scheduleType: dto.scheduleType,
         scheduleDays: dto.scheduleDays,
+        timeOfDay: dto.timeOfDay,
         streakEnabled: dto.streakEnabled,
         reminderEnabled: dto.reminderEnabled,
         reminderTime: dto.reminderEnabled === false ? null : dto.reminderTime,
@@ -164,6 +172,41 @@ export class HabitsService {
     }
   }
 
+  /** Vitrina: logros ganados de cada habito activo y el siguiente hito con lo que falta. */
+  async achievementsSummary(userId: string) {
+    const today = startOfToday();
+    const habits = await this.prisma.habit.findMany({
+      where: { userId, archived: false },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        completions: { select: { date: true } },
+        achievements: { orderBy: { milestoneDays: 'asc' } },
+      },
+    });
+
+    return {
+      totalMilestones: getStreakMilestones().length,
+      habits: habits.map((h) => {
+        const keys = new Set(h.completions.map((c) => toDateKey(c.date)));
+        const currentStreak = getCurrentStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, keys, today);
+        const next = h.streakEnabled ? getNextMilestone(currentStreak) : null;
+        return {
+          habit: { id: h.id, title: h.title, color: h.color, icon: h.icon, streakEnabled: h.streakEnabled },
+          currentStreak,
+          longestStreak: getLongestStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, [...keys]),
+          unlocked: h.achievements.map((a) => ({
+            id: a.id,
+            milestoneDays: a.milestoneDays,
+            phraseIndex: a.phraseIndex,
+            unlockedAt: a.unlockedAt,
+            label: getMilestoneLabel(a.milestoneDays),
+          })),
+          next: next ? { milestoneDays: next, remaining: next - currentStreak, label: getMilestoneLabel(next) } : null,
+        };
+      }),
+    };
+  }
+
   async listAchievements(userId: string, habitId: string) {
     await this.ensureOwner(userId, habitId);
     return this.prisma.habitAchievement.findMany({
@@ -202,6 +245,7 @@ export class HabitsService {
       archived: habit.archived,
       scheduleType: habit.scheduleType,
       scheduleDays: parseScheduleDays(habit.scheduleDays),
+      timeOfDay: habit.timeOfDay,
       streakEnabled: habit.streakEnabled,
       reminderEnabled: habit.reminderEnabled,
       reminderTime: habit.reminderTime,

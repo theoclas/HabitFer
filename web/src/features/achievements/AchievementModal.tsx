@@ -1,60 +1,55 @@
-import { TrophyOutlined } from "@ant-design/icons";
-import { Button, Modal, Typography } from "antd";
+import { Button, Modal } from "antd";
+import type { CSSProperties } from "react";
+import { flameStage } from "../../apps/habitfer/components/Flame";
 import type { UnlockedAchievement } from "../../types";
+import { habitEmoji } from "../habits/habitUtils";
 import { getNextMilestone } from "./milestones";
 import { pickPhraseByIndex } from "./phrases";
-import { habitEmoji } from "../habits/habitUtils";
 
 type Props = {
   achievement: UnlockedAchievement | null;
+  /** Abierto desde la vitrina: mismo contenido, otro titulo. */
+  replay?: boolean;
   onClose: () => void;
 };
 
-export function AchievementModal({ achievement, onClose }: Props) {
+export function AchievementModal({ achievement, replay, onClose }: Props) {
   if (!achievement) return null;
 
   const phrase = pickPhraseByIndex(achievement.phraseIndex);
   const next = getNextMilestone(achievement.milestoneDays);
+  const stage = flameStage(achievement.milestoneDays);
 
   return (
     <Modal
       open
       onCancel={onClose}
       footer={[
-        <Button key="ok" type="primary" onClick={onClose} style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f" }}>
-          Seguir adelante
+        <Button key="ok" type="primary" size="large" block onClick={onClose}>
+          {replay ? "Cerrar" : "Seguir adelante"}
         </Button>,
       ]}
       centered
       width={420}
-      className="achievement-modal"
+      className="hf-achievement"
       title={null}
       closable
     >
-      <div className="achievement-modal__body">
-        <div className="achievement-modal__badge" style={{ background: `linear-gradient(135deg, ${achievement.habitColor}, ${achievement.habitColor}88)` }}>
-          <span className="achievement-modal__emoji">{habitEmoji(achievement.habitIcon)}</span>
-          <TrophyOutlined className="achievement-modal__trophy" />
-        </div>
-
-        <Typography.Text className="achievement-modal__tag">Logro desbloqueado</Typography.Text>
-        <Typography.Title level={3} className="achievement-modal__title">
-          {achievement.milestoneDays} dias de racha
-        </Typography.Title>
-        <Typography.Text type="secondary" className="achievement-modal__habit">
+      <div className="hf-achievement__body">
+        <span className="hf-medal hf-medal--lg" style={{ "--m": stage?.outer ?? "var(--hf-ember)" } as CSSProperties}>
+          {habitEmoji(achievement.habitIcon)}
+          <b>{achievement.milestoneDays}</b>
+        </span>
+        <span className="hf-achievement__tag">{replay ? "Logro ganado" : "Logro desbloqueado"}</span>
+        <h3 className="hf-achievement__title">{achievement.milestoneDays} días de racha</h3>
+        <span className="hf-achievement__habit">
           {achievement.habitTitle} · {achievement.label}
-        </Typography.Text>
-
-        <blockquote className="achievement-modal__quote">
-          <Typography.Paragraph className="achievement-modal__phrase">&ldquo;{phrase.frase}&rdquo;</Typography.Paragraph>
-          <Typography.Text type="secondary" className="achievement-modal__author">&mdash; {phrase.autor}</Typography.Text>
+        </span>
+        <blockquote className="hf-quote">
+          <p>&ldquo;{phrase.frase}&rdquo;</p>
+          <cite>{phrase.autor}</cite>
         </blockquote>
-
-        {next && (
-          <Typography.Text type="secondary" className="achievement-modal__next">
-            Proximo logro: {next} dias
-          </Typography.Text>
-        )}
+        {next && !replay && <span className="hf-achievement__next">Próximo logro: {next} días</span>}
       </div>
     </Modal>
   );

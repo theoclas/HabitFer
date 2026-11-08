@@ -66,12 +66,7 @@ export function HabitEditorDrawer({ open, habit, onClose, onSaved }: Props) {
       open={open}
       onClose={onClose}
       extra={
-        <Button
-          type="primary"
-          loading={saving}
-          onClick={() => void handleSave()}
-          style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f" }}
-        >
+        <Button type="primary" loading={saving} onClick={() => void handleSave()}>
           Guardar
         </Button>
       }

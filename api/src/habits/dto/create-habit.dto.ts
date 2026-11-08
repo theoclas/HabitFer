@@ -1,4 +1,4 @@
-import { ScheduleType } from '@prisma/client';
+import { ScheduleType, TimeOfDay } from '@prisma/client';
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength, ArrayMinSize } from 'class-validator';
 
 export class CreateHabitDto {
@@ -30,6 +30,10 @@ export class CreateHabitDto {
   @IsArray()
   @ArrayMinSize(1)
   scheduleDays?: number[];
+
+  @IsOptional()
+  @IsEnum(TimeOfDay)
+  timeOfDay?: TimeOfDay;
 
   @IsOptional()
   @IsBoolean()

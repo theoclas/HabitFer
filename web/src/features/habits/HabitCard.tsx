@@ -1,122 +1,96 @@
-import { CheckOutlined, EditOutlined, FireOutlined, PlusOutlined } from "@ant-design/icons";
+import { EditOutlined } from "@ant-design/icons";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { StreakChip } from "../../apps/habitfer/components/Flame";
+import { burstSparks, buzz } from "../../apps/habitfer/effects";
 import type { Habit, HabitToday } from "../../types";
-import { habitCardBackground, habitEmoji, habitScheduleLabel } from "./habitUtils";
+import { habitEmoji, habitScheduleLabel } from "./habitUtils";
 
 type Props = {
   habit: Habit | HabitToday;
+  /** Se acepta por compatibilidad; el check ya es optimista y no se bloquea. */
   loading?: boolean;
   canToggle?: boolean;
+  /** Muestra la racha "en riesgo" (de noche, si el habito sigue pendiente). */
+  riskWindow?: boolean;
   layout?: "list" | "grid";
   onToggle: (habit: Habit | HabitToday) => void | Promise<void>;
   onOpen?: (habit: Habit | HabitToday) => void;
   onEdit?: (habit: Habit | HabitToday) => void;
 };
 
-export function HabitCard({ habit, loading, canToggle = true, layout = "list", onToggle, onOpen, onEdit }: Props) {
+/** Nombre compartido con la cabecera del detalle para la transicion entre pantallas. */
+export const HABIT_HERO_TRANSITION = "hf-habit-hero";
+
+export function HabitCard({ habit, loading, canToggle = true, riskWindow = false, onToggle, onOpen, onEdit }: Props) {
   const completed = habit.completedToday;
-  const isGrid = layout === "grid";
+  const atRisk = riskWindow && !completed && habit.streakEnabled && habit.currentStreak >= 3;
+  const [justDone, setJustDone] = useState(false);
+  const prevCompleted = useRef(completed);
+
+  // Animacion de "encendido" solo cuando pasa de pendiente a hecho mientras se ve la tarjeta.
+  useEffect(() => {
+    if (!prevCompleted.current && completed) {
+      setJustDone(true);
+      const t = window.setTimeout(() => setJustDone(false), 900);
+      prevCompleted.current = completed;
+      return () => window.clearTimeout(t);
+    }
+    prevCompleted.current = completed;
+    return undefined;
+  }, [completed]);
+
+  const open = (el: HTMLElement) => {
+    if (!onOpen) return;
+    el.style.setProperty("view-transition-name", HABIT_HERO_TRANSITION);
+    onOpen(habit);
+  };
+
+  const handleToggle = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!canToggle || loading) return;
+    if (!completed) {
+      burstSparks(e.currentTarget, habit.color);
+      buzz();
+    }
+    void onToggle(habit);
+  };
+
+  const classes = ["hf-card", completed ? "is-done" : "", atRisk ? "is-risk" : "", justDone ? "just-done" : ""]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
       role="button"
       tabIndex={0}
-      className="habit-card"
-      onClick={() => onOpen?.(habit)}
-      onKeyDown={(e) => e.key === "Enter" && onOpen?.(habit)}
-      style={{
-        display: "flex",
-        flexDirection: isGrid ? "column" : "row",
-        alignItems: isGrid ? "stretch" : "center",
-        gap: isGrid ? 12 : 14,
-        padding: isGrid ? "20px" : "18px 20px",
-        marginBottom: isGrid ? 0 : 14,
-        borderRadius: isGrid ? 20 : 22,
-        background: habitCardBackground(habit.color),
-        border: "none",
-        boxShadow: `0 4px 24px ${habit.color}22`,
-        cursor: onOpen || onEdit ? "pointer" : "default",
-        opacity: completed ? 0.85 : 1,
+      className={classes}
+      style={{ "--c": habit.color } as CSSProperties}
+      onClick={(e) => open(e.currentTarget)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && e.target === e.currentTarget) open(e.currentTarget);
       }}
+      aria-label={`${habit.title}${completed ? ", hecho" : ""}`}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 14, flex: isGrid ? undefined : 1, minWidth: 0 }}>
-        <div
-          style={{
-            width: isGrid ? 56 : 48,
-            height: isGrid ? 56 : 48,
-            borderRadius: 14,
-            background: "rgba(0,0,0,0.25)",
-            display: "grid",
-            placeItems: "center",
-            fontSize: isGrid ? 30 : 26,
-            flexShrink: 0,
-          }}
-        >
-          {habitEmoji(habit.icon)}
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: isGrid ? 18 : 17,
-              color: completed ? "#94a3b8" : "#f8fafc",
-              textDecoration: completed ? "line-through" : "none",
-              lineHeight: 1.3,
-            }}
-          >
-            {habit.title}
-          </div>
-          <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>{habitScheduleLabel(habit)}</div>
-          {habit.streakEnabled && habit.currentStreak > 0 && (
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                marginTop: 8,
-                padding: "2px 8px",
-                borderRadius: 999,
-                background: "rgba(249, 115, 22, 0.2)",
-                color: "#fb923c",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              <FireOutlined /> {habit.currentStreak} dias
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          justifyContent: isGrid ? "flex-end" : undefined,
-          marginTop: isGrid ? "auto" : 0,
-        }}
-      >
+      <span className="hf-card__emoji" aria-hidden="true">
+        {habitEmoji(habit.icon)}
+      </span>
+      <span className="hf-card__body">
+        <span className="hf-card__title">{habit.title}</span>
+        <span className="hf-card__meta">
+          {habit.streakEnabled && habit.currentStreak > 0 && <StreakChip days={habit.currentStreak} />}
+          {atRisk && <span className="hf-card__risk">en riesgo</span>}
+          <span>{habitScheduleLabel(habit)}</span>
+        </span>
+      </span>
+      <span className="hf-card__actions">
         {onEdit && (
           <button
             type="button"
-            aria-label="Editar habito"
+            className="hf-card__edit"
+            aria-label={`Editar ${habit.title}`}
             onClick={(e) => {
               e.stopPropagation();
               onEdit(habit);
-            }}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              border: "none",
-              background: "rgba(0,0,0,0.28)",
-              color: "#e2e8f0",
-              fontSize: 16,
-              display: "grid",
-              placeItems: "center",
-              cursor: "pointer",
-              flexShrink: 0,
             }}
           >
             <EditOutlined />
@@ -124,33 +98,18 @@ export function HabitCard({ habit, loading, canToggle = true, layout = "list", o
         )}
         <button
           type="button"
-          aria-label={completed ? "Desmarcar" : "Completar"}
-          disabled={loading || !canToggle}
+          className="hf-check"
+          aria-label={completed ? `Desmarcar ${habit.title}` : `Marcar ${habit.title}`}
+          aria-pressed={completed}
+          disabled={!canToggle}
           title={canToggle ? undefined : "Solo puedes marcar habitos de hoy o de ayer"}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!canToggle) return;
-            void onToggle(habit);
-          }}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            border: completed ? "none" : `2px solid ${habit.color}`,
-            background: completed ? "rgba(255,255,255,0.95)" : "rgba(0,0,0,0.28)",
-            color: completed ? habit.color : "#f8fafc",
-            fontSize: 22,
-            display: "grid",
-            placeItems: "center",
-            cursor: loading ? "wait" : canToggle ? "pointer" : "not-allowed",
-            opacity: canToggle ? 1 : 0.45,
-            flexShrink: 0,
-            transition: "transform 0.15s",
-          }}
+          onClick={handleToggle}
         >
-          {completed ? <CheckOutlined /> : <PlusOutlined />}
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
         </button>
-      </div>
+      </span>
     </div>
   );
 }

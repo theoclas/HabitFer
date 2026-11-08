@@ -21,6 +21,11 @@ export class HabitsController {
     return this.habits.today(user.userId, date);
   }
 
+  @Get('achievements')
+  achievementsSummary(@CurrentUser() user: AuthUserPayload) {
+    return this.habits.achievementsSummary(user.userId);
+  }
+
   @Get(':id/achievements')
   achievements(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
     return this.habits.listAchievements(user.userId, id);

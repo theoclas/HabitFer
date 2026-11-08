@@ -1,0 +1,50 @@
+import { theme, type ThemeConfig } from "antd";
+
+/** Tema Brasa de Ant Design: solo se aplica dentro de HabitFer (ProyecFer y Fernance siguen igual). */
+export const brasaTheme: ThemeConfig = {
+  algorithm: theme.darkAlgorithm,
+  token: {
+    colorPrimary: "#FF7A1A",
+    colorInfo: "#4FD1E8",
+    colorSuccess: "#5BD98A",
+    colorWarning: "#F5B841",
+    colorError: "#FF6B6B",
+    colorLink: "#FF9A4D",
+    colorBgLayout: "#0B0908",
+    colorBgContainer: "#171311",
+    colorBgElevated: "#1D1815",
+    colorBorder: "rgba(255, 236, 222, 0.11)",
+    colorBorderSecondary: "rgba(255, 236, 222, 0.07)",
+    colorText: "#F6EEE7",
+    colorTextSecondary: "#9C8D82",
+    colorTextTertiary: "#7A6C62",
+    colorTextQuaternary: "#5C5049",
+    borderRadius: 14,
+    borderRadiusLG: 18,
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontSizeHeading1: 34,
+    fontSizeHeading2: 28,
+    controlHeight: 40,
+    controlHeightLG: 48,
+    boxShadow: "0 6px 28px rgba(0, 0, 0, 0.45)",
+    boxShadowSecondary: "0 2px 14px rgba(0, 0, 0, 0.35)",
+  },
+  components: {
+    Button: {
+      primaryColor: "#1A0C04",
+      primaryShadow: "0 6px 18px -6px rgba(255, 122, 26, 0.55)",
+      fontWeight: 600,
+    },
+    Card: { colorBgContainer: "#171311", paddingLG: 20 },
+    Drawer: { colorBgElevated: "#171311" },
+    Modal: { contentBg: "#1D1815", headerBg: "#1D1815" },
+    Input: {
+      colorBgContainer: "rgba(255, 236, 222, 0.04)",
+      activeBorderColor: "#FF7A1A",
+      hoverBorderColor: "rgba(255, 236, 222, 0.2)",
+    },
+    Select: { colorBgContainer: "rgba(255, 236, 222, 0.04)" },
+    Segmented: { itemSelectedBg: "rgba(255, 122, 26, 0.22)", trackBg: "rgba(255, 236, 222, 0.05)" },
+    Tag: { defaultBg: "rgba(255, 236, 222, 0.06)", defaultColor: "#D9CCC2" },
+  },
+};

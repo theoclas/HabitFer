@@ -18,6 +18,7 @@ import { WorkGuidePage } from "./apps/proyecfer/pages/WorkGuidePage";
 import { RequireAuth } from "./layouts/RequireAuth";
 import { AppPickerPage } from "./platform/AppPickerPage";
 import { resolvePostLoginPath } from "./platform/apps";
+import { AchievementsPage } from "./pages/AchievementsPage";
 import { HabitDetailPage } from "./pages/HabitDetailPage";
 import { HabitsPage } from "./pages/HabitsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -47,6 +48,7 @@ export function AppRouter() {
           <Route path="habits/:id" element={<HabitDetailPage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="stats" element={<StatsPage />} />
+          <Route path="logros" element={<AchievementsPage />} />
         </Route>
         <Route path="/app/proyecfer" element={<ProyecFerShell />}>
           <Route index element={<ProyecFerHomePage />} />

@@ -47,6 +47,11 @@ export function pickRandomBannerPhrase(): MotivationalPhrase {
   return pool[randomIndex(pool.length)];
 }
 
+/** Dia perfecto: siempre una frase de Jhova, Feristoteles o Petlon. */
+export function pickFriendsPhrase(): MotivationalPhrase {
+  return BANNER_PHRASES_ALT[randomIndex(BANNER_PHRASES_ALT.length)];
+}
+
 /** Indice aleatorio solo para logros (coleccion original). */
 export function randomPhraseIndex(): number {
   return randomIndex(PHRASE_COUNT);

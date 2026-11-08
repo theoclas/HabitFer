@@ -15,7 +15,7 @@ export const APPS: Record<AppId, AppConfig> = {
     id: "habitfer",
     name: "HabitFer",
     description: "Habitos, tareas personales y estadisticas",
-    color: "#2dd4bf",
+    color: "#FF7A1A",
     basePath: "/app/habitfer",
   },
   proyecfer: {

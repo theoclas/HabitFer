@@ -1,6 +1,7 @@
-﻿import { FireOutlined } from "@ant-design/icons";
-import { Card, Col, Empty, Row, Select, Spin, Statistic, Typography, message } from "antd";
+﻿import { FireOutlined, TrophyOutlined } from "@ant-design/icons";
+import { Button, Card, Col, Empty, Row, Select, Spin, Statistic, Typography, message } from "antd";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -16,8 +17,11 @@ import { HabitHeatmap } from "../features/stats/HabitHeatmap";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { Habit, HabitStatsDetail, StatsOverview, TaskStatsSummary } from "../types";
 
+const TOOLTIP_STYLE = { background: "#1D1815", border: "1px solid rgba(255,236,222,0.12)", borderRadius: 12, color: "#F6EEE7" };
+
 export function StatsPage() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<StatsOverview | null>(null);
   const [taskStats, setTaskStats] = useState<TaskStatsSummary | null>(null);
@@ -78,8 +82,14 @@ export function StatsPage() {
 
   return (
     <div>
-      {isMobile && <Typography.Title level={2} style={{ marginTop: 0 }}>Estadisticas</Typography.Title>}
-
+      <div className="hf-page-head" style={{ alignItems: "center" }}>
+        <div className="hf-kicker">
+          Días perfectos seguidos: <b style={{ color: "var(--hf-fg)" }}>{overview.habits.perfectStreak}</b>
+        </div>
+        <Button icon={<TrophyOutlined />} size={isMobile ? "middle" : "large"} onClick={() => navigate("/app/habitfer/logros", { viewTransition: true })}>
+          Logros
+        </Button>
+      </div>
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={6}>
           <Card><Statistic title="Habitos activos" value={overview.habits.active} /></Card>
@@ -100,13 +110,13 @@ export function StatsPage() {
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
               <BarChart data={overview.habits.daily}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="label" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" allowDecimals={false} />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,236,222,0.08)" />
+                <XAxis dataKey="label" stroke="#9C8D82" />
+                <YAxis stroke="#9C8D82" allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,236,222,0.05)" }} />
                 <Legend />
-                <Bar dataKey="completed" name="Completados" fill="#22d3ee" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="scheduled" name="Programados" fill="#475569" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="completed" name="Completados" fill="#FF7A1A" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="scheduled" name="Programados" fill="#3A302A" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -116,11 +126,11 @@ export function StatsPage() {
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
               <BarChart data={taskStats.weeklyCompleted}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="label" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="completed" name="Completadas" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,236,222,0.08)" />
+                <XAxis dataKey="label" stroke="#9C8D82" />
+                <YAxis stroke="#9C8D82" allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,236,222,0.05)" }} />
+                <Bar dataKey="completed" name="Completadas" fill="#4FD1E8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -132,9 +142,9 @@ export function StatsPage() {
           <Empty description="Sin rachas activas" />
         ) : (
           overview.habits.topStreaks.map((h) => (
-            <div key={h.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #334155" }}>
+            <div key={h.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(255,236,222,0.08)" }}>
               <Typography.Text><span style={{ color: h.color, marginRight: 8 }}>●</span>{h.title}</Typography.Text>
-              <Typography.Text><FireOutlined style={{ color: "#f97316" }} /> {h.currentStreak}d (mejor {h.longestStreak})</Typography.Text>
+              <Typography.Text><FireOutlined style={{ color: "#FF7A1A" }} /> {h.currentStreak}d (mejor {h.longestStreak})</Typography.Text>
             </div>
           ))
         )}
@@ -166,11 +176,11 @@ export function StatsPage() {
           <div style={{ width: "100%", height: 240 }}>
             <ResponsiveContainer>
               <BarChart data={statusChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="value" name="Cantidad" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,236,222,0.08)" />
+                <XAxis dataKey="name" stroke="#9C8D82" />
+                <YAxis stroke="#9C8D82" allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,236,222,0.05)" }} />
+                <Bar dataKey="value" name="Cantidad" fill="#F5B841" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -180,11 +190,11 @@ export function StatsPage() {
           <div style={{ width: "100%", height: 240 }}>
             <ResponsiveContainer>
               <BarChart data={overview.tasks.daily}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="label" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="completed" name="Completadas" fill="#34d399" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,236,222,0.08)" />
+                <XAxis dataKey="label" stroke="#9C8D82" />
+                <YAxis stroke="#9C8D82" allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,236,222,0.05)" }} />
+                <Bar dataKey="completed" name="Completadas" fill="#5BD98A" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

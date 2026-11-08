@@ -18,6 +18,7 @@ export type AuthResponse = {
 
 
 export type ScheduleType = "DAILY" | "WEEKLY";
+export type TimeOfDay = "ANYTIME" | "MORNING" | "AFTERNOON" | "EVENING";
 
 export type Habit = {
   id: string;
@@ -28,6 +29,7 @@ export type Habit = {
   archived: boolean;
   scheduleType: ScheduleType;
   scheduleDays: number[];
+  timeOfDay: TimeOfDay;
   streakEnabled: boolean;
   reminderEnabled: boolean;
   reminderTime: string | null;
@@ -69,9 +71,21 @@ export type CreateHabitPayload = {
   icon?: string | null;
   scheduleType?: ScheduleType;
   scheduleDays?: number[];
+  timeOfDay?: TimeOfDay;
   streakEnabled?: boolean;
   reminderEnabled?: boolean;
   reminderTime?: string;
+};
+
+export type AchievementsSummary = {
+  totalMilestones: number;
+  habits: {
+    habit: { id: string; title: string; color: string; icon: string | null; streakEnabled: boolean };
+    currentStreak: number;
+    longestStreak: number;
+    unlocked: { id: string; milestoneDays: number; phraseIndex: number; unlockedAt: string; label: string }[];
+    next: { milestoneDays: number; remaining: number; label: string } | null;
+  }[];
 };
 
 
@@ -141,6 +155,9 @@ export type StatsOverview = {
     weekCompletionRate: number;
     daily: { date: string; label: string; scheduled: number; completed: number; rate: number }[];
     topStreaks: { id: string; title: string; color: string; currentStreak: number; longestStreak: number }[];
+    /** Dias seguidos con todos los habitos cumplidos (hoy suma solo si ya esta completo). */
+    perfectStreak: number;
+    todayPerfect: boolean;
   };
   tasks: {
     open: number;

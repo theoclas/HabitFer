@@ -1,5 +1,5 @@
 ﻿import { PlusOutlined } from "@ant-design/icons";
-import { Button, Empty, Progress, Spin, Typography, message } from "antd";
+import { Button, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,35 +7,68 @@ import {
   completeHabit,
   fetchHabitsToday,
   fetchStatsOverview,
+  fetchTasksToday,
   uncompleteHabit,
 } from "../api/client";
+import { Flame, PERFECT_STAGE, StreakChip } from "../apps/habitfer/components/Flame";
+import { ProgressOrb } from "../apps/habitfer/components/ProgressOrb";
+import { TodayTasks } from "../apps/habitfer/components/TodayTasks";
+import { HABITS_CHANGED_EVENT } from "../apps/habitfer/effects";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
-import { HabitCard } from "../features/habits/HabitCard";
-import { WeekCalendarStrip } from "../features/habits/WeekCalendarStrip";
-import { applyOptimisticToggle } from "../features/habits/habitUtils";
 import { useAchievements } from "../features/achievements/AchievementContext";
-import { RemindersBell } from "../features/reminders/RemindersBell";
+import { HabitCard } from "../features/habits/HabitCard";
+import { applyOptimisticToggle, habitEmoji } from "../features/habits/habitUtils";
+import { WeekCalendarStrip } from "../features/habits/WeekCalendarStrip";
 import { useIsMobile } from "../hooks/useIsMobile";
-import type { Habit, HabitToday } from "../types";
+import type { Habit, HabitToday, Task, TimeOfDay } from "../types";
 import { canMarkHabitsForDate } from "../utils/dates";
+
+const MOMENTS: Record<TimeOfDay, { label: string; hint: string }> = {
+  MORNING: { label: "Mañana", hint: "hasta las 12" },
+  AFTERNOON: { label: "Tarde", hint: "de 12 a 6" },
+  EVENING: { label: "Noche", hint: "desde las 6" },
+  ANYTIME: { label: "En cualquier momento", hint: "" },
+};
+const NATURAL_ORDER: TimeOfDay[] = ["MORNING", "AFTERNOON", "EVENING", "ANYTIME"];
+
+function momentNow(now: Dayjs): TimeOfDay {
+  const h = now.hour();
+  return h < 12 ? "MORNING" : h < 18 ? "AFTERNOON" : "EVENING";
+}
+
+/** Hoy: el momento actual primero, luego lo de "cualquier momento" y despues el resto del dia. */
+function sectionOrder(isToday: boolean, now: Dayjs): TimeOfDay[] {
+  if (!isToday) return NATURAL_ORDER;
+  const current = momentNow(now);
+  return [current, "ANYTIME", ...NATURAL_ORDER.filter((m) => m !== current && m !== "ANYTIME")];
+}
+
+type OverviewBits = { progressByDate: Record<string, number>; perfectStreak: number; todayPerfect: boolean };
 
 export function TodayPage() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { celebrate } = useAchievements();
+  const { celebrate, celebratePerfectDay } = useAchievements();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [habits, setHabits] = useState<HabitToday[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [progressByDate, setProgressByDate] = useState<Record<string, number>>({});
+  const [overview, setOverview] = useState<OverviewBits | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
-  /** Habitos con un cambio en vuelo: un segundo toque se ignora hasta que responda el servidor. */
+  const [slideBack, setSlideBack] = useState(false);
   const pendingRef = useRef(new Set<string>());
-  /** Solo la ultima carga pedida puede escribir el estado (evita que una respuesta vieja pise otro dia). */
   const loadSeqRef = useRef(0);
+  const habitsRef = useRef<HabitToday[]>([]);
+  const overviewRef = useRef<OverviewBits | null>(null);
+  habitsRef.current = habits;
+  overviewRef.current = overview;
 
+  const now = dayjs();
   const dateKey = selectedDate.format("YYYY-MM-DD");
-  const isToday = selectedDate.isSame(dayjs(), "day");
+  const todayKey = now.format("YYYY-MM-DD");
+  const isToday = dateKey === todayKey;
+  const isYesterday = dateKey === now.subtract(1, "day").format("YYYY-MM-DD");
   const canMark = canMarkHabitsForDate(dateKey);
 
   const load = useCallback(
@@ -43,17 +76,19 @@ export function TodayPage() {
       const seq = ++loadSeqRef.current;
       if (!opts?.silent) setLoading(true);
       try {
-        const [h, overview] = await Promise.all([
+        const [h, ov, t] = await Promise.all([
           fetchHabitsToday(dateKey),
           fetchStatsOverview().catch(() => null),
+          dateKey === dayjs().format("YYYY-MM-DD") && !opts?.silent ? fetchTasksToday().catch(() => null) : Promise.resolve(undefined),
         ]);
         if (seq !== loadSeqRef.current) return;
         setHabits(h);
-        if (overview?.habits.daily) {
+        if (ov) {
           const map: Record<string, number> = {};
-          for (const d of overview.habits.daily) map[d.date] = d.rate;
-          setProgressByDate(map);
+          for (const d of ov.habits.daily) map[d.date] = d.rate;
+          setOverview({ progressByDate: map, perfectStreak: ov.habits.perfectStreak ?? 0, todayPerfect: !!ov.habits.todayPerfect });
         }
+        if (t !== undefined) setTasks(t ?? []);
       } catch {
         if (!opts?.silent && seq === loadSeqRef.current) message.error("No se pudo cargar habitos");
       } finally {
@@ -67,14 +102,59 @@ export function TodayPage() {
     void load();
   }, [load]);
 
-  const doneCount = useMemo(() => habits.filter((h) => h.completedToday).length, [habits]);
-  const progressPct = habits.length ? Math.round((doneCount / habits.length) * 100) : 0;
+  useEffect(() => {
+    const onChanged = () => void load({ silent: true });
+    window.addEventListener(HABITS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(HABITS_CHANGED_EVENT, onChanged);
+  }, [load]);
 
-  /** El anillo del dia elegido sigue al check optimista sin esperar al resumen del servidor. */
-  const ringProgress = useMemo(
-    () => (loading || habits.length === 0 ? progressByDate : { ...progressByDate, [dateKey]: progressPct }),
-    [loading, habits.length, progressByDate, dateKey, progressPct],
+  const selectDate = (d: Dayjs) => {
+    setSlideBack(d.isBefore(selectedDate, "day"));
+    setSelectedDate(d);
+  };
+
+  const hour = now.hour();
+  const order = useMemo(() => sectionOrder(isToday, dayjs().hour(hour)), [isToday, hour]);
+  const sections = useMemo(
+    () =>
+      order
+        .map((m) => ({ moment: m, items: habits.filter((h) => (h.timeOfDay ?? "ANYTIME") === m) }))
+        .filter((s) => s.items.length > 0),
+    [order, habits],
   );
+  const ordered = useMemo(() => sections.flatMap((s) => s.items), [sections]);
+  const showHeads = sections.length > 1 || (sections.length === 1 && sections[0].moment !== "ANYTIME");
+
+  const doneCount = habits.filter((h) => h.completedToday).length;
+  const total = habits.length;
+  const allDone = total > 0 && doneCount === total;
+  const progressPct = total ? Math.round((doneCount / total) * 100) : 0;
+
+  const ringProgress = useMemo(
+    () => (loading || total === 0 ? overview?.progressByDate ?? {} : { ...(overview?.progressByDate ?? {}), [dateKey]: progressPct }),
+    [loading, total, overview, dateKey, progressPct],
+  );
+
+  const perfectStreak = (() => {
+    if (!overview) return 0;
+    if (!isToday) return overview.perfectStreak;
+    if (allDone && !overview.todayPerfect) return overview.perfectStreak + 1;
+    if (!allDone && overview.todayPerfect) return Math.max(0, overview.perfectStreak - 1);
+    return overview.perfectStreak;
+  })();
+
+  const bestStreak = useMemo(
+    () => habits.filter((h) => h.streakEnabled).reduce<HabitToday | null>((best, h) => (!best || h.currentStreak > best.currentStreak ? h : best), null),
+    [habits],
+  );
+
+  const maybeCelebratePerfectDay = () => {
+    const list = habitsRef.current;
+    if (!isToday || list.length === 0 || !list.every((h) => h.completedToday)) return;
+    const ov = overviewRef.current;
+    const streak = ov ? (ov.todayPerfect ? ov.perfectStreak : ov.perfectStreak + 1) : 1;
+    celebratePerfectDay({ done: list.length, total: list.length, streak, colors: list.map((h) => h.color) });
+  };
 
   const handleToggle = async (habit: HabitToday | Habit) => {
     if (!canMark) {
@@ -87,11 +167,14 @@ export function TodayPage() {
     const willComplete = !original.completedToday;
 
     pendingRef.current.add(habit.id);
-    setHabits((prev) => prev.map((h) => (h.id === habit.id ? applyOptimisticToggle(h, willComplete) : h)));
+    const optimistic = habits.map((h) => (h.id === habit.id ? applyOptimisticToggle(h, willComplete) : h));
+    habitsRef.current = optimistic;
+    setHabits(optimistic);
     try {
       if (willComplete) {
         const result = await completeHabit(habit.id, dateKey);
         if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
+        maybeCelebratePerfectDay();
       } else {
         await uncompleteHabit(habit.id, dateKey);
       }
@@ -108,126 +191,146 @@ export function TodayPage() {
     setEditing(null);
     setEditorOpen(true);
   };
-
   const openEdit = (habit: HabitToday | Habit) => {
     setEditing(habit);
     setEditorOpen(true);
   };
-
   const openDetail = (habit: HabitToday | Habit) => {
-    navigate(`/app/habitfer/habits/${habit.id}`);
+    navigate(`/app/habitfer/habits/${habit.id}`, { viewTransition: true, state: { habit } });
   };
+  const openAchievements = () => navigate("/app/habitfer/logros", { viewTransition: true });
 
-  const habitList = loading ? (
-    <div style={{ display: "grid", placeItems: "center", minHeight: 160 }}>
-      <Spin />
+  const weekday = selectedDate.format("dddd");
+  const kicker = isToday
+    ? `Hoy · ${weekday}`
+    : isYesterday
+      ? `Ayer · ${weekday}`
+      : weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  const riskWindow = isToday && now.hour() >= 20;
+
+  const header = (
+    <div className="hf-page-head">
+      <div>
+        <div className="hf-kicker">{kicker}</div>
+        <h1 className="hf-title">{selectedDate.format("D [de] MMMM")}</h1>
+      </div>
+      {!isToday && (
+        <button type="button" className="hf-today-chip" onClick={() => selectDate(dayjs())}>
+          Ir a hoy
+        </button>
+      )}
+    </div>
+  );
+
+  const orbCard =
+    loading && habits.length === 0 ? (
+      <div className="hf-skel hf-skel--orb" aria-hidden="true" />
+    ) : (
+      <div className="hf-orb-card">
+        <ProgressOrb
+          size={isMobile ? 104 : 116}
+          done={doneCount}
+          total={total}
+          segments={ordered.map((h) => ({ id: h.id, color: h.color, progress: h.completedToday ? 1 : 0 }))}
+        />
+        <div className="hf-orb-side">
+          <div className="hf-orb-stat">
+            <span className="hf-orb-stat__k">Días perfectos seguidos</span>
+            <span className="hf-orb-stat__v">
+              {perfectStreak > 0 && <Flame stage={PERFECT_STAGE} size={18} glow />}
+              {perfectStreak}
+              <small>{perfectStreak === 1 ? "día" : "días"}</small>
+            </span>
+          </div>
+          {bestStreak && bestStreak.currentStreak > 0 ? (
+            <div className="hf-orb-stat">
+              <span className="hf-orb-stat__k">Racha más larga activa</span>
+              <span className="hf-orb-stat__v">
+                <span className="hf-orb-emoji" aria-hidden="true">
+                  {habitEmoji(bestStreak.icon)}
+                </span>
+                <StreakChip days={bestStreak.currentStreak} />
+              </span>
+            </div>
+          ) : null}
+          <button type="button" className="hf-link" onClick={openAchievements}>
+            Ver logros
+          </button>
+        </div>
+      </div>
+    );
+
+  const list = loading && habits.length === 0 ? (
+    <div className="hf-list" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="hf-skel hf-skel--card" />
+      ))}
     </div>
   ) : habits.length === 0 ? (
-    <Empty description="Sin habitos para este dia">
-      <Button type="primary" onClick={openCreate} style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f" }}>
-        Crear habito
+    <div className="hf-empty">
+      <b>Nada programado para este día</b>
+      <p style={{ margin: "0 0 16px" }}>Crea un hábito y empieza a encender tu primera racha.</p>
+      <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        Crear hábito
       </Button>
-    </Empty>
+    </div>
   ) : (
-    <div className={isMobile ? undefined : "habit-grid"}>
-      {habits.map((habit) => (
-        <HabitCard
-          key={habit.id}
-          habit={habit}
-          layout={isMobile ? "list" : "grid"}
-          canToggle={canMark}
-          onToggle={handleToggle}
-          onOpen={openDetail}
-          onEdit={openEdit}
-        />
+    <div key={dateKey} className={`hf-day-in${slideBack ? " hf-day-in--back" : ""}`}>
+      {!canMark && (
+        <p style={{ color: "var(--hf-muted)", fontSize: 13, margin: "0 4px 12px" }}>
+          Solo lectura: puedes marcar hábitos de hoy o de ayer.
+        </p>
+      )}
+      {sections.map((s) => (
+        <section key={s.moment} className="hf-section">
+          {showHeads && (
+            <div className="hf-section__head">
+              <span>{MOMENTS[s.moment].label}</span>
+              {isToday && s.moment === momentNow(now) ? <em>ahora</em> : <span style={{ textTransform: "none", letterSpacing: 0 }}>{MOMENTS[s.moment].hint}</span>}
+            </div>
+          )}
+          <div className={`hf-list${isMobile ? "" : " hf-list--grid"}`}>
+            {s.items.map((habit) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                canToggle={canMark}
+                riskWindow={riskWindow}
+                onToggle={handleToggle}
+                onOpen={openDetail}
+                onEdit={openEdit}
+              />
+            ))}
+          </div>
+        </section>
       ))}
+      {isToday && <TodayTasks tasks={tasks} onChange={setTasks} />}
     </div>
   );
 
   return (
     <div>
       {isMobile ? (
-        <div className="page-header--mobile">
-          <div className="page-header__left" />
-          <Typography.Title level={3} className="page-header__title">
-            {isToday ? "Hoy" : selectedDate.format("D MMM")}
-          </Typography.Title>
-          <div className="page-header__actions">
-            <Button type="text" shape="circle" aria-label="Nuevo habito" icon={<PlusOutlined style={{ fontSize: 18, color: "#e2e8f0" }} />} onClick={openCreate} style={{ background: "rgba(255,255,255,0.06)" }} />
-            <RemindersBell />
-          </div>
-        </div>
+        <>
+          {header}
+          <WeekCalendarStrip selected={selectedDate} onSelect={selectDate} progressByDate={ringProgress} />
+          {orbCard}
+          {list}
+        </>
       ) : (
-        <div className="page-header">
-          <div>
-            <Typography.Title level={2} className="page-header__title">
-              {isToday ? "Hoy" : selectedDate.format("dddd, D MMMM")}
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              {doneCount}/{habits.length} habitos completados
-            </Typography.Text>
-          </div>
-          <div className="page-header__actions">
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f", borderRadius: 10 }}>
-              Nuevo habito
-            </Button>
-          </div>
+        <div className="today-layout">
+          <aside className="today-layout__sidebar">
+            {orbCard}
+            <WeekCalendarStrip selected={selectedDate} onSelect={selectDate} progressByDate={ringProgress} vertical />
+          </aside>
+          <section style={{ minWidth: 0 }}>
+            {header}
+            {list}
+          </section>
         </div>
       )}
 
-      <div className="today-layout">
-        {!isMobile && (
-          <aside className="today-layout__sidebar">
-            <Typography.Text type="secondary" style={{ display: "block", marginBottom: 10, fontSize: 13 }}>
-              Semana
-            </Typography.Text>
-            <WeekCalendarStrip
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              progressByDate={ringProgress}
-              vertical
-            />
-            <div className="today-progress-card">
-              <Typography.Text type="secondary" style={{ fontSize: 13 }}>Progreso del dia</Typography.Text>
-              <div style={{ marginTop: 12 }}>
-                <Progress percent={progressPct} strokeColor="#2dd4bf" trailColor="#2a2a3a" />
-              </div>
-              <Typography.Text style={{ display: "block", marginTop: 8, fontSize: 24, fontWeight: 700 }}>
-                {doneCount}/{habits.length}
-              </Typography.Text>
-            </div>
-          </aside>
-        )}
-
-        <section>
-          {isMobile && (
-            <>
-              <WeekCalendarStrip selected={selectedDate} onSelect={setSelectedDate} progressByDate={ringProgress} />
-              <Typography.Text type="secondary" style={{ display: "block", marginBottom: 16, fontSize: 13 }}>
-                {doneCount}/{habits.length} completados
-              </Typography.Text>
-            </>
-          )}
-          {!isMobile && (
-            <Typography.Title level={4} style={{ marginTop: 0, marginBottom: 16, fontWeight: 700 }}>
-              Habitos del dia
-            </Typography.Title>
-          )}
-          {!canMark && (
-            <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12, fontSize: 13 }}>
-              Vista de solo lectura — solo puedes marcar habitos de hoy o de ayer
-            </Typography.Text>
-          )}
-          {habitList}
-        </section>
-      </div>
-
-      <HabitEditorDrawer
-        open={editorOpen}
-        habit={editing}
-        onClose={() => setEditorOpen(false)}
-        onSaved={() => void load()}
-      />
+      <HabitEditorDrawer open={editorOpen} habit={editing} onClose={() => setEditorOpen(false)} onSaved={() => void load()} />
     </div>
   );
 }

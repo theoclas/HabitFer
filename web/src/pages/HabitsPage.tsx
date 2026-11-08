@@ -1,13 +1,13 @@
 ﻿import { PlusOutlined } from "@ant-design/icons";
-import { Button, Empty, Spin, Typography, message } from "antd";
+import { Button, message } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { completeHabit, fetchHabits, uncompleteHabit } from "../api/client";
+import { HABITS_CHANGED_EVENT } from "../apps/habitfer/effects";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { useAchievements } from "../features/achievements/AchievementContext";
 import { CollapsibleHabitSection } from "../features/habits/CollapsibleHabitSection";
 import { applyOptimisticToggle } from "../features/habits/habitUtils";
-import { RemindersBell } from "../features/reminders/RemindersBell";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { Habit } from "../types";
 import { todayKey } from "../utils/dates";
@@ -34,6 +34,12 @@ export function HabitsPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    const onChanged = () => void load();
+    window.addEventListener(HABITS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(HABITS_CHANGED_EVENT, onChanged);
+  }, [load]);
 
   const cardLayout = isMobile ? "list" : "grid";
 
@@ -79,34 +85,39 @@ export function HabitsPage() {
   };
 
   const openDetail = (habit: Habit) => {
-    navigate(`/app/habitfer/habits/${habit.id}`);
+    navigate(`/app/habitfer/habits/${habit.id}`, { viewTransition: true, state: { habit } });
   };
 
   const scheduled = habits.filter((h) => h.scheduledToday);
 
   return (
     <div>
-      <div className="page-header">
-        {isMobile && <Typography.Title level={3} className="page-header__title">Habitos</Typography.Title>}
+      <div className="hf-page-head">
+        <div>
+          <div className="hf-kicker">{habits.length} activos · {scheduled.length} hoy</div>
+          <h1 className="hf-title hf-title--sm">Todos tus hábitos</h1>
+        </div>
         {!isMobile && (
-          <div>
-            <Typography.Text type="secondary">Gestiona todos tus habitos</Typography.Text>
-          </div>
-        )}
-        <div className="page-header__actions">
-          {isMobile && <RemindersBell />}
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f", borderRadius: isMobile ? 12 : 10 }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             Nuevo
           </Button>
-        </div>
+        )}
       </div>
 
       {loading ? (
-        <div style={{ display: "grid", placeItems: "center", minHeight: 120 }}><Spin /></div>
+        <div className="hf-list" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="hf-skel hf-skel--card" />
+          ))}
+        </div>
       ) : habits.length === 0 ? (
-        <Empty description="Crea tu primer habito">
-          <Button type="primary" onClick={openCreate} style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f" }}>Crear habito</Button>
-        </Empty>
+        <div className="hf-empty">
+          <b>Todavía no tienes hábitos</b>
+          <p style={{ margin: "0 0 16px" }}>Crea el primero con el botón +.</p>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            Crear hábito
+          </Button>
+        </div>
       ) : (
         <>
           <CollapsibleHabitSection

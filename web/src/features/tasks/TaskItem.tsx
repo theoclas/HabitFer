@@ -25,8 +25,8 @@ export function TaskItem({ task, loading, onToggle, onOpen }: Props) {
         padding: "14px 12px",
         marginBottom: 8,
         borderRadius: 12,
-        background: "#1e293b",
-        border: "1px solid #334155",
+        background: "var(--hf-surface)",
+        border: "1px solid var(--hf-line)",
         opacity: done ? 0.7 : 1,
       }}
       onClick={() => onOpen?.(task)}
@@ -55,7 +55,7 @@ export function TaskItem({ task, loading, onToggle, onOpen }: Props) {
             )}
           </Space>
         </div>
-        {task.status === "IN_PROGRESS" && <CheckOutlined style={{ color: "#22d3ee" }} />}
+        {task.status === "IN_PROGRESS" && <CheckOutlined style={{ color: "var(--hf-blue)" }} />}
       </div>
     </List.Item>
   );

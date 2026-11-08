@@ -97,7 +97,7 @@ export function RemindersBell() {
             renderItem={(item) => (
               <List.Item style={{ cursor: "pointer" }} onClick={() => void handleOpenItem(item)}>
                 <List.Item.Meta
-                  avatar={item.sourceType === "HABIT" ? <FireOutlined style={{ color: "#22d3ee" }} /> : <CheckSquareOutlined style={{ color: "#38bdf8" }} />}
+                  avatar={item.sourceType === "HABIT" ? <FireOutlined style={{ color: "#FF7A1A" }} /> : <CheckSquareOutlined style={{ color: "#4FD1E8" }} />}
                   title={item.title}
                   description={
                     <Space direction="vertical" size={0}>

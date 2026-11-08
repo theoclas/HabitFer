@@ -47,6 +47,14 @@ export function startOfToday(): Date {
   return parseDateKey(localTodayKey());
 }
 
+/** Calendar day (YYYY-MM-DD) of a real instant, in the server's local time zone. */
+export function localDateKey(instant: Date): string {
+  const y = instant.getFullYear();
+  const m = String(instant.getMonth() + 1).padStart(2, '0');
+  const d = String(instant.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Real instant where a calendar day (UTC-midnight key) starts in the server's local time zone.
  * Use it to filter timestamp columns (createdAt, updatedAt) by the user's day.
