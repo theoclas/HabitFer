@@ -8,7 +8,8 @@ import { apiErrorMessage } from "../format";
 
 type Props = { open: boolean; onClose: () => void };
 
-const MAX_FILE_MB = 10;
+/** El nginx del servidor acepta hasta 5 MB por pedido (deploy/host-nginx/habitfer.conf). */
+const MAX_FILE_MB = 4;
 
 function reportLines(r: ImportReport): string[] {
   const lines: [number, string, string][] = [
@@ -65,7 +66,9 @@ export function DataSheet({ open, onClose }: Props) {
       notifyHabitsChanged();
       message.success("Respaldo importado");
     } catch (err) {
-      message.error(err instanceof Error && !("response" in err) ? err.message : apiErrorMessage(err, "No se pudo importar"));
+      const status = (err as { response?: { status?: number } }).response?.status;
+      if (status === 413) message.error(`El respaldo es demasiado grande para subirlo (máximo ${MAX_FILE_MB} MB).`);
+      else message.error(err instanceof Error && !("response" in err) ? err.message : apiErrorMessage(err, "No se pudo importar"));
     } finally {
       setBusy(null);
       if (fileRef.current) fileRef.current.value = "";
