@@ -1,14 +1,8 @@
-import { CalendarOutlined, CoffeeOutlined, DollarOutlined, ProjectOutlined, RightOutlined } from "@ant-design/icons";
+import { RightOutlined } from "@ant-design/icons";
 import { Card, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
+import { AppGlyph } from "./AppGlyph";
 import { APPS, type AppId, setLastApp } from "./apps";
-
-const icons: Record<AppId, React.ReactNode> = {
-  habitfer: <CalendarOutlined />,
-  proyecfer: <ProjectOutlined />,
-  fernance: <DollarOutlined />,
-  nutrifer: <CoffeeOutlined />,
-};
 
 export function AppPickerPage() {
   const navigate = useNavigate();
@@ -41,12 +35,7 @@ export function AppPickerPage() {
               styles={{ body: { padding: "20px 22px" } }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-                <div
-                  className="picker-app-card__icon"
-                  style={{ background: `${app.color}20`, color: app.color }}
-                >
-                  {icons[app.id]}
-                </div>
+                <AppGlyph id={app.id} size={52} />
                 <div style={{ flex: 1 }}>
                   <Typography.Title level={4} style={{ margin: 0, color: app.color, fontFamily: "var(--font-display)" }}>
                     {app.name}

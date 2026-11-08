@@ -1,7 +1,8 @@
-import { AppstoreOutlined, DownOutlined } from "@ant-design/icons";
-import { Dropdown } from "antd";
-import type { MenuProps } from "antd";
+import { DownOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { AppGlyph } from "./AppGlyph";
+import { AppLauncher } from "./AppLauncher";
 import { APPS, type AppId, setLastApp } from "./apps";
 
 function detectCurrentApp(pathname: string): AppId {
@@ -11,47 +12,55 @@ function detectCurrentApp(pathname: string): AppId {
   return "habitfer";
 }
 
-/** `compact`: solo el icono (en el celular el encabezado no da para el nombre). */
+/** Botón para cambiar de app; abre el lanzador. `compact`: solo el ícono (en el celular no cabe el nombre). */
 export function AppSwitcher({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
   const current = detectCurrentApp(location.pathname);
   const config = APPS[current];
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
 
-  const items: MenuProps["items"] = (Object.values(APPS) as (typeof APPS)[AppId][]).map((app) => ({
-    key: app.id,
-    label: (
-      <div>
-        <div style={{ fontWeight: 700, color: app.color }}>{app.name}</div>
-        <div style={{ fontSize: 11, color: "#64748b" }}>{app.description}</div>
-      </div>
-    ),
-  }));
+  // Si cambia la página (por ejemplo con el botón atrás), el lanzador se cierra.
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
-  const onClick: MenuProps["onClick"] = ({ key }) => {
-    const id = key as AppId;
-    if (id === current) return;
-    setLastApp(id);
-    navigate(APPS[id].basePath);
-  };
+  const close = useCallback((restoreFocus: boolean) => {
+    setOpen(false);
+    if (restoreFocus) buttonRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const launch = useCallback(
+    (id: AppId) => {
+      setLastApp(id);
+      navigate(APPS[id].basePath);
+    },
+    [navigate],
+  );
 
   return (
-    <Dropdown menu={{ items, onClick, selectedKeys: [current] }} trigger={["click"]}>
+    <>
       <button
+        ref={buttonRef}
         type="button"
         className={`app-switcher-btn${compact ? " app-switcher-btn--compact" : ""}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         aria-label={compact ? `Cambiar de app (ahora: ${config.name})` : undefined}
         title={compact ? config.name : undefined}
+        onClick={() => setOpen((v) => !v)}
         style={{
           "--switcher-border": `${config.color}44`,
           "--switcher-bg": `${config.color}14`,
           "--switcher-color": config.color,
         } as React.CSSProperties}
       >
-        <AppstoreOutlined />
-        {!compact && config.name}
-        {!compact && <DownOutlined style={{ fontSize: 10, opacity: 0.7 }} />}
+        <AppGlyph id={current} size={compact ? 24 : 22} />
+        {!compact && <span className="app-switcher-btn__name">{config.name}</span>}
+        {!compact && <DownOutlined className="app-switcher-btn__chev" />}
       </button>
-    </Dropdown>
+      {open && <AppLauncher current={current} anchor={buttonRef.current} onClose={close} onLaunch={launch} />}
+    </>
   );
 }
