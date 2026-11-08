@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchProfile, previewProfile, saveProfile } from "../api";
-import { gramsText, kcalText } from "../math";
+import { gramsText, kcalText, mlText } from "../math";
 import { MEAL_ORDER, type ActivityLevel, type MealSlot, type ProfileInput, type Sex, type Targets, type WeightGoal } from "../types";
 
 type Form = {
@@ -21,9 +21,13 @@ type Form = {
   fatTarget: number | null;
   carbsTarget: number | null;
   mealNames: Record<MealSlot, string>;
+  waterGoalMl: number;
+  glassMl: number;
 };
 
 const RATES = [0.25, 0.5, 0.75, 1];
+const GLASSES = [200, 250, 300, 350];
+const WATER_GOALS = [1500, 2000, 2500, 3000];
 const GOAL_VERB: Record<WeightGoal, string> = { LOSE: "bajar", MAINTAIN: "mantener", GAIN: "subir" };
 const year = new Date().getFullYear();
 
@@ -72,6 +76,8 @@ export function NutriGoalPage() {
           fatTarget: p?.targets.fat ?? null,
           carbsTarget: p?.targets.carbs ?? null,
           mealNames: r.mealNames,
+          waterGoalMl: p?.waterGoalMl ?? 2000,
+          glassMl: p?.glassMl ?? 250,
         });
       })
       .catch((err) => message.error(apiErrorMessage(err, "No se pudo cargar tu meta")));
@@ -125,6 +131,8 @@ export function NutriGoalPage() {
             }
           : {}),
         mealNames: form.mealNames,
+        waterGoalMl: form.waterGoalMl,
+        glassMl: form.glassMl,
       });
       message.success("Meta guardada");
       if (!hadProfile) navigate("/app/nutrifer");
@@ -141,12 +149,13 @@ export function NutriGoalPage() {
     : preview;
 
   return (
-    <div className="nf-goal" style={{ display: "grid", gap: 16 }}>
-      <div>
+    <div className="nf-goal">
+      <div className="nf-goal__intro">
         <h1 className="nf-page-title">Tu meta</h1>
         <p className="nf-page-lead">Con tus datos calculo cuánto gastas al día y cuánto te conviene comer. Puedes cambiarla cuando quieras.</p>
       </div>
 
+      <div className="nf-goal__a">
       <section className="nf-card" aria-labelledby="nf-goal-body">
         <h2 id="nf-goal-body">Tus datos</h2>
         <div className="nf-field">
@@ -222,7 +231,10 @@ export function NutriGoalPage() {
         )}
       </section>
 
-      <section className="nf-card" aria-labelledby="nf-goal-result" aria-live="polite">
+      </div>
+
+      <aside className="nf-goal__result">
+      <section className="nf-card nf-card--hero" aria-labelledby="nf-goal-result" aria-live="polite">
         <h2 id="nf-goal-result">Tu meta diaria</h2>
         {shown ? (
           <>
@@ -295,6 +307,43 @@ export function NutriGoalPage() {
           </div>
         )}
       </section>
+      {/* En el computador, la meta queda fija a la derecha con su botón de guardar. */}
+      <Button className="nf-only-desktop" type="primary" size="large" block loading={saving} disabled={!input} onClick={() => void save()}>
+        Guardar mi meta
+      </Button>
+      </aside>
+
+      <div className="nf-goal__b">
+      <section className="nf-card" aria-labelledby="nf-goal-water">
+        <h2 id="nf-goal-water">Agua</h2>
+        <div className="nf-field">
+          <span className="nf-label" id="nf-water-goal-label">
+            Meta al día
+          </span>
+          <div className="nf-chips" role="group" aria-labelledby="nf-water-goal-label">
+            {WATER_GOALS.map((ml) => (
+              <button key={ml} type="button" className="nf-chip" aria-pressed={form.waterGoalMl === ml} onClick={() => set("waterGoalMl", ml)}>
+                {mlText(ml)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="nf-field">
+          <span className="nf-label" id="nf-glass-label">
+            Tu vaso
+          </span>
+          <div className="nf-chips" role="group" aria-labelledby="nf-glass-label">
+            {GLASSES.map((ml) => (
+              <button key={ml} type="button" className="nf-chip" aria-pressed={form.glassMl === ml} onClick={() => set("glassMl", ml)}>
+                {ml} ml
+              </button>
+            ))}
+          </div>
+          <span className="nf-hint">
+            Son {Math.round(form.waterGoalMl / form.glassMl)} vasos al día. Cada toque en «Un vaso» suma {form.glassMl} ml.
+          </span>
+        </div>
+      </section>
 
       <section className="nf-card" aria-labelledby="nf-goal-meals">
         <h2 id="nf-goal-meals">Nombres de tus comidas</h2>
@@ -309,8 +358,9 @@ export function NutriGoalPage() {
           ))}
         </div>
       </section>
+      </div>
 
-      <div className="nf-actions" style={{ bottom: 0, marginBottom: 0, padding: "4px 0 0", background: "transparent" }}>
+      <div className="nf-actions nf-goal__actions nf-only-mobile" style={{ bottom: 0, marginBottom: 0, padding: "4px 0 0", background: "transparent" }}>
         <Button type="primary" size="large" loading={saving} disabled={!input} onClick={() => void save()}>
           Guardar mi meta
         </Button>

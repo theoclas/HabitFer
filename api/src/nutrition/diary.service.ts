@@ -1,72 +1,25 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, type MealEntry } from '@prisma/client';
-import { parseDateKey, toDateKey } from '../common/date.utils';
+import { Prisma, type MealSlot } from '@prisma/client';
+import { addDays, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
-import { amountText, computeEntry, EntryInputError, type EntryInput, type FoodForEntry } from './entry.utils';
+import { checkedDate, computeOr400, entryView, FOOD_FOR_ENTRY, fromTemplate, totalsOf, type FoodRow, type Template } from './entry.shared';
+import { amountText } from './entry.utils';
 import { MEAL_ORDER, mealNames } from './meals';
-import type { CreateEntryDto, UpdateEntryDto } from './nutrition.dto';
-import { roundTotals, scale, sumTotals, type Totals } from './nutrition-math';
+import type { CopyDto, CreateEntryDto, QuickEntryDto, RepeatEntryDto, UpdateEntryDto, WaterDto } from './nutrition.dto';
+import { roundTotals, scale, sumTotals } from './nutrition-math';
+import { habitualSuggestions, previousMeals } from './suggest.utils';
 
-const FOOD_FOR_ENTRY = {
-  portions: true,
-  parts: { orderBy: { sortOrder: 'asc' }, include: { food: true } },
-} satisfies Prisma.FoodInclude;
+/** Agua por defecto: 8 vasos de 250 ml. */
+export const DEFAULT_WATER_GOAL_ML = 2000;
+export const DEFAULT_GLASS_ML = 250;
+/** Días hacia atrás para saber «lo de siempre». */
+const HABIT_WINDOW_DAYS = 14;
+/** Hasta cuántos días atrás se ofrece «repetir lo de ayer». */
+const REPEAT_WINDOW_DAYS = 7;
 
-type FoodRow = Prisma.FoodGetPayload<{ include: typeof FOOD_FOR_ENTRY }>;
+const r1 = (n: number) => Math.round(n * 10) / 10;
 
-function asFood(row: FoodRow): FoodForEntry {
-  return {
-    id: row.id,
-    name: row.name,
-    kcal: row.kcal,
-    protein: row.protein,
-    fat: row.fat,
-    carbs: row.carbs,
-    fiber: row.fiber,
-    sugar: row.sugar,
-    sodium: row.sodium,
-    portions: row.portions.map((p) => ({ id: p.id, label: p.label, grams: p.grams, isDefault: p.isDefault })),
-    parts: row.parts.map((p) => ({ id: p.id, label: p.label, grams: p.grams, foodId: p.foodId, food: p.food })),
-  };
-}
-
-function totalsOf(e: Pick<MealEntry, 'kcal' | 'protein' | 'fat' | 'carbs' | 'fiber' | 'sugar' | 'sodium'>): Totals {
-  return { kcal: e.kcal, protein: e.protein, fat: e.fat, carbs: e.carbs, fiber: e.fiber ?? 0, sugar: e.sugar ?? 0, sodium: e.sodium ?? 0 };
-}
-
-export function entryView(e: MealEntry) {
-  return {
-    id: e.id,
-    date: toDateKey(e.date),
-    meal: e.meal,
-    foodId: e.foodId,
-    name: e.name,
-    portionLabel: e.portionLabel,
-    portionGrams: e.portionGrams,
-    quantity: e.quantity,
-    grams: e.grams,
-    amount: amountText(e),
-    kcal: e.kcal,
-    protein: e.protein,
-    fat: e.fat,
-    carbs: e.carbs,
-    fiber: e.fiber,
-    sugar: e.sugar,
-    sodium: e.sodium,
-    parts: e.parts,
-  };
-}
-
-/** AAAA-MM-DD que exista de verdad (no 2026-02-31) y razonable. */
-export function checkedDate(key: string): Date {
-  const date = parseDateKey(key);
-  if (Number.isNaN(date.getTime()) || toDateKey(date) !== key) throw new BadRequestException('Esa fecha no existe.');
-  const year = date.getUTCFullYear();
-  if (year < 2000 || year > new Date().getFullYear() + 1) throw new BadRequestException('Esa fecha está fuera de rango.');
-  return date;
-}
-
-/** El diario: lo que se anotó cada día, por comidas, con sus sumas y la meta. */
+/** El diario: lo que se anotó cada día, por comidas, con sus sumas, la meta, el agua y sugerencias. */
 @Injectable()
 export class DiaryService {
   constructor(private prisma: PrismaService) {}
@@ -80,22 +33,39 @@ export class DiaryService {
     return food;
   }
 
-  private compute(food: FoodRow, input: EntryInput) {
-    try {
-      return computeEntry(asFood(food), input);
-    } catch (err) {
-      if (err instanceof EntryInputError) throw new BadRequestException(err.message);
-      throw err;
-    }
-  }
-
   async day(userId: string, dateKey: string) {
     const date = checkedDate(dateKey);
-    const [entries, profile] = await Promise.all([
+    const weekFrom = addDays(date, -6);
+    const [entries, past, profile, extra, weekRows] = await Promise.all([
       this.prisma.mealEntry.findMany({ where: { userId, date }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }),
+      this.prisma.mealEntry.findMany({
+        where: { userId, date: { gte: addDays(date, -HABIT_WINDOW_DAYS), lt: date } },
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+        take: 2000,
+      }),
       this.prisma.nutritionProfile.findUnique({ where: { userId } }),
+      this.prisma.nutritionDay.findUnique({ where: { userId_date: { userId, date } } }),
+      this.prisma.mealEntry.groupBy({
+        by: ['date'],
+        where: { userId, date: { gte: weekFrom, lte: date } },
+        _sum: { kcal: true },
+        _count: { _all: true },
+      }),
     ]);
+    const weekBy = new Map(weekRows.map((r) => [toDateKey(r.date), r]));
+    /** Los 7 días que terminan en este (para la tira de la semana). */
+    const week = Array.from({ length: 7 }, (_, i) => {
+      const key = toDateKey(addDays(weekFrom, i));
+      const row = weekBy.get(key);
+      return { date: key, kcal: Math.round(row?._sum.kcal ?? 0), count: row?._count._all ?? 0 };
+    });
     const names = mealNames(profile?.mealNames);
+    const history = past.map((e) => ({ ...e, date: toDateKey(e.date) }));
+    const habitual = habitualSuggestions(
+      history,
+      entries.map((e) => ({ meal: e.meal, foodId: e.foodId })),
+    );
+    const previous = previousMeals(history, toDateKey(addDays(date, -REPEAT_WINDOW_DAYS)));
     const meals = MEAL_ORDER.map((slot) => {
       const list = entries.filter((e) => e.meal === slot);
       return {
@@ -103,6 +73,17 @@ export class DiaryService {
         name: names[slot],
         entries: list.map(entryView),
         totals: roundTotals(sumTotals(list.map(totalsOf))),
+        /** Lo de siempre en esta comida que aún no está anotado (se confirma con un toque). */
+        suggestions: (habitual.get(slot) ?? []).map(({ template: t, days }) => ({
+          entryId: t.id,
+          foodId: t.foodId,
+          name: t.name,
+          amount: amountText(t),
+          kcal: Math.round(t.kcal),
+          days,
+        })),
+        /** La última vez que esta comida tuvo algo (para «repetir lo de ayer»). */
+        previous: previous.meals.get(slot) ?? null,
       };
     });
     return {
@@ -112,13 +93,21 @@ export class DiaryService {
       targets: profile
         ? { kcal: profile.kcalTarget, protein: profile.proteinTarget, fat: profile.fatTarget, carbs: profile.carbsTarget }
         : null,
+      /** El último día con algo anotado antes de este (para repetir el día entero). */
+      previousDay: previous.day,
+      week,
+      water: {
+        ml: extra?.waterMl ?? 0,
+        goalMl: profile?.waterGoalMl ?? DEFAULT_WATER_GOAL_ML,
+        glassMl: profile?.glassMl ?? DEFAULT_GLASS_ML,
+      },
     };
   }
 
   async add(userId: string, dto: CreateEntryDto) {
     const date = checkedDate(dto.date);
     const food = await this.loadFood(userId, dto.foodId);
-    const v = this.compute(food, dto);
+    const v = computeOr400(food, dto);
     const created = await this.prisma.mealEntry.create({
       data: {
         userId,
@@ -132,6 +121,28 @@ export class DiaryService {
         grams: v.grams,
         ...v.totals,
         parts: v.parts ?? Prisma.DbNull,
+        prep: v.prep,
+        oilGrams: v.oilGrams,
+      },
+    });
+    return entryView(created);
+  }
+
+  /** Solo un número de calorías (y los macros que se sepan), sin buscar el alimento. */
+  async addQuick(userId: string, dto: QuickEntryDto) {
+    const date = checkedDate(dto.date);
+    const created = await this.prisma.mealEntry.create({
+      data: {
+        userId,
+        date,
+        meal: dto.meal,
+        quick: true,
+        name: dto.name?.trim() || 'Registro rápido',
+        quantity: 1,
+        kcal: Math.round(dto.kcal),
+        protein: r1(dto.protein ?? 0),
+        fat: r1(dto.fat ?? 0),
+        carbs: r1(dto.carbs ?? 0),
       },
     });
     return entryView(created);
@@ -144,14 +155,32 @@ export class DiaryService {
     if (dto.date) data.date = checkedDate(dto.date);
     if (dto.meal) data.meal = dto.meal;
 
-    const amountChanged = dto.quantity !== undefined || dto.grams !== undefined || dto.portionId !== undefined || dto.parts !== undefined;
+    const manual = dto.name !== undefined || dto.kcal !== undefined || dto.protein !== undefined || dto.fat !== undefined || dto.carbs !== undefined;
+    if (entry.quick) {
+      if (dto.name !== undefined) data.name = dto.name.trim() || 'Registro rápido';
+      if (dto.kcal !== undefined) data.kcal = Math.round(dto.kcal);
+      if (dto.protein !== undefined) data.protein = r1(dto.protein);
+      if (dto.fat !== undefined) data.fat = r1(dto.fat);
+      if (dto.carbs !== undefined) data.carbs = r1(dto.carbs);
+      return entryView(await this.prisma.mealEntry.update({ where: { id: entry.id }, data }));
+    }
+    if (manual) throw new BadRequestException('Las calorías a mano solo se cambian en un registro rápido.');
+
+    const amountChanged =
+      dto.quantity !== undefined ||
+      dto.grams !== undefined ||
+      dto.portionId !== undefined ||
+      dto.parts !== undefined ||
+      dto.prep !== undefined ||
+      dto.oilGrams !== undefined;
     if (amountChanged) {
       const food = entry.foodId
         ? await this.prisma.food.findFirst({ where: { id: entry.foodId, OR: [{ ownerId: null }, { ownerId: userId }] }, include: FOOD_FOR_ENTRY })
         : null;
       if (food) {
         const savedParts = Array.isArray(entry.parts) ? (entry.parts as { partId?: string; included?: boolean; grams?: number }[]) : [];
-        const v = this.compute(food, {
+        const prep = dto.prep !== undefined ? dto.prep : entry.prep;
+        const v = computeOr400(food, {
           portionId: dto.portionId,
           // Sin medida nueva se queda la que tenía (o sus gramos si se anotó en gramos).
           portionLabel: dto.portionId || dto.grams !== undefined ? undefined : (entry.portionLabel ?? undefined),
@@ -162,6 +191,9 @@ export class DiaryService {
             savedParts
               .filter((p) => typeof p.partId === 'string')
               .map((p) => ({ partId: p.partId as string, included: p.included !== false, grams: typeof p.grams === 'number' ? p.grams : undefined })),
+          prep,
+          // Quitar la preparación quita también su aceite.
+          oilGrams: dto.oilGrams !== undefined ? dto.oilGrams : dto.prep === null ? null : entry.oilGrams,
         });
         Object.assign(data, {
           name: v.name,
@@ -171,6 +203,8 @@ export class DiaryService {
           grams: v.grams,
           ...v.totals,
           parts: v.parts ?? Prisma.DbNull,
+          prep: v.prep,
+          oilGrams: v.oilGrams,
         });
       } else {
         // El alimento ya no existe: se escalan los valores guardados con la nueva cantidad.
@@ -189,5 +223,78 @@ export class DiaryService {
     const { count } = await this.prisma.mealEntry.deleteMany({ where: { id, userId } });
     if (count === 0) throw new NotFoundException('Esa anotación no existe.');
     return { ok: true };
+  }
+
+  /** Borrar varias de una vez (deshacer lo que se acaba de agregar, vaciar una comida). */
+  async removeMany(userId: string, ids: string[]) {
+    const { count } = await this.prisma.mealEntry.deleteMany({ where: { userId, id: { in: ids } } });
+    return { removed: count };
+  }
+
+  /**
+   * Anota de nuevo cada plantilla en su día y comida, en el mismo orden. Devuelve lo anotado.
+   * Lo usan repetir, copiar y las comidas guardadas.
+   */
+  async cloneInto(userId: string, items: { template: Template; date: Date; meal: MealSlot }[]) {
+    if (items.length === 0) return [];
+    const ids = [...new Set(items.map((i) => i.template.foodId).filter((x): x is string => !!x))];
+    const foods = ids.length
+      ? await this.prisma.food.findMany({ where: { id: { in: ids }, OR: [{ ownerId: null }, { ownerId: userId }] }, include: FOOD_FOR_ENTRY })
+      : [];
+    const byId = new Map(foods.map((f) => [f.id, f]));
+    const base = Date.now();
+    const rows = await this.prisma.$transaction(
+      items.map(({ template, date, meal }, i) => {
+        const data: Prisma.MealEntryUncheckedCreateInput = {
+          ...fromTemplate(template, template.foodId ? byId.get(template.foodId) : undefined),
+          userId,
+          date,
+          meal,
+          // Un milisegundo de diferencia para que se queden en el mismo orden.
+          createdAt: new Date(base + i),
+        };
+        return this.prisma.mealEntry.create({ data });
+      }),
+    );
+    return rows.map(entryView);
+  }
+
+  /** Volver a anotar algo que ya se anotó (los recientes y «lo de siempre»). */
+  async repeat(userId: string, id: string, dto: RepeatEntryDto) {
+    const entry = await this.prisma.mealEntry.findFirst({ where: { id, userId } });
+    if (!entry) throw new NotFoundException('Esa anotación no existe.');
+    const [created] = await this.cloneInto(userId, [{ template: entry, date: checkedDate(dto.date), meal: dto.meal }]);
+    return created;
+  }
+
+  /** Copiar una comida (o el día entero) a otro día y, si se quiere, a otra comida. */
+  async copy(userId: string, dto: CopyDto) {
+    const from = checkedDate(dto.fromDate);
+    const to = checkedDate(dto.toDate);
+    if (dto.toMeal && !dto.fromMeal) throw new BadRequestException('Para copiar a otra comida, elige qué comida copiar.');
+    const toMeal = dto.toMeal ?? dto.fromMeal;
+    if (dto.fromDate === dto.toDate && (!dto.fromMeal || toMeal === dto.fromMeal)) {
+      throw new BadRequestException('Elige otro día u otra comida para copiar.');
+    }
+    const sources = await this.prisma.mealEntry.findMany({
+      where: { userId, date: from, ...(dto.fromMeal ? { meal: dto.fromMeal } : {}) },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    if (sources.length === 0) throw new BadRequestException('No hay nada anotado para copiar.');
+    const entries = await this.cloneInto(
+      userId,
+      sources.map((t) => ({ template: t, date: to, meal: toMeal ?? t.meal })),
+    );
+    return { entries, kcal: Math.round(entries.reduce((s, e) => s + e.kcal, 0)) };
+  }
+
+  /** Sumar (o restar) agua del día. */
+  async addWater(userId: string, dto: WaterDto) {
+    const date = checkedDate(dto.date);
+    const key = { userId_date: { userId, date } };
+    const current = await this.prisma.nutritionDay.findUnique({ where: key });
+    const ml = Math.max(0, Math.min(20000, (current?.waterMl ?? 0) + dto.deltaMl));
+    await this.prisma.nutritionDay.upsert({ where: key, create: { userId, date, waterMl: ml }, update: { waterMl: ml } });
+    return { date: dto.date, ml };
   }
 }

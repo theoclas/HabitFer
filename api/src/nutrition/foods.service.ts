@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/com
 import { FoodSource, MealSlot, Prisma } from '@prisma/client';
 import { addDays, startOfToday } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
+import { amountText } from './entry.utils';
 import type { CreateFoodDto } from './nutrition.dto';
 import { normalize, rank, withoutWords, wordsOf, type SearchItem } from './search.utils';
 
@@ -30,7 +31,36 @@ export const SOURCE_LABELS: Record<FoodSource, string> = {
   USDA: 'USDA FoodData Central',
   OFF: 'Open Food Facts',
   USER: 'Creado por ti',
+  RECIPE: 'Receta tuya',
 };
+
+/** Lo que se anotó la última vez de un alimento, para repetirlo igual con un toque. */
+export type LastAmount = { entryId: string; portionLabel: string | null; quantity: number; grams: number | null; kcal: number; amount: string };
+
+const LAST_SELECT = {
+  id: true,
+  foodId: true,
+  meal: true,
+  portionLabel: true,
+  quantity: true,
+  grams: true,
+  prep: true,
+  oilGrams: true,
+  kcal: true,
+  createdAt: true,
+} satisfies Prisma.MealEntrySelect;
+
+type LastRow = Prisma.MealEntryGetPayload<{ select: typeof LAST_SELECT }>;
+
+const lastOf = (e: LastRow): LastAmount => ({
+  entryId: e.id,
+  portionLabel: e.portionLabel,
+  quantity: e.quantity,
+  grams: e.grams,
+  // Lo de la última vez, con sus calorías reales (en un plato, sin las partes que se quitaron; con el aceite).
+  kcal: Math.round(e.kcal),
+  amount: amountText(e),
+});
 
 /** Nutrientes extra que se muestran en el detalle, con su unidad. */
 const EXTRA_NUTRIENTS: { key: string; label: string; unit: string }[] = [
@@ -135,64 +165,137 @@ export class FoodsService implements OnModuleInit {
     return rank(items, q, 25).map((it) => toResult(it.row));
   }
 
-  /** Lo que más anotas, primero lo de esta comida; con la última cantidad para repetirla con un toque. */
+  /**
+   * Lo que más anotas, primero lo de esta comida (que es como decir «a esta hora del día»), con la
+   * última cantidad para repetirla con un toque.
+   */
   async recent(userId: string, meal?: MealSlot) {
     const entries = await this.prisma.mealEntry.findMany({
-      where: { userId, foodId: { not: null }, date: { gte: addDays(startOfToday(), -45) } },
+      where: { userId, foodId: { not: null }, quick: false, date: { gte: addDays(startOfToday(), -45) } },
       orderBy: { createdAt: 'desc' },
-      take: 300,
-      select: { foodId: true, meal: true, portionLabel: true, quantity: true, grams: true, kcal: true, createdAt: true },
+      take: 400,
+      select: LAST_SELECT,
     });
-    type Info = { count: number; sameMeal: number; last: (typeof entries)[number] };
+    type Info = { count: number; sameMeal: number; last: LastRow; lastSameMeal: LastRow | null };
     const byFood = new Map<string, Info>();
     for (const e of entries) {
       const key = e.foodId as string;
+      const same = e.meal === meal;
       const info = byFood.get(key);
       if (info) {
         info.count++;
-        if (e.meal === meal) info.sameMeal++;
-      } else byFood.set(key, { count: 1, sameMeal: e.meal === meal ? 1 : 0, last: e });
+        if (same) {
+          info.sameMeal++;
+          info.lastSameMeal ??= e;
+        }
+      } else byFood.set(key, { count: 1, sameMeal: same ? 1 : 0, last: e, lastSameMeal: same ? e : null });
     }
     const top = [...byFood.entries()]
       .sort((a, b) => b[1].sameMeal - a[1].sameMeal || b[1].count - a[1].count || b[1].last.createdAt.getTime() - a[1].last.createdAt.getTime())
       .slice(0, 12);
     if (top.length === 0) return [];
-    const rows = await this.prisma.food.findMany({
-      where: { id: { in: top.map(([id]) => id) }, archived: false, OR: [{ ownerId: null }, { ownerId: userId }] },
-      select: SUMMARY_SELECT,
-    });
+    const [rows, favs] = await Promise.all([
+      this.prisma.food.findMany({
+        where: { id: { in: top.map(([id]) => id) }, archived: false, OR: [{ ownerId: null }, { ownerId: userId }] },
+        select: SUMMARY_SELECT,
+      }),
+      this.favoriteIds(userId),
+    ]);
     const byId = new Map(rows.map((r) => [r.id, r]));
     return top
       .filter(([id]) => byId.has(id))
       .map(([id, info]) => ({
         ...toResult(byId.get(id) as SummaryRow),
         timesUsed: info.count,
-        // Lo de la última vez, con sus calorías reales (en un plato, sin las partes que se quitaron).
-        last: { portionLabel: info.last.portionLabel, quantity: info.last.quantity, grams: info.last.grams, kcal: Math.round(info.last.kcal) },
+        favorite: favs.has(id),
+        // En esta comida se repite lo de esta comida (el tinto del desayuno no es el de la tarde).
+        last: lastOf(info.lastSameMeal ?? info.last),
       }));
   }
 
-  async detail(userId: string, id: string) {
-    const food = await this.prisma.food.findFirst({
-      where: { id, OR: [{ ownerId: null }, { ownerId: userId }] },
-      include: {
-        portions: { orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }] },
-        parts: {
-          orderBy: { sortOrder: 'asc' },
-          include: { food: { select: { id: true, name: true, kcal: true, protein: true, fat: true, carbs: true, fiber: true, sugar: true, sodium: true } } },
-        },
-      },
+  private async favoriteIds(userId: string): Promise<Set<string>> {
+    const rows = await this.prisma.foodFavorite.findMany({ where: { userId }, select: { foodId: true } });
+    return new Set(rows.map((r) => r.foodId));
+  }
+
+  /** Favoritos (los más recientes primero), con lo que se anotó la última vez si ya se anotaron. */
+  async favorites(userId: string) {
+    const favs = await this.prisma.foodFavorite.findMany({
+      where: { userId, food: { archived: false, OR: [{ ownerId: null }, { ownerId: userId }] } },
+      orderBy: { createdAt: 'desc' },
+      take: 60,
+      select: { food: { select: SUMMARY_SELECT } },
     });
+    if (favs.length === 0) return [];
+    const ids = favs.map((f) => f.food.id);
+    const lasts = await this.prisma.mealEntry.findMany({
+      where: { userId, foodId: { in: ids }, quick: false },
+      orderBy: { createdAt: 'desc' },
+      distinct: ['foodId'],
+      select: LAST_SELECT,
+    });
+    const lastBy = new Map(lasts.map((e) => [e.foodId as string, e]));
+    return favs.map(({ food }) => {
+      const last = lastBy.get(food.id);
+      return { ...toResult(food), favorite: true, last: last ? lastOf(last) : null };
+    });
+  }
+
+  /**
+   * Lo que sale al abrir una comida: favoritos y lo que más anotas ahí (sin repetir: un favorito
+   * que también es reciente se queda arriba, con la cantidad que se usa en esta comida).
+   */
+  async shortcuts(userId: string, meal?: MealSlot) {
+    const [favorites, recents] = await Promise.all([this.favorites(userId), this.recent(userId, meal)]);
+    const recentById = new Map(recents.map((r) => [r.id, r]));
+    const favIds = new Set(favorites.map((f) => f.id));
+    return {
+      favorites: favorites.map((f) => ({ ...f, last: recentById.get(f.id)?.last ?? f.last })),
+      recents: recents.filter((r) => !favIds.has(r.id)),
+    };
+  }
+
+  async setFavorite(userId: string, foodId: string, on: boolean) {
+    const food = await this.prisma.food.findFirst({ where: { id: foodId, OR: [{ ownerId: null }, { ownerId: userId }] }, select: { id: true } });
+    if (!food) throw new NotFoundException('Ese alimento no existe.');
+    if (on) {
+      await this.prisma.foodFavorite.upsert({ where: { userId_foodId: { userId, foodId } }, create: { userId, foodId }, update: {} });
+    } else {
+      await this.prisma.foodFavorite.deleteMany({ where: { userId, foodId } });
+    }
+    return { foodId, favorite: on };
+  }
+
+  async detail(userId: string, id: string) {
+    const [food, fav] = await Promise.all([
+      this.prisma.food.findFirst({
+        where: { id, OR: [{ ownerId: null }, { ownerId: userId }] },
+        include: {
+          portions: { orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }] },
+          parts: {
+            orderBy: { sortOrder: 'asc' },
+            include: { food: { select: { id: true, name: true, kcal: true, protein: true, fat: true, carbs: true, fiber: true, sugar: true, sodium: true } } },
+          },
+          _count: { select: { ingredients: true } },
+        },
+      }),
+      this.prisma.foodFavorite.findUnique({ where: { userId_foodId: { userId, foodId: id } }, select: { foodId: true } }),
+    ]);
     if (!food) throw new NotFoundException('Ese alimento no existe.');
     const extra = food.nutrients && typeof food.nutrients === 'object' && !Array.isArray(food.nutrients) ? (food.nutrients as Record<string, unknown>) : {};
+    const servings = food.servings ?? null;
     return {
       id: food.id,
       name: food.name,
       category: food.category,
       brand: food.brand,
       source: food.source,
-      sourceLabel: SOURCE_LABELS[food.source],
+      sourceLabel:
+        food.source === FoodSource.RECIPE && servings
+          ? `Receta tuya · ${food._count.ingredients} ingredientes · ${String(Math.round(servings * 10) / 10).replace('.', ',')} porciones`
+          : SOURCE_LABELS[food.source],
       own: food.ownerId === userId,
+      favorite: fav !== null,
       per100: {
         kcal: Math.round(food.kcal),
         protein: r1(food.protein),

@@ -83,7 +83,9 @@ export const PORTIONS: PortionRule[] = [
   ...byCode(['E003', 'E004'], [['Porción', 80, true], ['Lata escurrida', 120]]),
   { code: 'F125', portions: [['Unidad', 40, true]] },
   ...byCode(['F051', 'F053'], [['Tajada', 20, true]]),
-  ...byCode(['H008', 'H003', 'H004'], vaso),
+  ...byCode(['H003', 'H004'], vaso),
+  // Gaseosa: el vaso, la botella personal (400 ml) y la lata.
+  { code: 'H008', portions: [['Vaso', 250, true], ['Botella personal', 400], ['Lata', 330], ['Vaso mediano', 200]] },
   { code: 'H006', portions: [['Botella o lata', 330, true]] },
   ...byCode(['G002', 'G028'], [['Vaso', 200, true]]),
   ...byCode(['K010', 'K011'], [['Pastilla', 20, true]]),

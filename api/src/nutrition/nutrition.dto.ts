@@ -1,7 +1,8 @@
-import { MealSlot, Sex, WeightGoal } from '@prisma/client';
+import { CookMethod, MealSlot, Sex, WeightGoal } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -95,6 +96,17 @@ export class CreateEntryDto {
   @ValidateNested({ each: true })
   @Type(() => EntryPartDto)
   parts?: EntryPartDto[];
+
+  /** Cómo se preparó; con aceite se suman sus calorías. */
+  @IsOptional()
+  @IsEnum(CookMethod, { message: 'Preparación no válida.' })
+  prep?: CookMethod;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(300, { message: 'Es demasiado aceite para una sola anotación.' })
+  oilGrams?: number;
 }
 
 export class UpdateEntryDto {
@@ -129,6 +141,234 @@ export class UpdateEntryDto {
   @ValidateNested({ each: true })
   @Type(() => EntryPartDto)
   parts?: EntryPartDto[];
+
+  /** null quita la preparación (y su aceite). */
+  @IsOptional()
+  @IsEnum(CookMethod, { message: 'Preparación no válida.' })
+  prep?: CookMethod | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(300, { message: 'Es demasiado aceite para una sola anotación.' })
+  oilGrams?: number | null;
+
+  /** Solo en un registro rápido: nombre, calorías y macros. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(80, { message: 'El nombre es demasiado largo.' })
+  name?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10000, { message: 'Revisa las calorías: son demasiadas.' })
+  kcal?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  protein?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  fat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  carbs?: number;
+}
+
+/** Registro rápido: solo un número de calorías (y si se quiere, los macros). */
+export class QuickEntryDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  meal!: MealSlot;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80, { message: 'El nombre es demasiado largo.' })
+  name?: string;
+
+  @IsNumber({}, { message: 'Escribe las calorías.' })
+  @Min(1, { message: 'Escribe las calorías.' })
+  @Max(10000, { message: 'Revisa las calorías: son demasiadas.' })
+  kcal!: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  protein?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  fat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  carbs?: number;
+}
+
+/** Volver a anotar algo (una anotación vieja) en otro día o comida. */
+export class RepeatEntryDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  meal!: MealSlot;
+}
+
+/** Borrar varias anotaciones de una vez (deshacer, vaciar una comida). */
+export class RemoveEntriesDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(200)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  ids!: string[];
+}
+
+/** Copiar una comida (o el día entero si no se dice cuál) a otro día. */
+export class CopyDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  fromDate!: string;
+
+  @IsOptional()
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  fromMeal?: MealSlot;
+
+  @Matches(DATE_KEY, DATE_MSG)
+  toDate!: string;
+
+  /** Comida de destino (por defecto la misma). */
+  @IsOptional()
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  toMeal?: MealSlot;
+}
+
+export class WaterDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsInt({ message: 'El agua va en mililitros.' })
+  @Min(-5000)
+  @Max(5000)
+  deltaMl!: number;
+}
+
+export class SavedMealCreateDto {
+  @IsString()
+  @MinLength(1, { message: 'Ponle un nombre.' })
+  @MaxLength(80, { message: 'El nombre es demasiado largo.' })
+  name!: string;
+
+  /** La comida que se guarda: lo anotado ese día en esa comida. */
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  meal!: MealSlot;
+}
+
+export class SavedMealUpdateDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1, { message: 'Ponle un nombre.' })
+  @MaxLength(80, { message: 'El nombre es demasiado largo.' })
+  name?: string;
+
+  /** Lo que se queda (lo demás se quita). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Deja al menos una cosa en la comida guardada.' })
+  @ArrayMaxSize(60)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  itemIds?: string[];
+}
+
+export class SavedMealLogDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  meal!: MealSlot;
+
+  /** Solo estas cosas (por defecto, todas). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Elige al menos una cosa.' })
+  @ArrayMaxSize(60)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  itemIds?: string[];
+}
+
+export class RecipeIngredientDto {
+  @IsString()
+  @MaxLength(40)
+  foodId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  portionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  portionLabel?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1, { message: 'Los gramos deben ser mayores que cero.' })
+  @Max(20000, { message: 'Son demasiados gramos para un ingrediente.' })
+  grams?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.05, { message: 'La cantidad debe ser mayor que cero.' })
+  @Max(200, { message: 'La cantidad es demasiado grande.' })
+  quantity?: number;
+}
+
+/** Receta propia: ingredientes de la olla entera y cuántas porciones salen. */
+export class RecipeDto {
+  @IsString()
+  @MinLength(2, { message: 'Escribe el nombre de la receta.' })
+  @MaxLength(120, { message: 'El nombre es demasiado largo.' })
+  name!: string;
+
+  @IsNumber({}, { message: 'Di cuántas porciones salen.' })
+  @Min(0.5, { message: 'Debe salir al menos media porción.' })
+  @Max(100, { message: 'Son demasiadas porciones.' })
+  servings!: number;
+
+  /** Lo que pesó la olla al final (opcional). */
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50000, { message: 'Revisa el peso de la olla.' })
+  cookedGrams?: number | null;
+
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Agrega al menos un ingrediente.' })
+  @ArrayMaxSize(80, { message: 'Son demasiados ingredientes.' })
+  @ValidateNested({ each: true })
+  @Type(() => RecipeIngredientDto)
+  ingredients!: RecipeIngredientDto[];
 }
 
 /** Alimento propio: valores por la porción que diga el usuario (o por 100 g si no la da). */
@@ -252,4 +492,18 @@ export class ProfileDto {
   @IsOptional()
   @IsObject()
   mealNames?: Record<string, string>;
+
+  /** Agua al día, en mililitros. */
+  @IsOptional()
+  @IsInt()
+  @Min(500, { message: 'La meta de agua debe estar entre 500 y 8.000 ml.' })
+  @Max(8000, { message: 'La meta de agua debe estar entre 500 y 8.000 ml.' })
+  waterGoalMl?: number;
+
+  /** Tamaño del vaso, en mililitros. */
+  @IsOptional()
+  @IsInt()
+  @Min(100, { message: 'El vaso debe tener entre 100 y 1.000 ml.' })
+  @Max(1000, { message: 'El vaso debe tener entre 100 y 1.000 ml.' })
+  glassMl?: number;
 }

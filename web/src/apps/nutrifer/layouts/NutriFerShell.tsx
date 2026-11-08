@@ -1,4 +1,4 @@
-import { AimOutlined, BulbOutlined, CalendarOutlined, MoonOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import { AimOutlined, BulbOutlined, CalendarOutlined, FireOutlined, MoonOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -13,6 +13,7 @@ import "../theme/nutrifer.css";
 const BASE = "/app/nutrifer";
 const NAV = [
   { key: BASE, label: "Hoy", icon: <CalendarOutlined /> },
+  { key: `${BASE}/cocina`, label: "Cocina", icon: <FireOutlined /> },
   { key: `${BASE}/meta`, label: "Meta", icon: <AimOutlined /> },
 ];
 
@@ -23,7 +24,7 @@ const PREF_LABEL: Record<NfThemePref, string> = {
   dark: "Tema: oscuro",
 };
 
-/** NutriFer: comida colombiana y calorías. Encabezado propio, «Hoy» y «Meta». */
+/** NutriFer: comida colombiana y calorías. Encabezado propio, «Hoy», «Cocina» y «Meta». */
 export function NutriFerShell() {
   const { pref, mode, setPref } = useNfTheme();
   const isMobile = useIsMobile();
@@ -35,7 +36,7 @@ export function NutriFerShell() {
     setLastApp("nutrifer");
   }, []);
 
-  const current = location.pathname.startsWith(`${BASE}/meta`) ? `${BASE}/meta` : BASE;
+  const current = NAV.find((n) => n.key !== BASE && location.pathname.startsWith(n.key))?.key ?? BASE;
   const themeIcon = pref === "auto" ? <BulbOutlined /> : pref === "light" ? <SunOutlined /> : <MoonOutlined />;
 
   return (

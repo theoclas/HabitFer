@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { NutritionProfile, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { DEFAULT_GLASS_ML, DEFAULT_WATER_GOAL_ML } from './diary.service';
 import { DEFAULT_MEAL_NAMES, MEAL_ORDER, mealNames } from './meals';
 import type { ProfileDto } from './nutrition.dto';
 import { ACTIVITY_LEVELS, computeTargets, type ProfileInput } from './nutrition-math';
@@ -18,6 +19,8 @@ function view(p: NutritionProfile) {
     manual: p.manual,
     targets: { kcal: p.kcalTarget, protein: p.proteinTarget, fat: p.fatTarget, carbs: p.carbsTarget },
     suggested,
+    waterGoalMl: p.waterGoalMl ?? DEFAULT_WATER_GOAL_ML,
+    glassMl: p.glassMl ?? DEFAULT_GLASS_ML,
   };
 }
 
@@ -64,6 +67,8 @@ export class ProfileService {
       proteinTarget: manual ? (dto.proteinTarget ?? t.protein) : t.protein,
       fatTarget: manual ? (dto.fatTarget ?? t.fat) : t.fat,
       carbsTarget: manual ? (dto.carbsTarget ?? t.carbs) : t.carbs,
+      ...(dto.waterGoalMl !== undefined ? { waterGoalMl: dto.waterGoalMl } : {}),
+      ...(dto.glassMl !== undefined ? { glassMl: dto.glassMl } : {}),
     };
     const names = cleanMealNames(dto.mealNames, current?.mealNames);
     await this.prisma.nutritionProfile.upsert({

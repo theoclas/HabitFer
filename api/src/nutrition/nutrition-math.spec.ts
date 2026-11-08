@@ -5,6 +5,7 @@ import {
   dishTotals,
   formatQuantity,
   per100FromParts,
+  recipeValues,
   roundTotals,
   scale,
   sumTotals,
@@ -109,5 +110,37 @@ describe('porciones y sumas', () => {
     expect(formatQuantity(0.5)).toBe('½');
     expect(formatQuantity(1.5)).toBe('1½');
     expect(formatQuantity(0.25)).toBe('0,25');
+  });
+});
+
+describe('recetas', () => {
+  const t = (kcal: number, protein = 0) => ({ kcal, protein, fat: 0, carbs: 0, fiber: 0, sugar: 0, sodium: 0 });
+
+  it('reparte la olla por porciones y por 100 g de la suma de ingredientes', () => {
+    const r = recipeValues(
+      [
+        { grams: 500, totals: t(600, 40) },
+        { grams: 1500, totals: t(0) },
+      ],
+      4,
+    );
+    expect(r.rawGrams).toBe(2000);
+    expect(r.weight).toBe(2000);
+    expect(r.servingGrams).toBe(500);
+    expect(r.perServing.kcal).toBe(150);
+    expect(r.perServing.protein).toBe(10);
+    expect(r.per100.kcal).toBe(30);
+  });
+
+  it('si se pesó la olla, los 100 g son del peso final', () => {
+    const r = recipeValues([{ grams: 1000, totals: t(800) }], 4, 1600);
+    expect(r.weight).toBe(1600);
+    expect(r.servingGrams).toBe(400);
+    expect(r.per100.kcal).toBe(50);
+    expect(r.perServing.kcal).toBe(200);
+  });
+
+  it('sin porciones válidas cuenta una', () => {
+    expect(recipeValues([{ grams: 100, totals: t(100) }], 0).perServing.kcal).toBe(100);
   });
 });

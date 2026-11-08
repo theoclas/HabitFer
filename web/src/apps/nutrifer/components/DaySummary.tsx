@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { intText, kcalText, remaining } from "../math";
 import type { MacroTargets, Totals } from "../types";
 
@@ -6,6 +7,7 @@ const C = 2 * Math.PI * R;
 
 /** Anillo de calorías: lo que queda para la meta (o lo comido si aún no hay meta). */
 export function CalorieRing({ eaten, target }: { eaten: number; target: number | null }) {
+  const gid = `nf-ring-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const over = target != null && eaten > target;
   const pct = target ? Math.min(1, eaten / target) : 0;
   const big = target ? Math.abs(remaining(target, eaten)) : Math.round(eaten);
@@ -16,6 +18,12 @@ export function CalorieRing({ eaten, target }: { eaten: number; target: number |
   return (
     <div className={`nf-ring${over ? " nf-ring--over" : ""}`}>
       <svg viewBox="0 0 120 120" role="img" aria-label={aria}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" style={{ stopColor: "var(--nf-aguacate)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--nf-accent)" }} />
+          </linearGradient>
+        </defs>
         <circle className="nf-ring__track" cx="60" cy="60" r={R} fill="none" strokeWidth="11" />
         {pct > 0 && (
           <circle
@@ -28,6 +36,7 @@ export function CalorieRing({ eaten, target }: { eaten: number; target: number |
             strokeLinecap="round"
             strokeDasharray={`${pct * C} ${C}`}
             transform="rotate(-90 60 60)"
+            style={over ? undefined : { stroke: `url(#${gid})` }}
           />
         )}
         <text className="nf-ring__big" x="60" y="62" textAnchor="middle">

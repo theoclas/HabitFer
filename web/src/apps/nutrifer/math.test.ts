@@ -1,7 +1,23 @@
 // Pruebas de las cuentas de NutriFer en el teléfono. Corren con el runner de Node: npm test
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { gramsText, kcalText, previewAmount, quantityText, remaining, scale } from "./math.ts";
+import {
+  canPrep,
+  gramsForGoal,
+  gramsText,
+  kcalText,
+  mlText,
+  oilText,
+  previewAmount,
+  quantityText,
+  recipePreview,
+  relativeDay,
+  remaining,
+  scale,
+  shiftDay,
+  suggestedOil,
+} from "./math.ts";
+import { defaultAmount, lastAmount, portionText } from "./format.ts";
 import type { FoodDetail } from "./types.ts";
 
 const arepa: FoodDetail = {
@@ -52,4 +68,85 @@ test("textos", () => {
   assert.equal(quantityText(1.5), "1½");
   assert.equal(quantityText(2), "2");
   assert.equal(remaining(2000, 1437.6), 562);
+});
+
+const pechuga: FoodDetail = {
+  ...arepa,
+  id: "p",
+  name: "Pollo, pechuga sin piel, cruda",
+  category: "Carnes y derivados",
+  per100: { kcal: 120, protein: 23.5, fat: 2.6, carbs: 0 },
+  portions: [{ id: "filete", label: "Filete", grams: 150, isDefault: true }],
+};
+
+test("cómo se preparó: el aceite que suele llevar", () => {
+  assert.equal(suggestedOil("COCIDO", 150), 0);
+  assert.equal(suggestedOil("FRITO", 150), 15);
+  assert.equal(suggestedOil("ASADO", 150), 5);
+  assert.equal(suggestedOil("FRITO", 10), 2.5, "media cucharadita como mínimo");
+  assert.equal(oilText(5), "1 cucharadita (5 g)");
+  assert.equal(oilText(2.5), "½ cucharadita (2,5 g)");
+  assert.equal(oilText(0), "Sin aceite");
+});
+
+test("solo se pregunta cómo se preparó lo que se cocina y no viene ya frito", () => {
+  assert.equal(canPrep(pechuga), true);
+  assert.equal(canPrep({ ...pechuga, name: "Pollo, pechuga sin piel, frita sin sal" }), false);
+  assert.equal(canPrep({ ...pechuga, category: "Frutas y derivados" }), false);
+  assert.equal(canPrep(bandeja), false);
+  assert.equal(canPrep({ ...pechuga, source: "RECIPE" }), false);
+  assert.equal(canPrep({ ...pechuga, category: null }), false);
+});
+
+test("el aceite suma 9 kcal por gramo", () => {
+  const sin = previewAmount(pechuga, { portionId: "filete", quantity: 1 });
+  const frita = previewAmount(pechuga, { portionId: "filete", quantity: 1, prep: "FRITO", oilGrams: 15 });
+  assert.equal(frita.grams, sin.grams, "los gramos son del pollo");
+  assert.equal(Math.round(frita.totals.kcal - sin.totals.kcal), 135);
+  assert.equal(Math.round(frita.totals.fat - sin.totals.fat), 15);
+});
+
+test("anotar por meta: 30 g de proteína de pechuga", () => {
+  assert.equal(gramsForGoal(pechuga.per100, "protein", 30), 128);
+  assert.equal(gramsForGoal(pechuga.per100, "kcal", 300), 250);
+  assert.equal(gramsForGoal(pechuga.per100, "carbs", 30), null, "la pechuga no tiene carbohidratos");
+  assert.equal(gramsForGoal(pechuga.per100, "protein", 0), null);
+});
+
+test("receta: por porción y por el peso de la olla", () => {
+  const items = [
+    { per100: { kcal: 300, protein: 20, fat: 1, carbs: 50 }, grams: 500 },
+    { per100: { kcal: 0, protein: 0, fat: 0, carbs: 0 }, grams: 1500 },
+  ];
+  const r = recipePreview(items, 4);
+  assert.equal(r.weight, 2000);
+  assert.equal(r.servingGrams, 500);
+  assert.equal(r.perServing.kcal, 375);
+  assert.equal(r.perServing.protein, 25);
+  const pesada = recipePreview(items, 4, 1200);
+  assert.equal(pesada.servingGrams, 300);
+  assert.equal(pesada.perServing.kcal, 375, "pesar la olla no cambia las calorías de una porción");
+});
+
+test("agua y días", () => {
+  assert.equal(mlText(300), "300 ml");
+  assert.equal(mlText(2000), "2 L");
+  assert.equal(mlText(1250), "1,25 L");
+  assert.equal(shiftDay("2026-03-01", -1), "2026-02-28");
+  assert.equal(shiftDay("2026-12-31", 1), "2027-01-01");
+  assert.equal(relativeDay("2026-11-08", "2026-11-08"), "hoy");
+  assert.equal(relativeDay("2026-11-07", "2026-11-08"), "ayer");
+  assert.equal(relativeDay("2026-11-03", "2026-11-08"), "el martes");
+  assert.equal(relativeDay("2026-10-30", "2026-11-08"), "el 30 de oct.");
+});
+
+test("textos de las filas", () => {
+  assert.deepEqual(lastAmount({ entryId: "e", portionLabel: "Pocillo tintero", quantity: 2, grams: 240, kcal: 10 }), { text: "2 × pocillo tintero · 240 g", kcal: 10 });
+  assert.deepEqual(lastAmount({ entryId: "e", portionLabel: null, quantity: 1, grams: 128, kcal: 154 }), { text: "128 g", kcal: 154 });
+  const r = { id: "a", name: "Arepa", category: null, source: "TCAC" as const, kcal100: 157, portion: { id: "peq", label: "Arepa pequeña", grams: 56 }, kcalPortion: 88, isDish: false };
+  assert.deepEqual(defaultAmount(r), { text: "1 arepa pequeña · 56 g", kcal: 88 });
+  assert.deepEqual(defaultAmount({ ...r, portion: null, kcalPortion: null }), { text: "100 g", kcal: 157 });
+  assert.equal(portionText("2 huevos", 1), "2 huevos");
+  assert.equal(portionText("2 huevos", 2), "2 × 2 huevos");
+  assert.equal(portionText("Pocillo", 1.5), "1½ × pocillo");
 });

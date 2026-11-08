@@ -1,4 +1,4 @@
-import { amountText, computeEntry, EntryInputError, type FoodForEntry } from './entry.utils';
+import { amountText, computeEntry, EntryInputError, inputFromSaved, type FoodForEntry } from './entry.utils';
 
 const arepa: FoodForEntry = {
   id: 'arepa',
@@ -105,5 +105,72 @@ describe('amountText', () => {
     expect(amountText({ portionLabel: 'Plato', quantity: 0.5, grams: 115 })).toBe('½ × plato · 115 g');
     expect(amountText({ portionLabel: null, quantity: 1, grams: 150 })).toBe('150 g');
     expect(amountText({ portionLabel: '100 g', quantity: 1, grams: 100 })).toBe('100 g');
+  });
+
+  it('una medida que ya dice cuántos no lleva «1» delante', () => {
+    expect(amountText({ portionLabel: '2 huevos', quantity: 1, grams: 150 })).toBe('2 huevos · 150 g');
+    expect(amountText({ portionLabel: '2 huevos', quantity: 2, grams: 300 })).toBe('2 × 2 huevos · 300 g');
+  });
+});
+
+describe('preparación y aceite', () => {
+  const huevo: FoodForEntry = {
+    id: 'huevo',
+    name: 'Huevo de gallina, entero, crudo',
+    kcal: 143,
+    protein: 12.6,
+    fat: 9.5,
+    carbs: 0.7,
+    portions: [{ id: 'p-u', label: 'Unidad', grams: 50, isDefault: true }],
+    parts: [],
+  };
+
+  it('frito con una cucharadita: suma 45 kcal y 5 g de grasa', () => {
+    const solo = computeEntry(huevo, {});
+    const frito = computeEntry(huevo, { prep: 'FRITO', oilGrams: 5 });
+    expect(frito).toMatchObject({ prep: 'FRITO', oilGrams: 5, grams: 50 });
+    expect(frito.totals.kcal).toBe(solo.totals.kcal + 45);
+    expect(frito.totals.fat).toBeCloseTo(solo.totals.fat + 5, 5);
+  });
+
+  it('cocido sin aceite guarda la preparación y no suma nada', () => {
+    const v = computeEntry(huevo, { prep: 'COCIDO', oilGrams: 0 });
+    expect(v).toMatchObject({ prep: 'COCIDO', oilGrams: null });
+    expect(v.totals.kcal).toBe(computeEntry(huevo, {}).totals.kcal);
+  });
+
+  it('un plato por partes no lleva aceite aparte (ya trae el suyo)', () => {
+    const v = computeEntry(bandeja, { prep: 'FRITO', oilGrams: 10 });
+    expect(v).toMatchObject({ prep: null, oilGrams: null });
+  });
+
+  it('el aceite tiene tope', () => {
+    expect(computeEntry(huevo, { prep: 'FRITO', oilGrams: 900 }).oilGrams).toBe(300);
+  });
+
+  it('el texto dice cómo se preparó y cuánto aceite lleva', () => {
+    expect(amountText({ portionLabel: 'Unidad', quantity: 1, grams: 50, prep: 'FRITO', oilGrams: 5 })).toBe('1 unidad · 50 g · frito, +5 g de aceite');
+    expect(amountText({ portionLabel: null, quantity: 1, grams: 150, prep: 'ASADO', oilGrams: 2.5 })).toBe('150 g · asado, +2,5 g de aceite');
+    expect(amountText({ portionLabel: null, quantity: 1, grams: 150, prep: 'COCIDO', oilGrams: null })).toBe('150 g · cocido');
+  });
+});
+
+describe('inputFromSaved: repetir igual', () => {
+  it('misma medida, cantidad y preparación', () => {
+    const saved = computeEntry(arepa, { portionId: 'p-med', quantity: 2, prep: 'ASADO', oilGrams: 5 });
+    const again = computeEntry(arepa, inputFromSaved(saved));
+    expect(again).toEqual(saved);
+  });
+
+  it('en gramos', () => {
+    const saved = computeEntry(arepa, { grams: 123 });
+    expect(computeEntry(arepa, inputFromSaved(saved)).grams).toBe(123);
+  });
+
+  it('un plato sin el chicharrón sigue sin el chicharrón', () => {
+    const saved = computeEntry(bandeja, { parts: [{ partId: 'chicharron', included: false }] });
+    const again = computeEntry(bandeja, inputFromSaved(saved));
+    expect(again.totals.kcal).toBe(saved.totals.kcal);
+    expect(again.parts?.find((p) => p.partId === 'chicharron')?.included).toBe(false);
   });
 });

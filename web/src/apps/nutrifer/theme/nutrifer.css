@@ -26,6 +26,8 @@
   --nf-mora: #9C2F5E;
   --nf-aguacate: #5A8A2C;
   --nf-lulo: #C4621A;
+  --nf-agua: #2A7AB8;
+  --nf-agua-soft: #DCEBF6;
   --nf-glass: rgba(243, 246, 241, 0.9);
   --nf-shadow: 0 12px 32px -18px rgba(20, 32, 25, 0.35);
 }
@@ -46,6 +48,8 @@
   --nf-mora: #E36C9B;
   --nf-aguacate: #9CCB5A;
   --nf-lulo: #F2A65A;
+  --nf-agua: #6BB6EC;
+  --nf-agua-soft: #16293A;
   --nf-glass: rgba(13, 19, 16, 0.88);
   --nf-shadow: 0 14px 36px -18px rgba(0, 0, 0, 0.75);
 }
@@ -159,7 +163,7 @@
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   background: var(--nf-glass);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -547,7 +551,525 @@
 .nf-explain { font-size: 0.88rem; color: var(--nf-muted); line-height: 1.55; margin: 0; }
 .nf-explain b { color: var(--nf-ink); }
 
+/* =========================================================================
+   Fase 1 · anotar en segundos
+   ========================================================================= */
+
+/* ---------- Comida: menú, pie y «lo de siempre» ---------- */
+.nf-meal__head { justify-content: flex-start; }
+.nf-meal__kcal { margin-left: auto; }
+.nf-meal__menu {
+  width: 34px;
+  height: 34px;
+  margin: -8px -8px -8px 0;
+  align-self: center;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--nf-muted);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex: none;
+}
+.nf-meal__menu:hover { background: var(--nf-sunk); color: var(--nf-ink); }
+.nf-meal__foot { display: flex; flex-wrap: wrap; border-top: 1px solid var(--nf-line); }
+.nf-meal__foot .nf-meal__add { width: auto; flex: 1 1 auto; border-top: 0; }
+.nf-meal__repeat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--nf-body);
+  font: 600 0.88rem/1.2 var(--nf-text);
+  text-align: left;
+  cursor: pointer;
+}
+.nf-meal__repeat small { color: var(--nf-muted); font-weight: 500; }
+.nf-meal__repeat:hover { background: var(--nf-sunk); }
+.nf-meal__repeat:disabled { opacity: 0.6; cursor: default; }
+
+.nf-suggest {
+  border-top: 1px dashed var(--nf-line);
+  padding: 6px 0 4px;
+  background: var(--nf-accent-soft);
+  background: color-mix(in srgb, var(--nf-accent-soft) 45%, transparent);
+}
+.nf-suggest__label {
+  padding: 6px 16px 2px;
+  font: 700 0.7rem/1 var(--nf-text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nf-accent);
+}
+.nf-suggest__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 12px 6px 16px;
+}
+.nf-suggest__name { color: var(--nf-body); font-weight: 600; overflow-wrap: anywhere; }
+.nf-suggest__name small { display: block; font-weight: 400; font-size: 0.8rem; color: var(--nf-muted); }
+.nf-suggest__yes,
+.nf-suggest__no {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+.nf-suggest__yes { border: 1px solid var(--nf-accent); background: var(--nf-accent); color: var(--nf-accent-ink); }
+.nf-suggest__no { border: 1px solid var(--nf-line); background: var(--nf-surface); color: var(--nf-muted); }
+.nf-suggest__yes:disabled,
+.nf-suggest__no:disabled { opacity: 0.6; cursor: default; }
+
+/* ---------- Agua ---------- */
+.nf-water {
+  background: var(--nf-surface);
+  border: 1px solid var(--nf-line);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+.nf-water__head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; }
+.nf-water__title { margin: 0; font: 700 1.08rem/1.2 var(--nf-display); color: var(--nf-ink); }
+.nf-water__amount { font-size: 0.88rem; color: var(--nf-muted); font-variant-numeric: tabular-nums; }
+.nf-water__amount b { color: var(--nf-agua); }
+.nf-water.is-done .nf-water__amount { color: var(--nf-agua); font-weight: 600; }
+.nf-water__glasses { display: flex; flex-wrap: wrap; gap: 2px; }
+.nf-glass {
+  width: 34px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--nf-faint);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  cursor: pointer;
+}
+.nf-glass:hover { background: var(--nf-sunk); }
+.nf-glass.is-full { color: var(--nf-agua); }
+.nf-glass-icon__glass { stroke: currentColor; }
+.nf-glass-icon__water { fill: var(--nf-agua); opacity: 0.85; }
+.nf-water__actions { display: flex; gap: 8px; }
+.nf-water__minus {
+  width: 46px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--nf-line);
+  background: var(--nf-surface);
+  color: var(--nf-ink);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+.nf-water__plus {
+  flex: 1;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--nf-agua-soft);
+  color: var(--nf-agua);
+  font: 700 0.95rem/1 var(--nf-text);
+  cursor: pointer;
+}
+.nf-water__plus small { font-weight: 500; opacity: 0.85; }
+.nf-water__minus:disabled,
+.nf-water__plus:disabled { opacity: 0.5; cursor: default; }
+
+/* ---------- Hoja de agregar: atajos ---------- */
+.nf-quickbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 2px 0 4px; }
+.nf-quickbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--nf-line);
+  background: var(--nf-surface);
+  color: var(--nf-ink);
+  font: 600 0.9rem/1.15 var(--nf-text);
+  text-align: center;
+  cursor: pointer;
+}
+.nf-quickbar__btn:hover { border-color: var(--nf-accent); }
+.nf-quickbar__btn .anticon { color: var(--nf-maiz); }
+.nf-quickbar__btn .nf-glass-icon { font-size: 18px; color: var(--nf-agua); flex: none; }
+.nf-chips--sm { gap: 6px; }
+.nf-chips--sm .nf-chip { padding: 8px 12px; font-size: 0.84rem; }
+.nf-chips--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  margin: 0 -2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nf-chips--scroll::-webkit-scrollbar { display: none; }
+.nf-chips--scroll .nf-chip { flex: none; }
+.nf-badge--recipe { color: var(--nf-mora); }
+.nf-badge--saved { color: var(--nf-agua); }
+.nf-star-mini { color: var(--nf-maiz); margin-right: 5px; font-size: 0.85em; }
+
+/* ---------- Detalle: estrella, por meta y aceite ---------- */
+.nf-detail__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: 8px 0 16px; }
+.nf-star {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--nf-line);
+  background: var(--nf-surface);
+  color: var(--nf-muted);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex: none;
+}
+.nf-star:hover { border-color: var(--nf-maiz); }
+.nf-star.is-on { color: var(--nf-maiz); border-color: var(--nf-maiz); }
+.nf-goalbox { padding: 12px; border-radius: 16px; background: var(--nf-sunk); }
+.nf-goalbox .nf-chip { background: var(--nf-surface); }
+.nf-goalbox .nf-chip[aria-pressed="true"] { background: var(--nf-accent); }
+.nf-goalbox__row { display: flex; align-items: center; gap: 10px; }
+.nf-goalbox__result { margin: 0; color: var(--nf-body); }
+.nf-goalbox__result b { color: var(--nf-accent); font: 800 1.2rem/1 var(--nf-display); }
+.nf-warn { margin: 0; color: var(--nf-lulo); font-size: 0.85rem; font-weight: 600; }
+.nf-oil {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--nf-line);
+}
+.nf-oil__text { color: var(--nf-body); min-width: 0; }
+.nf-oil__text b { color: var(--nf-ink); }
+.nf-oil__text small { color: var(--nf-lulo); font-weight: 600; font-size: 0.82rem; }
+.nf-oil__btns { display: flex; gap: 6px; flex: none; }
+.nf-oil__btns button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--nf-line);
+  background: var(--nf-surface);
+  color: var(--nf-ink);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+.nf-oil__btns button:disabled { opacity: 0.4; cursor: default; }
+
+/* ---------- Avisos con «Deshacer» ---------- */
+.nf-undo { display: inline-flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; }
+.nf-undo__btn {
+  border: 0;
+  background: transparent;
+  color: var(--nf-accent, #2B7A4A);
+  font-weight: 700;
+  padding: 2px 4px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Día: llamado suave, herramientas, fecha ---------- */
+.nf-callout--soft { background: var(--nf-surface); border: 1px dashed var(--nf-line); }
+.nf-daytools { display: flex; justify-content: center; }
+.nf-daytools .ant-btn { color: var(--nf-muted); }
+.nf-date {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--nf-line);
+  background: var(--nf-surface);
+  color: var(--nf-body);
+  font: 600 0.84rem/1 var(--nf-text);
+}
+:root[data-nf-theme="dark"] .nf-date { color-scheme: dark; }
+
+/* ---------- Cocina: listas ---------- */
+.nf-card__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nf-list { display: grid; border: 1px solid var(--nf-line); border-radius: 14px; overflow: hidden; }
+.nf-list > * + * { border-top: 1px solid var(--nf-line); }
+.nf-list__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  background: var(--nf-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nf-list__row:hover { background: var(--nf-sunk); }
+.nf-list__row--static { cursor: default; }
+.nf-list__row--static:hover { background: var(--nf-surface); }
+.nf-list__main { display: grid; gap: 2px; min-width: 0; }
+.nf-list__main b { color: var(--nf-ink); font-weight: 600; overflow-wrap: anywhere; }
+.nf-list__main small { color: var(--nf-muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+.nf-list__main--btn { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.nf-list__side { display: grid; justify-items: end; gap: 1px; }
+.nf-list__side b { color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-list__side small { color: var(--nf-muted); font-size: 0.72rem; white-space: nowrap; }
+.nf-list__chev { color: var(--nf-faint); font-size: 12px; transition: transform 0.2s ease; }
+.nf-list__group.is-open .nf-list__chev { transform: rotate(90deg); }
+.nf-list__items { display: grid; padding: 2px 12px 12px; background: var(--nf-surface); }
+.nf-list__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--nf-line);
+}
+.nf-list__item > span:first-child { color: var(--nf-body); overflow-wrap: anywhere; min-width: 0; }
+.nf-list__item small { display: block; color: var(--nf-muted); font-size: 0.78rem; }
+.nf-list__kcal { font-weight: 600; color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-list__tools { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; }
+.nf-icon-btn--sm { width: 32px; height: 32px; font-size: 12px; }
+
+/* =========================================================================
+   Estructura de las pantallas (una columna en el teléfono)
+   ========================================================================= */
+.nf-today,
+.nf-today__side,
+.nf-today__meals,
+.nf-kitchen,
+.nf-goal,
+.nf-goal__a,
+.nf-goal__b,
+.nf-goal__result,
+.nf-split,
+.nf-split__main,
+.nf-split__side { display: grid; gap: 16px; min-width: 0; align-content: start; }
+
+/* Lo del computador no se ve en el teléfono (y al revés). */
+.nf-col,
+.nf-legend,
+.nf-entry__chev,
+.nf-week { display: none; }
+@media (max-width: 1023px) {
+  .nf-only-desktop { display: none !important; }
+}
+@media (min-width: 1024px) {
+  .nf-only-mobile { display: none !important; }
+}
+
+/* ---------- Últimos 7 días (de tableta para arriba) ---------- */
+@media (min-width: 768px) {
+  .nf-week { display: grid; }
+}
+.nf-week {
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--nf-line);
+  background: var(--nf-surface);
+}
+.nf-week__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.nf-week__title { margin: 0; font: 700 1rem/1.2 var(--nf-display); color: var(--nf-ink); }
+.nf-week__avg { font-size: 0.82rem; color: var(--nf-muted); }
+.nf-week__avg b { color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-week__grid { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.nf-week__goal {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  height: 0;
+  border-top: 1.5px dashed var(--nf-muted);
+  opacity: 0.7;
+  z-index: 1;
+  pointer-events: none;
+}
+.nf-week__day {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--nf-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.nf-week__day:disabled { cursor: default; opacity: 0.4; }
+.nf-week__bar {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  border-radius: 9px;
+  background: var(--nf-sunk);
+  overflow: hidden;
+}
+.nf-week__bar i {
+  display: block;
+  width: 100%;
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(180deg, var(--nf-aguacate), var(--nf-accent));
+  transition: height 0.4s ease;
+}
+.nf-week__bar i.is-over { background: var(--nf-lulo); }
+.nf-week__day:hover:not(:disabled) .nf-week__bar { background: var(--nf-line); }
+.nf-week__day.is-sel .nf-week__bar { outline: 2px solid var(--nf-accent); outline-offset: 2px; }
+.nf-week__label { display: grid; justify-items: center; gap: 1px; font-size: 0.7rem; line-height: 1.15; }
+.nf-week__label b { font-size: 0.86rem; color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-week__day.is-sel .nf-week__label,
+.nf-week__day.is-sel .nf-week__label b { color: var(--nf-accent); }
+.nf-week__foot { margin: 0; font-size: 0.8rem; color: var(--nf-muted); }
+.nf-week__kcal { display: none; font-size: 0.72rem; color: var(--nf-muted); font-variant-numeric: tabular-nums; }
+@media (min-width: 1024px) {
+  .nf-week { padding: 16px 18px 14px; box-shadow: var(--nf-shadow); }
+  .nf-week__grid { gap: 12px; }
+  .nf-week__title { font-size: 1.08rem; }
+  .nf-week__kcal { display: block; margin-top: 2px; }
+}
+
+/* =========================================================================
+   Computador: más ancho, panel fijo a la izquierda y comidas como tabla
+   ========================================================================= */
+@media (min-width: 1024px) {
+  .nf-shell {
+    background:
+      radial-gradient(900px 520px at 100% -8%, color-mix(in srgb, var(--nf-maiz) 11%, transparent), transparent 62%),
+      radial-gradient(760px 480px at -6% 104%, color-mix(in srgb, var(--nf-aguacate) 12%, transparent), transparent 60%),
+      radial-gradient(640px 420px at 46% 120%, color-mix(in srgb, var(--nf-mora) 7%, transparent), transparent 60%),
+      var(--nf-bg);
+    background-attachment: fixed;
+  }
+  .nf-main { max-width: 1180px; padding: 28px 32px 64px; gap: 24px; }
+
+  /* Hoy */
+  .nf-today { grid-template-columns: 340px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .nf-today__side {
+    position: sticky;
+    top: 84px;
+    max-height: calc(100dvh - 100px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding: 2px;
+    margin: -2px;
+  }
+  .nf-today__side .nf-daynav__title { font-size: 1.45rem; }
+  .nf-today__side .nf-summary { grid-template-columns: 1fr; justify-items: center; gap: 18px; padding: 22px; }
+  .nf-today__side .nf-ring svg { width: 176px; height: 176px; }
+  .nf-today__side .nf-macros { width: 100%; }
+  .nf-today__side .nf-callout { flex-direction: column; align-items: stretch; }
+  .nf-today__meals { gap: 16px; }
+
+  .nf-summary,
+  .nf-card--hero {
+    background:
+      radial-gradient(120% 85% at 50% 0%, color-mix(in srgb, var(--nf-accent-soft) 80%, transparent), transparent 70%),
+      var(--nf-surface);
+    box-shadow: var(--nf-shadow);
+  }
+  .nf-meal { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+  .nf-meal:hover { border-color: color-mix(in srgb, var(--nf-accent) 30%, var(--nf-line)); box-shadow: var(--nf-shadow); }
+  .nf-meal__name { font-size: 1.15rem; }
+
+  /* Cocina: recetas en mosaico, guardadas y favoritos lado a lado */
+  .nf-kitchen { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .nf-kitchen__intro,
+  .nf-kitchen__recipes { grid-column: 1 / -1; }
+  .nf-list--tiles {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .nf-list--tiles > * + * { border-top: 0; }
+  .nf-list--tiles > .nf-list__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    min-height: 116px;
+    padding: 16px;
+    border: 1px solid var(--nf-line);
+    border-radius: 16px;
+    background:
+      linear-gradient(160deg, color-mix(in srgb, var(--nf-maiz) 9%, transparent), transparent 55%),
+      var(--nf-surface);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .nf-list--tiles > .nf-list__row:hover { transform: translateY(-2px); box-shadow: var(--nf-shadow); border-color: var(--nf-accent); }
+  .nf-list--tiles .nf-list__main { align-self: stretch; align-content: space-between; }
+  .nf-list--tiles .nf-list__main b { font: 700 1.08rem/1.25 var(--nf-display); }
+  .nf-list--tiles .nf-list__side b { font: 800 1.35rem/1 var(--nf-display); color: var(--nf-accent); }
+  .nf-list--tiles .nf-list__chev { display: none; }
+
+  /* Meta y recetas: el resultado queda fijo a la derecha */
+  .nf-goal { grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto auto auto 1fr; column-gap: 28px; align-items: start; }
+  .nf-goal__intro { grid-column: 1; grid-row: 1; }
+  .nf-goal__a { grid-column: 1; grid-row: 2; }
+  .nf-goal__b { grid-column: 1; grid-row: 3; }
+  .nf-goal__result { grid-column: 2; grid-row: 1 / span 4; position: sticky; top: 84px; }
+  .nf-split { grid-template-columns: minmax(0, 1fr) 380px; column-gap: 28px; align-items: start; }
+  .nf-split__side { position: sticky; top: 84px; }
+  .nf-split__side .nf-actions { position: static; margin: 0; padding: 0; }
+}
+
+/* Pantallas anchas: las comidas se leen como una tabla con proteína, carbohidratos y grasa. */
+@media (min-width: 1280px) {
+  .nf-main { max-width: 1320px; }
+  .nf-today { grid-template-columns: 380px minmax(0, 1fr); }
+
+  .nf-legend,
+  .nf-meal__head,
+  .nf-entry { grid-template-columns: minmax(0, 1fr) 96px 104px 80px 72px 34px; column-gap: 8px; }
+  .nf-col { display: block; text-align: right; font-size: 0.88rem; color: var(--nf-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .nf-legend {
+    display: grid;
+    align-items: center;
+    padding: 0 17px;
+    font: 600 0.76rem/1 var(--nf-text);
+    color: var(--nf-muted);
+  }
+  .nf-legend > span:first-child { font: 700 0.72rem/1 var(--nf-text); letter-spacing: 0.08em; text-transform: uppercase; }
+  .nf-legend .nf-col { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 0.76rem; }
+  .nf-legend .nf-col--p .nf-dot { background: var(--nf-mora); }
+  .nf-legend .nf-col--c .nf-dot { background: var(--nf-maiz); }
+  .nf-legend .nf-col--g .nf-dot { background: var(--nf-aguacate); }
+  .nf-legend__kcal { text-align: right; }
+
+  .nf-meal__head { display: grid; align-items: center; }
+  .nf-meal__head .nf-col { font-weight: 700; color: var(--nf-ink); }
+  .nf-meal__head .nf-meal__kcal { margin-left: 0; text-align: right; }
+  .nf-meal__menu { grid-column: 6; margin: 0; justify-self: center; }
+
+  .nf-entry { row-gap: 2px; }
+  .nf-entry__name { grid-column: 1; grid-row: 1; }
+  .nf-entry__amount { grid-column: 1; grid-row: 2; }
+  .nf-entry .nf-col { grid-row: 1 / span 2; align-self: center; }
+  .nf-entry .nf-col--p { grid-column: 2; }
+  .nf-entry .nf-col--c { grid-column: 3; }
+  .nf-entry .nf-col--g { grid-column: 4; }
+  .nf-entry__kcal { grid-column: 5; grid-row: 1 / span 2; text-align: right; }
+  .nf-entry__chev { display: block; grid-column: 6; grid-row: 1 / span 2; justify-self: center; font-size: 11px; color: var(--nf-faint); }
+  .nf-entry:hover .nf-entry__chev { color: var(--nf-accent); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nf-ring__fill,
-  .nf-bar > i { transition: none; }
+  .nf-bar > i,
+  .nf-list__chev,
+  .nf-week__bar i,
+  .nf-meal,
+  .nf-list--tiles > .nf-list__row { transition: none; }
 }

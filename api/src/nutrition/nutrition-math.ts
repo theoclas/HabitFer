@@ -179,3 +179,43 @@ export function formatQuantity(q: number): string {
   if (frac < 0.01) return String(whole);
   return String(Math.round(q * 100) / 100).replace('.', ',');
 }
+
+/* ---------- Recetas ---------- */
+
+const divide = (t: Totals, by: number): Totals => ({
+  kcal: t.kcal / by,
+  protein: t.protein / by,
+  fat: t.fat / by,
+  carbs: t.carbs / by,
+  fiber: t.fiber / by,
+  sugar: t.sugar / by,
+  sodium: t.sodium / by,
+});
+
+export type RecipeValues = {
+  /** Toda la olla. */
+  totals: Totals;
+  /** Suma de los gramos de los ingredientes. */
+  rawGrams: number;
+  /** Peso con el que se reparte: el de la olla si se pesó, si no la suma de los ingredientes. */
+  weight: number;
+  per100: Totals;
+  servingGrams: number;
+  perServing: Totals;
+};
+
+/** Una receta propia: suma los ingredientes y la reparte por porciones (y por 100 g del peso final). */
+export function recipeValues(items: { grams: number; totals: Totals }[], servings: number, cookedGrams?: number | null): RecipeValues {
+  const rawGrams = items.reduce((g, i) => g + Math.max(0, i.grams), 0);
+  const totals = sumTotals(items.map((i) => i.totals));
+  const weight = cookedGrams && cookedGrams > 0 ? cookedGrams : rawGrams;
+  const s = servings > 0 ? servings : 1;
+  return {
+    totals,
+    rawGrams,
+    weight,
+    per100: weight > 0 ? divide(totals, weight / 100) : { ...ZERO },
+    servingGrams: weight / s,
+    perServing: divide(totals, s),
+  };
+}

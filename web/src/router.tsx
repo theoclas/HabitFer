@@ -8,6 +8,8 @@ import { CreditDetailPage } from "./apps/fernance/pages/CreditDetailPage";
 import { HabitFerShell } from "./apps/habitfer/layouts/HabitFerShell";
 import { NutriFerShell } from "./apps/nutrifer/layouts/NutriFerShell";
 import { NutriGoalPage } from "./apps/nutrifer/pages/NutriGoalPage";
+import { NutriKitchenPage } from "./apps/nutrifer/pages/NutriKitchenPage";
+import { NutriRecipePage } from "./apps/nutrifer/pages/NutriRecipePage";
 import { NutriTodayPage } from "./apps/nutrifer/pages/NutriTodayPage";
 import { ProyecFerShell } from "./apps/proyecfer/layouts/ProyecFerShell";
 import { ProyecFerHomePage } from "./apps/proyecfer/pages/ProyecFerHomePage";
@@ -78,6 +80,8 @@ export function AppRouter() {
         </Route>
         <Route path="/app/nutrifer" element={<NutriFerShell />}>
           <Route index element={<NutriTodayPage />} />
+          <Route path="cocina" element={<NutriKitchenPage />} />
+          <Route path="cocina/receta/:id" element={<NutriRecipePage />} />
           <Route path="meta" element={<NutriGoalPage />} />
         </Route>
         <Route path="/app" element={<AppRedirect />} />

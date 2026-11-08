@@ -1,109 +1,90 @@
-import { LoadingOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Drawer, Input, message, type InputRef } from "antd";
-import axios from "axios";
+import { LoadingOutlined, PlusOutlined, SearchOutlined, StarFilled, StarOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Drawer, Input, message, type InputRef } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { apiErrorMessage } from "../../habitfer/format";
-import { addEntry, foodDetail, recentFoods, searchFoods } from "../api";
-import { kcalText, quantityText } from "../math";
-import type { AmountChoice, FoodDetail, FoodResult, MealSlot, RecentFood } from "../types";
+import { addEntry, addQuickEntry, fetchShortcuts, foodDetail, logSavedMeal, removeEntries, repeatEntry, setFavorite, type QuickInput } from "../api";
+import { defaultAmount, inMeal, lastAmount, thingsText } from "../format";
+import { useFoodSearch } from "../hooks";
+import { kcalText } from "../math";
+import type { AmountChoice, Entry, FavoriteFood, FoodDetail, FoodResult, MealSlot, Remaining, SavedMealView, Shortcuts } from "../types";
 import { AmountEditor } from "./AmountEditor";
 import { CreateFoodForm } from "./CreateFoodForm";
+import { FoodRow } from "./FoodRow";
+import { QuickEntryForm } from "./QuickEntryForm";
+import { GlassIcon } from "./WaterCard";
+import { notifyUndo } from "./undo";
 
 type Props = {
   open: boolean;
   meal: MealSlot | null;
   mealName: string;
   date: string;
+  /** Lo que falta para la meta del día («anotar por meta»). */
+  remaining: Remaining | null;
   onClose: () => void;
   onAdded: () => void;
+  /** Un vaso de agua (va al contador del día, no a la comida). */
+  onWater: () => void;
 };
 
-const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+type View = { kind: "home" } | { kind: "detail"; food: FoodDetail } | { kind: "create" } | { kind: "quick" } | { kind: "saved"; saved: SavedMealView };
 
-function badge(food: FoodResult) {
-  if (food.source === "USER") return <span className="nf-badge nf-badge--own">Tuyo</span>;
-  if (food.isDish || food.source === "DISH") return <span className="nf-badge nf-badge--dish">Plato</span>;
-  if (food.source === "P18") return <span className="nf-badge">ICBF</span>;
-  return null;
-}
+/** Atajos de bebidas: buscan la familia y cada resultado se agrega con su medida (pocillo, vaso, botella). */
+const DRINKS: { label: string; q: string }[] = [
+  { label: "Tinto", q: "tinto" },
+  { label: "Café con leche", q: "cafe con leche" },
+  { label: "Aguapanela", q: "aguapanela" },
+  { label: "Chocolate", q: "chocolate en leche" },
+  { label: "Jugo en agua", q: "jugo en agua" },
+  { label: "Jugo en leche", q: "jugo en leche" },
+  { label: "Gaseosa", q: "gaseosa" },
+  { label: "Leche", q: "leche entera" },
+  { label: "Cerveza", q: "cerveza" },
+];
 
-/** «1 arepa pequeña · 56 g» o «2 × pocillo»: lo que se anotó la última vez. */
-function lastAmount(r: RecentFood): { text: string; kcal: number } {
-  const { portionLabel, quantity, grams, kcal } = r.last;
-  if (!portionLabel) return { text: grams != null ? `${Math.round(grams)} g` : "100 g", kcal };
-  const amount = quantity === 1 ? `1 ${lower(portionLabel)}` : `${quantityText(quantity)} × ${lower(portionLabel)}`;
-  return { text: grams != null ? `${amount} · ${Math.round(grams)} g` : amount, kcal };
-}
-
-function defaultAmount(food: FoodResult): { text: string; kcal: number } {
-  if (food.portion) return { text: `1 ${lower(food.portion.label)} · ${Math.round(food.portion.grams)} g`, kcal: food.kcalPortion ?? food.kcal100 };
-  return { text: "100 g", kcal: food.kcal100 };
-}
-
-/** Buscar y agregar a una comida. Queda abierta para seguir agregando: así se arma un plato rápido. */
-export function AddFoodSheet({ open, meal, mealName, date, onClose, onAdded }: Props) {
+/**
+ * Buscar y agregar a una comida. Arriba, lo de un toque: solo calorías, agua, bebidas, comidas
+ * guardadas, favoritos y lo que más anotas aquí. Queda abierta para seguir agregando.
+ */
+export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, onAdded, onWater }: Props) {
   const isMobile = useIsMobile();
   const inputRef = useRef<InputRef>(null);
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<FoodResult[] | null>(null);
-  const [recents, setRecents] = useState<RecentFood[] | null>(null);
-  const [detail, setDetail] = useState<FoodDetail | null>(null);
+  const results = useFoodSearch(q);
+  const [shortcuts, setShortcuts] = useState<Shortcuts | null>(null);
+  const [view, setView] = useState<View>({ kind: "home" });
   const [opening, setOpening] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [quickBusy, setQuickBusy] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
 
-  const loadRecents = useCallback(() => {
+  const loadShortcuts = useCallback(() => {
     if (!meal) return;
-    recentFoods(meal)
-      .then(setRecents)
-      .catch(() => setRecents([]));
+    fetchShortcuts(meal)
+      .then(setShortcuts)
+      .catch(() => setShortcuts({ favorites: [], recents: [], savedMeals: [] }));
   }, [meal]);
 
   useEffect(() => {
     if (!open || !meal) return;
     setQ("");
-    setResults(null);
-    setDetail(null);
-    setCreating(false);
-    setRecents(null);
-    loadRecents();
+    setView({ kind: "home" });
+    setShortcuts(null);
+    loadShortcuts();
     const t = window.setTimeout(() => inputRef.current?.focus(), 200);
     return () => window.clearTimeout(t);
-  }, [open, meal, loadRecents]);
+  }, [open, meal, loadShortcuts]);
 
-  // Búsqueda mientras se escribe: espera un instante y cancela la anterior.
-  useEffect(() => {
-    const term = q.trim();
-    if (!term) {
-      setResults(null);
-      return;
-    }
-    const ctrl = new AbortController();
-    const t = window.setTimeout(() => {
-      searchFoods(term, ctrl.signal)
-        .then(setResults)
-        .catch((err) => {
-          if (!axios.isCancel(err)) message.error(apiErrorMessage(err, "No se pudo buscar"));
-        });
-    }, 160);
-    return () => {
-      window.clearTimeout(t);
-      ctrl.abort();
-    };
-  }, [q]);
-
-  const backToSearch = () => {
-    setDetail(null);
-    setCreating(false);
+  const home = () => {
+    setView({ kind: "home" });
     window.setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const openFood = async (id: string) => {
     setOpening(id);
     try {
-      setDetail(await foodDetail(id));
+      setView({ kind: "detail", food: await foodDetail(id) });
     } catch (err) {
       message.error(apiErrorMessage(err, "No se pudo abrir ese alimento"));
     } finally {
@@ -111,21 +92,31 @@ export function AddFoodSheet({ open, meal, mealName, date, onClose, onAdded }: P
     }
   };
 
-  const added = (name: string) => {
-    message.success(`${name} quedó en ${lower(mealName)}`);
+  /** Avisa con «Deshacer», recarga el día y los atajos. */
+  const done = (text: string, created: Entry[]) => {
     onAdded();
-    loadRecents();
+    loadShortcuts();
+    notifyUndo(text, async () => {
+      try {
+        await removeEntries(created.map((e) => e.id));
+        onAdded();
+        loadShortcuts();
+      } catch (err) {
+        message.error(apiErrorMessage(err, "No se pudo deshacer"));
+      }
+    });
   };
 
-  const save = async (choice: AmountChoice) => {
-    if (!detail || !meal) return;
+  const where = inMeal(mealName);
+
+  const save = async (food: FoodDetail, choice: AmountChoice) => {
+    if (!meal) return;
     setBusy(true);
     try {
-      await addEntry({ date, meal, foodId: detail.id, ...choice });
-      added(detail.name);
+      const e = await addEntry({ date, meal, foodId: food.id, ...choice });
+      done(`${food.name} quedó en ${where}`, [e]);
       setQ("");
-      setResults(null);
-      backToSearch();
+      home();
     } catch (err) {
       message.error(apiErrorMessage(err, "No se pudo agregar"));
     } finally {
@@ -133,20 +124,13 @@ export function AddFoodSheet({ open, meal, mealName, date, onClose, onAdded }: P
     }
   };
 
-  /** Repetir con un toque la misma cantidad de la última vez. */
-  const repeat = async (r: RecentFood) => {
+  /** «+» en una fila: repite lo de la última vez o, si nunca se anotó, la medida por defecto. */
+  const quickAdd = async (food: FoodResult, lastEntryId?: string | null) => {
     if (!meal) return;
-    setQuickBusy(r.id);
+    setQuickBusy(food.id);
     try {
-      await addEntry({
-        date,
-        meal,
-        foodId: r.id,
-        quantity: r.last.quantity,
-        ...(r.last.portionLabel ? { portionLabel: r.last.portionLabel } : {}),
-        ...(r.last.grams != null ? { grams: r.last.grams } : {}),
-      });
-      added(r.name);
+      const e = lastEntryId ? await repeatEntry(lastEntryId, { date, meal }) : await addEntry({ date, meal, foodId: food.id, quantity: 1 });
+      done(`${food.name} quedó en ${where}`, [e]);
     } catch (err) {
       message.error(apiErrorMessage(err, "No se pudo agregar"));
     } finally {
@@ -154,37 +138,298 @@ export function AddFoodSheet({ open, meal, mealName, date, onClose, onAdded }: P
     }
   };
 
-  const row = (food: FoodResult, amount: { text: string; kcal: number }, quick?: () => void) => (
-    <div className="nf-result" key={food.id}>
-      <button type="button" className="nf-result__main" onClick={() => void openFood(food.id)}>
-        <span className="nf-result__name">{food.name}</span>
-        <span className="nf-result__meta">
-          {badge(food)}
-          {amount.text}
-        </span>
-      </button>
-      <span className="nf-result__side">
-        <span className="nf-result__kcal">
-          {opening === food.id ? <LoadingOutlined /> : kcalText(amount.kcal)} <small>kcal</small>
-        </span>
-        {quick && (
-          <button type="button" className="nf-quick" onClick={quick} disabled={quickBusy === food.id} aria-label={`Repetir ${food.name}, ${amount.text}`}>
-            {quickBusy === food.id ? <LoadingOutlined /> : <PlusOutlined />}
-          </button>
-        )}
-      </span>
-    </div>
-  );
+  const logSaved = async (saved: SavedMealView, itemIds?: string[]) => {
+    if (!meal) return;
+    setQuickBusy(saved.id);
+    setBusy(true);
+    try {
+      const r = await logSavedMeal(saved.id, { date, meal, ...(itemIds ? { itemIds } : {}) });
+      done(`${saved.name} quedó en ${where} · ${kcalText(r.kcal)} kcal`, r.entries);
+      if (view.kind === "saved") home();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo agregar"));
+    } finally {
+      setQuickBusy(null);
+      setBusy(false);
+    }
+  };
+
+  const saveQuick = async (v: QuickInput) => {
+    if (!meal) return;
+    setBusy(true);
+    try {
+      const e = await addQuickEntry({ ...v, date, meal });
+      done(`${kcalText(e.kcal)} kcal quedaron en ${where}`, [e]);
+      home();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo agregar"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleFavorite = async (food: FoodDetail) => {
+    const on = !food.favorite;
+    setView({ kind: "detail", food: { ...food, favorite: on } });
+    try {
+      await setFavorite(food.id, on);
+      message.success(on ? "Quedó en favoritos" : "Ya no está en favoritos");
+      loadShortcuts();
+    } catch (err) {
+      setView({ kind: "detail", food });
+      message.error(apiErrorMessage(err, "No se pudo cambiar"));
+    }
+  };
 
   const term = q.trim();
+  const favRow = (f: FavoriteFood) => {
+    const amount = f.last ? lastAmount(f.last) : defaultAmount(f);
+    return (
+      <FoodRow
+        key={f.id}
+        food={f}
+        favorite
+        amount={amount}
+        opening={opening === f.id}
+        quickBusy={quickBusy === f.id}
+        onOpen={() => void openFood(f.id)}
+        onQuick={() => void quickAdd(f, f.last?.entryId)}
+        quickLabel={`Agregar ${f.name}, ${amount.text}`}
+      />
+    );
+  };
+
+  let body;
+  if (view.kind === "create") {
+    body = (
+      <CreateFoodForm
+        initialName={term}
+        onCancel={home}
+        onCreated={(food) => {
+          void openFood(food.id);
+        }}
+      />
+    );
+  } else if (view.kind === "quick") {
+    body = <QuickEntryForm busy={busy} onCancel={home} submitLabel={(k) => (k > 0 ? `Agregar · ${kcalText(k)} kcal` : "Agregar")} onSubmit={(v) => void saveQuick(v)} />;
+  } else if (view.kind === "saved") {
+    const s = view.saved;
+    const chosen = s.items.filter((i) => picked[i.id] !== false);
+    const kcal = chosen.reduce((t, i) => t + i.kcal, 0);
+    body = (
+      <div className="nf-detail">
+        <button type="button" className="nf-back" onClick={home}>
+          ‹ Volver a la búsqueda
+        </button>
+        <header>
+          <h3 className="nf-detail__name">{s.name}</h3>
+          <p className="nf-detail__source">Comida guardada · quita lo que hoy no comiste</p>
+        </header>
+        <div className="nf-parts" role="group" aria-label="Lo que lleva">
+          {s.items.map((i) => {
+            const on = picked[i.id] !== false;
+            return (
+              <label key={i.id} className={`nf-part${on ? "" : " nf-part--off"}`}>
+                <Checkbox checked={on} onChange={(e) => setPicked((p) => ({ ...p, [i.id]: e.target.checked }))} />
+                <span className="nf-part__name">
+                  {i.name}
+                  <small>{i.amount || "Registro rápido"}</small>
+                </span>
+                <span className="nf-part__kcal">{kcalText(i.kcal)}</span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="nf-actions">
+          <Button type="primary" size="large" loading={busy} disabled={chosen.length === 0} onClick={() => void logSaved(s, chosen.length === s.items.length ? undefined : chosen.map((i) => i.id))}>
+            Agregar · {kcalText(kcal)} kcal
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (view.kind === "detail") {
+    const food = view.food;
+    body = (
+      <>
+        <button type="button" className="nf-back" onClick={home}>
+          ‹ Volver a la búsqueda
+        </button>
+        <header className="nf-detail__head">
+          <div style={{ minWidth: 0 }}>
+            <h3 className="nf-detail__name">{food.name}</h3>
+            <p className="nf-detail__source">{food.sourceLabel}</p>
+          </div>
+          <button
+            type="button"
+            className={`nf-star${food.favorite ? " is-on" : ""}`}
+            aria-pressed={!!food.favorite}
+            aria-label={food.favorite ? "Quitar de favoritos" : "Marcar como favorito"}
+            title={food.favorite ? "Quitar de favoritos" : "Favorito"}
+            onClick={() => void toggleFavorite(food)}
+          >
+            {food.favorite ? <StarFilled /> : <StarOutlined />}
+          </button>
+        </header>
+        <AmountEditor
+          key={food.id}
+          food={food}
+          busy={busy}
+          remaining={remaining}
+          submitLabel={(k) => `Agregar · ${kcalText(k)} kcal`}
+          onSubmit={(c) => void save(food, c)}
+        />
+      </>
+    );
+  } else {
+    body = (
+      <>
+        <div className="nf-search">
+          <Input
+            ref={inputRef}
+            size="large"
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Busca: arepa, tinto, bandeja paisa…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            enterKeyHint="search"
+            aria-label="Buscar alimento"
+          />
+        </div>
+        {term ? (
+          results === null ? (
+            <div className="nf-empty">Buscando…</div>
+          ) : results.length === 0 ? (
+            <div className="nf-empty">No encontré «{term}». Prueba con otra palabra o créalo abajo.</div>
+          ) : (
+            <div className="nf-results">
+              {results.map((r) => {
+                const amount = defaultAmount(r);
+                return (
+                  <FoodRow
+                    key={r.id}
+                    food={r}
+                    amount={amount}
+                    opening={opening === r.id}
+                    quickBusy={quickBusy === r.id}
+                    onOpen={() => void openFood(r.id)}
+                    onQuick={() => void quickAdd(r)}
+                    quickLabel={`Agregar ${r.name}, ${amount.text}`}
+                  />
+                );
+              })}
+            </div>
+          )
+        ) : (
+          <>
+            <div className="nf-quickbar">
+              <button type="button" className="nf-quickbar__btn" onClick={() => setView({ kind: "quick" })}>
+                <ThunderboltOutlined /> Solo calorías
+              </button>
+              <button
+                type="button"
+                className="nf-quickbar__btn"
+                onClick={() => {
+                  onWater();
+                }}
+              >
+                <GlassIcon level={0.7} /> Un vaso de agua
+              </button>
+            </div>
+            <div className="nf-section-label">Bebidas</div>
+            <div className="nf-chips nf-chips--sm nf-chips--scroll" role="group" aria-label="Bebidas">
+              {DRINKS.map((d) => (
+                <button key={d.q} type="button" className="nf-chip" onClick={() => setQ(d.q)}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            {shortcuts === null ? (
+              <div className="nf-empty">Cargando…</div>
+            ) : (
+              <>
+                {shortcuts.savedMeals.length > 0 && (
+                  <>
+                    <div className="nf-section-label">Tus comidas guardadas</div>
+                    <div className="nf-results">
+                      {shortcuts.savedMeals.slice(0, 6).map((s) => (
+                        <div className="nf-result" key={s.id}>
+                          <button
+                            type="button"
+                            className="nf-result__main"
+                            onClick={() => {
+                              setPicked({});
+                              setView({ kind: "saved", saved: s });
+                            }}
+                          >
+                            <span className="nf-result__name">{s.name}</span>
+                            <span className="nf-result__meta">
+                              <span className="nf-badge nf-badge--saved">Guardada</span>
+                              {thingsText(s.items.length)}: {s.items.map((i) => i.name.split(",")[0]).join(" · ")}
+                            </span>
+                          </button>
+                          <span className="nf-result__side">
+                            <span className="nf-result__kcal">
+                              {kcalText(s.kcal)} <small>kcal</small>
+                            </span>
+                            <button type="button" className="nf-quick" onClick={() => void logSaved(s)} disabled={quickBusy === s.id} aria-label={`Agregar ${s.name} completa`}>
+                              {quickBusy === s.id ? <LoadingOutlined /> : <PlusOutlined />}
+                            </button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {shortcuts.favorites.length > 0 && (
+                  <>
+                    <div className="nf-section-label">Favoritos</div>
+                    <div className="nf-results">{shortcuts.favorites.slice(0, 10).map(favRow)}</div>
+                  </>
+                )}
+                {shortcuts.recents.length > 0 && (
+                  <>
+                    <div className="nf-section-label">Lo que más anotas aquí</div>
+                    <div className="nf-results">
+                      {shortcuts.recents.map((r) => {
+                        const amount = lastAmount(r.last);
+                        return (
+                          <FoodRow
+                            key={r.id}
+                            food={r}
+                            amount={amount}
+                            opening={opening === r.id}
+                            quickBusy={quickBusy === r.id}
+                            onOpen={() => void openFood(r.id)}
+                            onQuick={() => void quickAdd(r, r.last.entryId)}
+                            quickLabel={`Repetir ${r.name}, ${amount.text}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                {shortcuts.savedMeals.length + shortcuts.favorites.length + shortcuts.recents.length === 0 && (
+                  <div className="nf-empty">Escribe lo que comiste. La búsqueda entiende «tinto», «perico» o «aguapanela», con o sin tildes.</div>
+                )}
+              </>
+            )}
+          </>
+        )}
+        <button type="button" className="nf-create-link" onClick={() => setView({ kind: "create" })}>
+          ¿No está? Crea tu propio alimento
+        </button>
+      </>
+    );
+  }
 
   return (
     <Drawer
-      title={`Agregar a ${lower(mealName)}`}
+      title={`Agregar a ${where}`}
       open={open}
       onClose={onClose}
       placement={isMobile ? "bottom" : "right"}
-      size={isMobile ? "92dvh" : 480}
+      size={isMobile ? "92dvh" : 520}
       rootClassName="nf-drawer"
       styles={{
         body: {
@@ -196,69 +441,7 @@ export function AddFoodSheet({ open, meal, mealName, date, onClose, onAdded }: P
         wrapper: isMobile ? { maxWidth: "100vw" } : undefined,
       }}
     >
-      {creating ? (
-        <CreateFoodForm
-          initialName={term}
-          onCancel={backToSearch}
-          onCreated={(food) => {
-            setCreating(false);
-            void openFood(food.id);
-          }}
-        />
-      ) : detail ? (
-        <>
-          <button type="button" className="nf-back" onClick={backToSearch}>
-            ‹ Volver a la búsqueda
-          </button>
-          <header style={{ margin: "8px 0 16px" }}>
-            <h3 className="nf-detail__name">{detail.name}</h3>
-            <p className="nf-detail__source">{detail.sourceLabel}</p>
-          </header>
-          <AmountEditor key={detail.id} food={detail} busy={busy} submitLabel={(k) => `Agregar · ${kcalText(k)} kcal`} onSubmit={(c) => void save(c)} />
-        </>
-      ) : (
-        <>
-          <div className="nf-search">
-            <Input
-              ref={inputRef}
-              size="large"
-              allowClear
-              prefix={<SearchOutlined />}
-              placeholder="Busca: arepa, tinto, bandeja paisa…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              enterKeyHint="search"
-              aria-label="Buscar alimento"
-            />
-          </div>
-          {term ? (
-            results === null ? (
-              <div className="nf-empty">Buscando…</div>
-            ) : results.length === 0 ? (
-              <div className="nf-empty">No encontré «{term}». Prueba con otra palabra o créalo abajo.</div>
-            ) : (
-              <div className="nf-results">{results.map((r) => row(r, defaultAmount(r)))}</div>
-            )
-          ) : recents === null ? (
-            <div className="nf-empty">Cargando…</div>
-          ) : recents.length > 0 ? (
-            <>
-              <div className="nf-section-label">Lo que más anotas aquí</div>
-              <div className="nf-results">
-                {recents.map((r) => {
-                  const amount = lastAmount(r);
-                  return row(r, amount, r.isDish ? undefined : () => void repeat(r));
-                })}
-              </div>
-            </>
-          ) : (
-            <div className="nf-empty">Escribe lo que comiste. La búsqueda entiende «tinto», «perico» o «aguapanela», con o sin tildes.</div>
-          )}
-          <button type="button" className="nf-create-link" onClick={() => setCreating(true)}>
-            ¿No está? Crea tu propio alimento
-          </button>
-        </>
-      )}
+      {body}
     </Drawer>
   );
 }

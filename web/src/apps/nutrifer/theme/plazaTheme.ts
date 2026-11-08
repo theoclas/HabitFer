@@ -36,6 +36,10 @@ const light: ThemeConfig = {
     Button: { fontWeight: 600, primaryShadow: "none" },
     Segmented: { itemSelectedBg: "#FFFFFF", trackBg: "#E8EEE5" },
     Drawer: { colorBgElevated: "#FBFCFA" },
+    // El tema de la plataforma pinta los diálogos y los campos de oscuro e índigo: aquí van con el papel de NutriFer.
+    Modal: { contentBg: "#FFFFFF", headerBg: "#FFFFFF", footerBg: "transparent" },
+    Input: { colorBgContainer: "#FFFFFF", activeBorderColor: "#2B7A4A", hoverBorderColor: "#8A978E" },
+    Select: { colorBgContainer: "#FFFFFF" },
   },
 };
 
@@ -62,6 +66,9 @@ const dark: ThemeConfig = {
     Button: { fontWeight: 600, primaryShadow: "none", primaryColor: "#08170E" },
     Segmented: { itemSelectedBg: "#26352C", trackBg: "#151E19" },
     Drawer: { colorBgElevated: "#121A16" },
+    Modal: { contentBg: "#151E19", headerBg: "#151E19", footerBg: "transparent" },
+    Input: { colorBgContainer: "#151E19", activeBorderColor: "#5DBE85", hoverBorderColor: "#66756B" },
+    Select: { colorBgContainer: "#151E19" },
   },
 };
 
