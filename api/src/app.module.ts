@@ -13,6 +13,7 @@ import { FernanceModule } from './fernance/fernance.module';
 import { HabitsModule } from './habits/habits.module';
 import { MailModule } from './mail/mail.module';
 import { MoodsModule } from './moods/moods.module';
+import { NutritionModule } from './nutrition/nutrition.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProyecFerModule } from './proyecfer/proyecfer.module';
 import { PushModule } from './push/push.module';
@@ -51,6 +52,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     UsersModule,
     ProyecFerModule,
     FernanceModule,
+    NutritionModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

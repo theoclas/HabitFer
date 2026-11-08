@@ -94,6 +94,9 @@ model User {
   habitPauses           HabitPause[]
   challengeResults      ChallengeResult[]
   coachMessages         CoachMessage[]
+  foods                 Food[]
+  mealEntries           MealEntry[]
+  nutritionProfile      NutritionProfile?
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
@@ -836,4 +839,169 @@ model CreditInstallment {
   paidAt   DateTime?
 
   @@index([creditId, dueDate])
+}
+
+/* ---------- NutriFer: comida colombiana y calorias ---------- */
+
+/// De donde sale un alimento.
+enum FoodSource {
+  /// Tabla de Composicion de Alimentos Colombianos 2018 (ICBF).
+  TCAC
+  /// 18 preparaciones tradicionales medidas por el ICBF y la Universidad Nacional.
+  P18
+  /// Plato tipico armado por partes en NutriFer.
+  DISH
+  /// USDA FoodData Central (respaldo).
+  USDA
+  /// Open Food Facts (productos empacados).
+  OFF
+  /// Creado por el usuario.
+  USER
+}
+
+/// Comidas del dia a la colombiana (los nombres se cambian en el perfil).
+enum MealSlot {
+  DESAYUNO
+  MEDIAS_NUEVES
+  ALMUERZO
+  ONCES
+  COMIDA
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum WeightGoal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
+/// Un alimento con sus valores por 100 g de parte comestible.
+model Food {
+  id         String        @id @default(cuid())
+  source     FoodSource
+  /// Codigo en su fuente (codigo TCAC, fdcId, codigo de barras o clave del plato).
+  sourceCode String?       @db.VarChar(40)
+  name       String        @db.VarChar(160)
+  /// Nombre, alias y sinonimos normalizados (minusculas, sin tildes) para la busqueda.
+  searchText String        @db.Text
+  category   String?       @db.VarChar(80)
+  brand      String?       @db.VarChar(120)
+  barcode    String?       @db.VarChar(32)
+  kcal       Float
+  protein    Float
+  fat        Float
+  carbs      Float
+  fiber      Float?
+  sugar      Float?
+  satFat     Float?
+  /// mg por 100 g.
+  sodium     Float?
+  /// Resto de nutrientes de la fuente (minerales, vitaminas, grasas), por 100 g.
+  nutrients  Json?
+  /// null = base compartida; si no, alimento propio de ese usuario.
+  ownerId    String?
+  owner      User?         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Fuera de la busqueda (no se borra para no romper el historial).
+  archived   Boolean       @default(false)
+  /// Prioridad en la busqueda: lo de todos los dias arriba, lo raro abajo (la pone el cargador).
+  priority   Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  portions   FoodPortion[]
+  parts      DishPart[]    @relation("DishParts")
+  partOf     DishPart[]    @relation("DishPartFood")
+  entries    MealEntry[]
+
+  @@unique([source, sourceCode])
+  @@index([ownerId])
+  @@index([barcode])
+}
+
+/// Medida casera de un alimento: "1 arepa pequeña" = 56 g.
+model FoodPortion {
+  id        String  @id @default(cuid())
+  foodId    String
+  food      Food    @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  label     String  @db.VarChar(80)
+  grams     Float
+  isDefault Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  @@index([foodId])
+}
+
+/// Parte de un plato tipico para una porcion (bandeja paisa = arroz + frijoles + chicharron + ...).
+model DishPart {
+  id        String @id @default(cuid())
+  dishId    String
+  dish      Food   @relation("DishParts", fields: [dishId], references: [id], onDelete: Cascade)
+  foodId    String
+  food      Food   @relation("DishPartFood", fields: [foodId], references: [id], onDelete: Cascade)
+  label     String @db.VarChar(80)
+  grams     Float
+  sortOrder Int    @default(0)
+
+  @@index([dishId])
+}
+
+/// Lo que se anoto en una comida. Guarda una copia de los valores: si el alimento cambia, el historial no.
+model MealEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  meal         MealSlot
+  foodId       String?
+  food         Food?    @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  name         String   @db.VarChar(160)
+  /// Medida usada ("arepa pequeña"); null si se anoto en gramos.
+  portionLabel String?  @db.VarChar(80)
+  /// Gramos de una unidad de esa medida.
+  portionGrams Float?
+  quantity     Float    @default(1)
+  grams        Float?
+  kcal         Float
+  protein      Float
+  fat          Float
+  carbs        Float
+  fiber        Float?
+  sugar        Float?
+  sodium       Float?
+  /// Plato por partes: [{ label, foodId, grams, included }] tal como se anoto.
+  parts        Json?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, foodId])
+}
+
+/// Datos para calcular la meta, y preferencias de NutriFer.
+model NutritionProfile {
+  userId        String     @id
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sex           Sex
+  birthYear     Int
+  heightCm      Float
+  weightKg      Float
+  /// Factor de actividad (1.2 sedentario ... 1.9 muy activo).
+  activity      Float
+  goal          WeightGoal @default(MAINTAIN)
+  /// Kilos por semana para bajar o subir.
+  ratePerWeek   Float      @default(0.5)
+  kcalTarget    Int
+  proteinTarget Int
+  fatTarget     Int
+  carbsTarget   Int
+  /// true = metas puestas a mano (no se recalculan).
+  manual        Boolean    @default(false)
+  /// Nombres propios de las comidas, p. ej. {"ONCES": "Algo"}.
+  mealNames     Json?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }

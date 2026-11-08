@@ -1,4 +1,4 @@
-export type AppId = "habitfer" | "proyecfer" | "fernance";
+export type AppId = "habitfer" | "proyecfer" | "fernance" | "nutrifer";
 
 export const LAST_APP_KEY = "fersua_last_app";
 
@@ -32,11 +32,18 @@ export const APPS: Record<AppId, AppConfig> = {
     color: "#D4AF37",
     basePath: "/app/fernance",
   },
+  nutrifer: {
+    id: "nutrifer",
+    name: "NutriFer",
+    description: "Comida colombiana, calorías y nutrientes",
+    color: "#46C27A",
+    basePath: "/app/nutrifer",
+  },
 };
 
 export function getLastApp(): AppId | null {
   const v = localStorage.getItem(LAST_APP_KEY);
-  return v === "habitfer" || v === "proyecfer" || v === "fernance" ? v : null;
+  return v === "habitfer" || v === "proyecfer" || v === "fernance" || v === "nutrifer" ? v : null;
 }
 
 export function setLastApp(id: AppId) {

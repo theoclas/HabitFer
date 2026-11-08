@@ -1,4 +1,4 @@
-import { CalendarOutlined, DollarOutlined, ProjectOutlined, RightOutlined } from "@ant-design/icons";
+import { CalendarOutlined, CoffeeOutlined, DollarOutlined, ProjectOutlined, RightOutlined } from "@ant-design/icons";
 import { Card, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { APPS, type AppId, setLastApp } from "./apps";
@@ -7,6 +7,7 @@ const icons: Record<AppId, React.ReactNode> = {
   habitfer: <CalendarOutlined />,
   proyecfer: <ProjectOutlined />,
   fernance: <DollarOutlined />,
+  nutrifer: <CoffeeOutlined />,
 };
 
 export function AppPickerPage() {
