@@ -71,6 +71,8 @@ export function habitView(h: HabitFull, ctx: ViewContext) {
     reminderEnabled: h.reminderEnabled,
     reminderTime: h.reminderTime,
     reminderTimes: habitReminderTimes(h),
+    /** Se marca solo desde NutriFer (null = a mano). */
+    autoSource: h.autoSource ?? null,
     sortOrder: h.sortOrder,
     createdAt: h.createdAt,
     updatedAt: h.updatedAt,

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchProfile, previewProfile, saveProfile } from "../api";
+import { BackupCard } from "../components/BackupCard";
+import { HabitLinksCard } from "../components/HabitLinksCard";
 import { gramsText, intText, kcalText, mlText, nutrientGoals } from "../math";
 import { MEAL_ORDER, type ActivityLevel, type MealSlot, type ProfileInput, type Sex, type Targets, type WeightGoal } from "../types";
 
@@ -405,6 +407,10 @@ export function NutriGoalPage() {
           ))}
         </div>
       </section>
+
+      {/* Se guardan solos (no con «Guardar mi meta»). */}
+      <HabitLinksCard />
+      <BackupCard />
       </div>
 
       <div className="nf-actions nf-goal__actions nf-only-mobile" style={{ bottom: 0, marginBottom: 0, padding: "4px 0 0", background: "transparent" }}>

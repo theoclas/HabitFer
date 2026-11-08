@@ -4,6 +4,7 @@ import { countsOn, currentStreak, isDoneOn, longestStreak, shiftKey, streakUnit 
 import { PrismaService } from '../prisma/prisma.service';
 import { loadHistory } from './history.loader';
 import { buildDays, byHour, byWeekday, earliestKey, moodSummary, ranking } from './history.utils';
+import { foodInsights } from './food-insights.utils';
 import { computeInsights } from './insights.utils';
 import { lastDayOfMonth, monthSummary } from './month.utils';
 import { computePerfectStreak } from './perfect-days.utils';
@@ -12,6 +13,8 @@ import { addDays, dayLabel, lastNDays, localDayStart, parseDateKey, startOfToday
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 400;
+/** Días que miran los descubrimientos que cruzan la comida con los hábitos. */
+const FOOD_LOOKBACK_DAYS = 56;
 
 @Injectable()
 export class StatsService {
@@ -189,14 +192,50 @@ export class StatsService {
   /** Frases sacadas del historial (ultimas 8 semanas y meses anteriores). */
   async insights(userId: string) {
     const todayKey = toDateKey(startOfToday());
-    const [{ history }, moodRows] = await Promise.all([
+    const from = shiftKey(todayKey, -FOOD_LOOKBACK_DAYS);
+    const yesterday = shiftKey(todayKey, -1);
+    const [{ history }, moodRows, entries, profile] = await Promise.all([
       loadHistory(this.prisma, userId),
       this.prisma.dayMood.findMany({
         where: { userId, date: { gte: parseDateKey(shiftKey(todayKey, -60)) } },
         select: { date: true, mood: true },
       }),
+      // Lo de NutriFer, para cruzarlo con los hábitos y el ánimo.
+      this.prisma.mealEntry.findMany({
+        where: { userId, date: { gte: parseDateKey(from), lte: parseDateKey(yesterday) } },
+        select: { date: true, meal: true, kcal: true, protein: true },
+      }),
+      this.prisma.nutritionProfile.findUnique({ where: { userId }, select: { kcalTarget: true, proteinTarget: true } }),
     ]);
-    return computeInsights(history, new Map(moodRows.map((m) => [toDateKey(m.date), m.mood])), todayKey);
+    const moods = new Map(moodRows.map((m) => [toDateKey(m.date), m.mood]));
+    const habitInsights = computeInsights(history, moods, todayKey);
+    if (!entries.length) return habitInsights;
+
+    const foodBy = new Map<string, { date: string; meals: Set<string>; kcal: number; protein: number }>();
+    for (const e of entries) {
+      const key = toDateKey(e.date);
+      const d = foodBy.get(key) ?? { date: key, meals: new Set<string>(), kcal: 0, protein: 0 };
+      d.meals.add(e.meal);
+      d.kcal += e.kcal;
+      d.protein += e.protein;
+      foodBy.set(key, d);
+    }
+    // Sin los hábitos que NutriFer marca solos (darían la respuesta por adelantado).
+    const auto = new Set(
+      (await this.prisma.habit.findMany({ where: { userId, autoSource: { not: null } }, select: { id: true } })).map((h) => h.id),
+    );
+    const habitDays = buildDays(
+      history.filter((h) => !auto.has(h.id)),
+      from,
+      yesterday,
+    );
+    const food = foodInsights(
+      [...foodBy.values()].map((d) => ({ date: d.date, meals: d.meals.size, kcal: d.kcal, protein: d.protein })),
+      habitDays,
+      moods,
+      profile ? { kcal: profile.kcalTarget, protein: profile.proteinTarget } : null,
+    );
+    return [...habitInsights, ...food].sort((a, b) => b.score - a.score).slice(0, 7);
   }
 
   /** Resumen de un mes (YYYY-MM; por defecto el actual) para las tarjetas "tu mes". */

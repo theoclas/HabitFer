@@ -1,4 +1,4 @@
-import { CookMethod, MealSlot, Sex, WeightGoal } from '@prisma/client';
+import { CookMethod, MealSlot, PlanKind, Sex, WeightGoal } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -8,6 +8,7 @@ import {
   IsEnum,
   IsIn,
   IsInt,
+  IsISO8601,
   IsNumber,
   IsObject,
   IsOptional,
@@ -678,4 +679,109 @@ export class RangeQueryDto {
 
   @Matches(DATE_KEY, DATE_MSG)
   to!: string;
+}
+
+/* ---------- Ayuno, hábitos, plan, mes y respaldo ---------- */
+
+const HOURS_MSG = { message: 'La meta del ayuno va de 10 a 72 horas.' };
+
+export class FastStartDto {
+  @IsOptional()
+  @IsISO8601({}, { message: 'La hora de inicio no es válida.' })
+  startedAt?: string;
+
+  @IsOptional()
+  @IsInt(HOURS_MSG)
+  @Min(10, HOURS_MSG)
+  @Max(72, HOURS_MSG)
+  goalHours?: number;
+}
+
+export class FastStopDto {
+  @IsOptional()
+  @IsISO8601({}, { message: 'La hora de fin no es válida.' })
+  endedAt?: string;
+}
+
+export class FastUpdateDto extends FastStartDto {
+  @IsOptional()
+  @IsISO8601({}, { message: 'La hora de fin no es válida.' })
+  endedAt?: string;
+}
+
+export class FastSettingsDto {
+  @IsOptional()
+  @IsInt(HOURS_MSG)
+  @Min(10, HOURS_MSG)
+  @Max(72, HOURS_MSG)
+  goalHours?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  notify?: boolean;
+}
+
+export class HabitLinkDto {
+  /** El hábito de HabitFer que se conecta (vacío = desconectar). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  habitId?: string;
+}
+
+export class PlanWeekQueryDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  from!: string;
+}
+
+const SERVINGS_MSG = { message: 'Las porciones van de 0,25 a 20.' };
+
+export class PlanAddDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsEnum(MealSlot)
+  meal!: MealSlot;
+
+  @IsEnum(PlanKind)
+  kind!: PlanKind;
+
+  @IsString()
+  @MaxLength(40)
+  refId!: string;
+
+  @IsOptional()
+  @IsNumber({}, SERVINGS_MSG)
+  @Min(0.25, SERVINGS_MSG)
+  @Max(20, SERVINGS_MSG)
+  servings?: number;
+}
+
+export class PlanUpdateDto {
+  @IsOptional()
+  @IsNumber({}, SERVINGS_MSG)
+  @Min(0.25, SERVINGS_MSG)
+  @Max(20, SERVINGS_MSG)
+  servings?: number;
+
+  @IsOptional()
+  @Matches(DATE_KEY, DATE_MSG)
+  date?: string;
+
+  @IsOptional()
+  @IsEnum(MealSlot)
+  meal?: MealSlot;
+}
+
+export class PlanCopyDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  from!: string;
+
+  @Matches(DATE_KEY, DATE_MSG)
+  to!: string;
+}
+
+export class MonthQueryDto {
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'El mes debe venir como AAAA-MM.' })
+  month!: string;
 }

@@ -377,6 +377,28 @@ export class HabitsService {
     if (habit.kind === HabitKind.QUIT) {
       throw new BadRequestException('Este hábito es para dejar algo: ahí se registra una recaída, no se marca.');
     }
+    if (habit.autoSource) {
+      throw new BadRequestException('Este hábito se marca solo desde NutriFer: anótalo allá.');
+    }
+  }
+
+  /**
+   * NutriFer marca solos los hábitos conectados (anotar las comidas, proteína, agua, ayuno). Solo hoy y ayer y
+   * solo si el hábito toca ese día; no escribe nada si el valor no cambió. Devuelve si cambió.
+   */
+  async syncAutoValue(userId: string, habitId: string, dateKey: string, rawValue: number): Promise<boolean> {
+    const habit = await this.prisma.habit.findFirst({ where: { id: habitId, userId, archived: false } });
+    if (!habit || !habit.autoSource || habit.kind === HabitKind.QUIT || !DATE_KEY.test(dateKey)) return false;
+    const date = parseDateKey(dateKey);
+    if (!isCompletableDate(date) || !isPlannedOn(habit, dateKey)) return false;
+    const value = Math.max(0, Math.round(rawValue));
+    const goal = Math.max(1, habit.goal);
+    const current = await this.valueOn(habit, date);
+    // En un sí/no da igual pasarse: cuenta hecho o no hecho.
+    const same = goal > 1 ? current === value : (current >= 1) === (value >= 1);
+    if (same) return false;
+    await this.applyValue(userId, habit, date, goal > 1 ? value : value >= 1 ? 1 : 0);
+    return true;
   }
 
   async complete(userId: string, id: string, dto: CompleteHabitDto) {

@@ -9,6 +9,7 @@ import { HabitFerShell } from "./apps/habitfer/layouts/HabitFerShell";
 import { NutriFerShell } from "./apps/nutrifer/layouts/NutriFerShell";
 import { NutriGoalPage } from "./apps/nutrifer/pages/NutriGoalPage";
 import { NutriKitchenPage } from "./apps/nutrifer/pages/NutriKitchenPage";
+import { NutriPlanPage } from "./apps/nutrifer/pages/NutriPlanPage";
 import { NutriProgressPage } from "./apps/nutrifer/pages/NutriProgressPage";
 import { NutriRecipePage } from "./apps/nutrifer/pages/NutriRecipePage";
 import { NutriTodayPage } from "./apps/nutrifer/pages/NutriTodayPage";
@@ -83,6 +84,7 @@ export function AppRouter() {
           <Route index element={<NutriTodayPage />} />
           <Route path="cocina" element={<NutriKitchenPage />} />
           <Route path="cocina/receta/:id" element={<NutriRecipePage />} />
+          <Route path="cocina/plan" element={<NutriPlanPage />} />
           <Route path="progreso" element={<NutriProgressPage />} />
           <Route path="meta" element={<NutriGoalPage />} />
         </Route>

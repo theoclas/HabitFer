@@ -23,6 +23,13 @@ type Options<T extends Habit> = {
 const OFFLINE_TEXT = "Sin conexión: lo guardé y lo envío cuando vuelva la señal";
 const VALUE_DEBOUNCE_MS = 650;
 
+/** Los hábitos conectados a NutriFer se marcan solos: aquí no se tocan. */
+function autoGuard(habit: Habit): boolean {
+  if (!habit.autoSource) return false;
+  message.open({ key: "hf-auto", type: "info", content: "Este hábito se marca solo desde NutriFer: anótalo allá y aparece aquí." });
+  return true;
+}
+
 /**
  * Acciones sobre un habito con cambio optimista y cola sin conexion:
  * marcar o desmarcar, sumar cantidad (medibles) y registrar una recaida (dejar algo).
@@ -58,6 +65,7 @@ export function useHabitActions<T extends Habit>(options: Options<T>) {
   const toggle = useCallback(
     async (habit: T) => {
       const { canMark, dateKey, itemsRef } = opts.current;
+      if (autoGuard(habit)) return;
       if (!canMark) {
         message.warning("Solo puedes marcar habitos de hoy o de ayer");
         return;
@@ -125,6 +133,7 @@ export function useHabitActions<T extends Habit>(options: Options<T>) {
   const setValue = useCallback(
     (habit: T, value: number) => {
       const { canMark, dateKey, itemsRef } = opts.current;
+      if (autoGuard(habit)) return;
       if (!canMark) {
         message.warning("Solo puedes marcar habitos de hoy o de ayer");
         return;

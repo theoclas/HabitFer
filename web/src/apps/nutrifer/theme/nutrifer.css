@@ -28,6 +28,10 @@
   --nf-lulo: #C4621A;
   --nf-agua: #2A7AB8;
   --nf-agua-soft: #DCEBF6;
+  /* Para letra: un punto más oscuros, para que se lean sobre el papel y los fondos suaves. */
+  --nf-accent-text: #236B3F;
+  --nf-lulo-text: #A34E12;
+  --nf-agua-text: #1F6AA5;
   --nf-glass: rgba(243, 246, 241, 0.9);
   --nf-shadow: 0 12px 32px -18px rgba(20, 32, 25, 0.35);
 }
@@ -50,6 +54,9 @@
   --nf-lulo: #F2A65A;
   --nf-agua: #6BB6EC;
   --nf-agua-soft: #16293A;
+  --nf-accent-text: var(--nf-accent);
+  --nf-lulo-text: var(--nf-lulo);
+  --nf-agua-text: var(--nf-agua);
   --nf-glass: rgba(13, 19, 16, 0.88);
   --nf-shadow: 0 14px 36px -18px rgba(0, 0, 0, 0.75);
 }
@@ -386,8 +393,8 @@
   background: var(--nf-sunk);
   color: var(--nf-muted);
 }
-.nf-badge--dish { color: var(--nf-lulo); }
-.nf-badge--own { color: var(--nf-accent); }
+.nf-badge--dish { color: var(--nf-lulo-text); }
+.nf-badge--own { color: var(--nf-accent-text); }
 .nf-quick {
   width: 36px;
   height: 36px;
@@ -642,8 +649,8 @@
 .nf-water__head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; }
 .nf-water__title { margin: 0; font: 700 1.08rem/1.2 var(--nf-display); color: var(--nf-ink); }
 .nf-water__amount { font-size: 0.88rem; color: var(--nf-muted); font-variant-numeric: tabular-nums; }
-.nf-water__amount b { color: var(--nf-agua); }
-.nf-water.is-done .nf-water__amount { color: var(--nf-agua); font-weight: 600; }
+.nf-water__amount b { color: var(--nf-agua-text); }
+.nf-water.is-done .nf-water__amount { color: var(--nf-agua-text); font-weight: 600; }
 .nf-water__glasses { display: flex; flex-wrap: wrap; gap: 2px; }
 .nf-glass {
   width: 34px;
@@ -679,11 +686,11 @@
   border-radius: 12px;
   border: 1px solid transparent;
   background: var(--nf-agua-soft);
-  color: var(--nf-agua);
+  color: var(--nf-agua-text);
   font: 700 0.95rem/1 var(--nf-text);
   cursor: pointer;
 }
-.nf-water__plus small { font-weight: 500; opacity: 0.85; }
+.nf-water__plus small { font-weight: 500; }
 .nf-water__minus:disabled,
 .nf-water__plus:disabled { opacity: 0.5; cursor: default; }
 
@@ -719,7 +726,7 @@
 .nf-chips--scroll::-webkit-scrollbar { display: none; }
 .nf-chips--scroll .nf-chip { flex: none; }
 .nf-badge--recipe { color: var(--nf-mora); }
-.nf-badge--saved { color: var(--nf-agua); }
+.nf-badge--saved { color: var(--nf-agua-text); }
 .nf-star-mini { color: var(--nf-maiz); margin-right: 5px; font-size: 0.85em; }
 
 /* ---------- Detalle: estrella, por meta y aceite ---------- */
@@ -745,7 +752,7 @@
 .nf-goalbox__row { display: flex; align-items: center; gap: 10px; }
 .nf-goalbox__result { margin: 0; color: var(--nf-body); }
 .nf-goalbox__result b { color: var(--nf-accent); font: 800 1.2rem/1 var(--nf-display); }
-.nf-warn { margin: 0; color: var(--nf-lulo); font-size: 0.85rem; font-weight: 600; }
+.nf-warn { margin: 0; color: var(--nf-lulo-text); font-size: 0.85rem; font-weight: 600; }
 .nf-oil {
   display: flex;
   align-items: center;
@@ -757,7 +764,7 @@
 }
 .nf-oil__text { color: var(--nf-body); min-width: 0; }
 .nf-oil__text b { color: var(--nf-ink); }
-.nf-oil__text small { color: var(--nf-lulo); font-weight: 600; font-size: 0.82rem; }
+.nf-oil__text small { color: var(--nf-lulo-text); font-weight: 600; font-size: 0.82rem; }
 .nf-oil__btns { display: flex; gap: 6px; flex: none; }
 .nf-oil__btns button {
   width: 40px;
@@ -991,11 +998,11 @@
   padding: 2px 4px 2px 8px;
   border-radius: 999px;
   background: var(--nf-sunk);
-  color: var(--nf-lulo);
+  color: var(--nf-lulo-text);
   font-weight: 600;
 }
 .nf-review__prep button { border: 0; background: transparent; color: var(--nf-muted); cursor: pointer; padding: 2px; font-size: 10px; }
-.nf-review__missing { margin: 0; font-size: 0.84rem; color: var(--nf-lulo); }
+.nf-review__missing { margin: 0; font-size: 0.84rem; color: var(--nf-lulo-text); }
 
 /* =========================================================================
    Estructura de las pantallas (una columna en el teléfono)
@@ -1314,7 +1321,7 @@
 .nf-result__main:disabled { cursor: progress; }
 
 .nf-badge--off { color: var(--nf-ink); }
-.nf-badge--check { color: var(--nf-lulo); }
+.nf-badge--check { color: var(--nf-lulo-text); }
 
 /* El código de barras de un producto. */
 .nf-code {
@@ -1395,7 +1402,7 @@
 .nf-seal::after { inset: 5px; background: #0A0A0A; }
 .nf-seal small { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.04em; }
 .nf-seal b { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.01em; overflow-wrap: anywhere; }
-.nf-seals__note { margin: 0; font-size: 0.74rem; color: var(--nf-faint); }
+.nf-seals__note { margin: 0; font-size: 0.74rem; color: var(--nf-muted); }
 
 /* En las listas: un octágono chiquito con cuántos sellos tiene. */
 .nf-seal-mini {
@@ -1501,7 +1508,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--nf-faint);
+  color: var(--nf-muted);
 }
 
 /* Barras contra la meta: la fibra sube en verde; el azúcar y el sodio son límites (gris hasta pasarse). */
@@ -1512,7 +1519,7 @@
 .nf-macro__note { font-size: 0.74rem; color: var(--nf-muted); line-height: 1.35; }
 .nf-macro__note.is-over { color: var(--nf-ink); font-weight: 600; display: inline-flex; gap: 5px; align-items: center; }
 .nf-macro__note.is-over .anticon { color: var(--nf-lulo); }
-.nf-macro.is-over .nf-macro__row b { color: var(--nf-lulo); }
+.nf-macro.is-over .nf-macro__row b { color: var(--nf-lulo-text); }
 .nf-macros--2 { grid-template-columns: 1fr; }
 
 .nf-nutricard { padding: 16px 18px; gap: 12px; }
@@ -1794,4 +1801,187 @@
 @media (prefers-reduced-motion: reduce) {
   .nf-col-g,
   .nf-wreport__body { transition: none; }
+}
+
+/* =========================================================================
+   Fase 5 · super app: ayuno, conexión con HabitFer, plan y mercado, tu mes y respaldo
+   ========================================================================= */
+
+.nf-progress__intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* ---------- Ayuno ---------- */
+.nf-fast { padding: 16px 18px; gap: 12px; }
+.nf-fast__head { display: inline-flex; align-items: center; gap: 8px; }
+.nf-fast__streak { display: inline-flex; align-items: center; gap: 4px; font: 700 0.8rem/1 var(--nf-text); color: var(--nf-ink); }
+.nf-fast__streak .anticon { color: var(--nf-lulo); }
+.nf-fast__live { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; align-items: center; }
+.nf-fast__ring { position: relative; width: 112px; height: 112px; }
+.nf-fast__ring svg { width: 100%; height: 100%; display: block; }
+.nf-fast__center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.nf-fast__center b { font: 800 1rem/1.1 var(--nf-display); color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-fast__center small { font-size: 0.72rem; color: var(--nf-muted); }
+.nf-fast__info { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.nf-fast__info p { margin: 0; color: var(--nf-body); font-size: 0.9rem; line-height: 1.35; }
+.nf-fast__info b { color: var(--nf-ink); }
+.nf-fast__info small { color: var(--nf-muted); font-size: 0.78rem; }
+.nf-fast__idle { display: grid; gap: 10px; justify-items: start; }
+.nf-fast__idle .ant-segmented { max-width: 100%; overflow-x: auto; }
+.nf-fastring__track { stroke: var(--nf-sunk); }
+.nf-fastring__fill { stroke: var(--nf-maiz); transition: stroke-dasharray 0.6s ease; }
+.nf-fastring.is-reached .nf-fastring__fill { stroke: var(--nf-accent); }
+.nf-wlist li.nf-fastlist { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+
+/* ---------- Conexión con HabitFer ---------- */
+.nf-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.nf-links__row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--nf-line); }
+.nf-links__row:last-child { border-bottom: 0; }
+.nf-links__icon { width: 36px; height: 36px; border-radius: 12px; background: var(--nf-sunk); display: grid; place-items: center; font-size: 18px; }
+.nf-links__body { display: grid; gap: 4px; min-width: 0; }
+.nf-links__body > b { color: var(--nf-ink); }
+.nf-links__body > small { color: var(--nf-muted); font-size: 0.78rem; line-height: 1.4; }
+.nf-links__ctrl { display: flex; gap: 8px; margin-top: 4px; min-width: 0; }
+.nf-links__on { font-size: 0.74rem; font-weight: 700; color: var(--nf-accent); display: inline-flex; gap: 4px; align-items: center; }
+
+/* ---------- Respaldo ---------- */
+.nf-backup { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- Cadenas: cuántos platos tuyos tiene cada una ---------- */
+/* Le gana a «.nf-chip small» (que la aclara): el número se lee en los dos temas. */
+.nf-chip .nf-chip__count {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--nf-accent-soft);
+  color: var(--nf-ink);
+  opacity: 1;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.nf-note a { color: var(--nf-accent-text); font-weight: 700; }
+
+/* ---------- Cocina: entrada al plan ---------- */
+.nf-plancta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--nf-accent);
+  border-radius: 16px;
+  background: var(--nf-accent-soft);
+  color: var(--nf-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nf-plancta > .anticon { font-size: 22px; color: var(--nf-accent); }
+.nf-plancta b { display: block; font: 700 1rem/1.25 var(--nf-display); }
+.nf-plancta small { display: block; margin-top: 2px; color: var(--nf-muted); font-size: 0.8rem; line-height: 1.4; }
+.nf-plancta:hover { filter: brightness(1.02); }
+
+/* ---------- Plan de la semana y mercado ---------- */
+.nf-planpage { display: grid; gap: 16px; }
+.nf-planpage__intro { display: grid; gap: 8px; justify-items: start; }
+.nf-planpage__cols { display: grid; gap: 20px; }
+.nf-plandays { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; transition: opacity 0.15s ease; }
+.nf-plandays.is-loading { opacity: 0.55; }
+.nf-planday { border: 1px solid var(--nf-line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 8px; background: var(--nf-surface); }
+.nf-planday.is-today { border-color: var(--nf-accent); }
+.nf-planday__head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.nf-planday__head b { color: var(--nf-ink); }
+.nf-planday__head span { font-size: 0.84rem; color: var(--nf-muted); font-variant-numeric: tabular-nums; }
+.nf-planday__head span.is-over { color: var(--nf-lulo-text); font-weight: 700; }
+.nf-planmeal { display: grid; gap: 4px; }
+.nf-planmeal__name { font: 700 0.7rem/1 var(--nf-text); letter-spacing: 0.06em; text-transform: uppercase; color: var(--nf-muted); }
+.nf-planitem { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--nf-line); }
+.nf-planitem.is-missing { opacity: 0.55; }
+.nf-planitem__name { color: var(--nf-ink); font-weight: 600; font-size: 0.9rem; min-width: 0; overflow-wrap: anywhere; }
+.nf-planitem__name small { display: block; font-weight: 500; color: var(--nf-muted); font-size: 0.76rem; }
+.nf-planitem__kcal { font-weight: 700; color: var(--nf-ink); font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+.nf-planitem__tools { display: flex; gap: 2px; }
+.nf-planadd {
+  justify-self: start;
+  border: 1px dashed var(--nf-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--nf-accent);
+  font: 700 0.84rem/1 var(--nf-text);
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.nf-planadd:hover { border-color: var(--nf-accent); }
+.nf-market__group { display: grid; gap: 6px; }
+.nf-market__list { list-style: none; margin: 0; padding: 0; display: grid; }
+.nf-market__list li { padding: 7px 0; border-bottom: 1px solid var(--nf-line); }
+.nf-market__list li .ant-checkbox-wrapper { width: 100%; align-items: flex-start; }
+.nf-market__name { display: block; color: var(--nf-ink); font-weight: 600; }
+.nf-market__list small { display: block; color: var(--nf-muted); font-size: 0.78rem; }
+.nf-market__list li.is-checked .nf-market__name { text-decoration: line-through; color: var(--nf-muted); }
+/* Donde no cabe todo en una fila (teléfono angosto o días en columnas), los botones van debajo. */
+@media (max-width: 420px), (min-width: 1024px) {
+  .nf-planitem { grid-template-columns: minmax(0, 1fr) auto; }
+  .nf-planitem__tools { grid-column: 1 / -1; justify-content: flex-end; }
+}
+@media (min-width: 1024px) {
+  .nf-planpage__cols { grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); align-items: start; }
+  .nf-market { position: sticky; top: 84px; max-height: calc(100dvh - 100px); overflow-y: auto; }
+  .nf-plandays { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- Tu mes en comida ---------- */
+.nf-recap {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: radial-gradient(120% 70% at 85% 0%, rgba(93, 190, 133, 0.28), transparent 60%), linear-gradient(180deg, #0D1A12, #163322);
+  color: #EDF3EE;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.nf-recap__top { display: flex; align-items: center; gap: 8px; }
+.nf-recap__month { flex: 1; text-align: center; font: 700 1rem/1.2 var(--nf-text); }
+.nf-recap__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(237, 243, 238, 0.1);
+  color: #EDF3EE;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.nf-recap__icon:disabled { opacity: 0.3; cursor: default; }
+.nf-recap__close { margin-left: 4px; }
+.nf-recap__body { overflow-y: auto; padding: 20px 0; display: grid; align-content: start; gap: 16px; justify-items: stretch; }
+.nf-recap__kicker { margin: 0; font: 700 0.85rem/1 var(--nf-text); letter-spacing: 0.12em; text-transform: uppercase; color: #9CCB5A; text-align: center; }
+.nf-recap__empty { text-align: center; color: #97A69C; }
+.nf-recap__cards { display: grid; gap: 12px; width: min(560px, 100%); margin: 0 auto; transition: opacity 0.15s ease; }
+.nf-recap__cards.is-loading { opacity: 0.5; }
+.nf-recap__card {
+  display: grid;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: rgba(237, 243, 238, 0.07);
+  animation: nf-recap-in 0.45s ease both;
+}
+.nf-recap__card b { font: 800 clamp(1.8rem, 7vw, 2.6rem)/1.05 var(--nf-display); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.nf-recap__card span { font-weight: 600; color: #9CCB5A; }
+.nf-recap__card small { color: #97A69C; font-size: 0.85rem; }
+.nf-recap__foot { display: flex; justify-content: center; padding-top: 8px; }
+@keyframes nf-recap-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@media (min-width: 1024px) {
+  .nf-recap__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(860px, 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nf-recap__card { animation: none; }
+  .nf-fastring__fill,
+  .nf-plandays { transition: none; }
 }

@@ -440,3 +440,90 @@ export type Insights = {
   discoveries: { from: string; to: string; loggedDays: number; items: Discovery[] };
   energy: EnergyView | null;
 };
+
+/* ---------- Ayuno, hábitos, plan, mes y respaldo ---------- */
+
+export type FastView = {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  goalHours: number;
+  goalAt: string;
+  hours: number;
+  reached: boolean;
+};
+
+export type FastingState = {
+  now: string;
+  goalHours: number;
+  notify: boolean;
+  canSaveSettings: boolean;
+  plans: number[];
+  current: FastView | null;
+  streak: number;
+  best: number;
+  history: FastView[];
+};
+
+export type AutoSource = "NUTRI_LOG" | "NUTRI_PROTEIN" | "NUTRI_WATER" | "NUTRI_FAST";
+
+export type LinkableHabit = { id: string; title: string; icon: string | null; color: string; goal: number; unit: string | null; autoSource: string | null };
+
+export type HabitLinks = {
+  sources: { source: AutoSource; title: string; description: string; icon: string; habit: LinkableHabit | null }[];
+  habits: LinkableHabit[];
+};
+
+export type PlanKind = "SAVED" | "RECIPE" | "FOOD";
+
+export type PlanItem = {
+  id: string;
+  date: string;
+  meal: MealSlot;
+  kind: PlanKind;
+  refId: string;
+  servings: number;
+  name: string;
+  unit?: string;
+  kcal: number;
+  missing: boolean;
+};
+
+export type ShoppingGroup = { category: string; items: { foodId: string; name: string; grams: number; amount: string; uses: number }[] };
+
+export type PlanWeek = {
+  from: string;
+  to: string;
+  mealNames: Record<MealSlot, string>;
+  kcalTarget: number | null;
+  items: PlanItem[];
+  days: { date: string; kcal: number }[];
+  shopping: ShoppingGroup[];
+};
+
+export type MonthRecap = {
+  month: string;
+  from: string;
+  to: string;
+  today: string;
+  firstMonth: string | null;
+  kcalTarget: number | null;
+  daysInMonth: number;
+  loggedDays: number;
+  entries: number;
+  avgKcal: number | null;
+  inTarget: number | null;
+  proteinDays: number | null;
+  waterDays: number;
+  topFood: { name: string; times: number; days: number; kcal: number } | null;
+  topDish: { name: string; times: number; days: number; kcal: number } | null;
+  bestWeek: { start: string; end: string; inTarget: number; logged: number } | null;
+  streak: number;
+  weight: { start: number; end: number; change: number } | null;
+  fasts: { reached: number; longestHours: number };
+};
+
+export type NutritionImportReport = { entries: number; water: number; weights: number; fasts: number; foods: number; savedMeals: number };
+
+/** Una cadena colombiana: si publica sus calorías (y dónde) y los platos que ya creaste de ella. */
+export type Chain = { name: string; info: "si" | "parcial" | "no"; url?: string; note: string; foods: FoodResult[] };

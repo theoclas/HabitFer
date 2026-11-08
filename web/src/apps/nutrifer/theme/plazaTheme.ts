@@ -30,6 +30,8 @@ const light: ThemeConfig = {
     colorText: "#142019",
     colorTextSecondary: "#5B6A61",
     colorTextTertiary: "#7A887F",
+    // Los textos de ayuda de los campos se leen (4,5 a 1 sobre el papel).
+    colorTextPlaceholder: "#6B7A70",
     boxShadow: "0 10px 30px -12px rgba(20, 32, 25, 0.25)",
   },
   components: {
@@ -60,6 +62,7 @@ const dark: ThemeConfig = {
     colorText: "#EDF3EE",
     colorTextSecondary: "#97A69C",
     colorTextTertiary: "#7C8B81",
+    colorTextPlaceholder: "#7C8B81",
     boxShadow: "0 12px 34px -12px rgba(0, 0, 0, 0.6)",
   },
   components: {

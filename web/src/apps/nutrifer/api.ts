@@ -1,9 +1,17 @@
 import { api } from "../../api/client";
 import type {
   AmountChoice,
+  AutoSource,
   BarcodeResult,
+  Chain,
   BatchItem,
+  FastingState,
+  HabitLinks,
+  MonthRecap,
+  NutritionImportReport,
   OffHit,
+  PlanKind,
+  PlanWeek,
   DayView,
   Entry,
   FavoriteFood,
@@ -277,5 +285,121 @@ export async function fetchReport(from: string, to: string) {
 
 export async function fetchInsights() {
   const { data } = await api.get<Insights>("/nutrition/insights");
+  return data;
+}
+
+/* ---------- Ayuno ---------- */
+
+export async function fetchFasting() {
+  const { data } = await api.get<FastingState>("/nutrition/fasting");
+  return data;
+}
+
+export async function startFast(payload: { startedAt?: string; goalHours?: number } = {}) {
+  const { data } = await api.post<FastingState>("/nutrition/fasting/start", payload);
+  return data;
+}
+
+export async function stopFast(payload: { endedAt?: string } = {}) {
+  const { data } = await api.post<FastingState>("/nutrition/fasting/stop", payload);
+  return data;
+}
+
+export async function updateFast(id: string, payload: { startedAt?: string; endedAt?: string; goalHours?: number }) {
+  const { data } = await api.patch<FastingState>(`/nutrition/fasting/${id}`, payload);
+  return data;
+}
+
+export async function deleteFast(id: string) {
+  const { data } = await api.delete<FastingState>(`/nutrition/fasting/${id}`);
+  return data;
+}
+
+export async function saveFastSettings(payload: { goalHours?: number; notify?: boolean }) {
+  const { data } = await api.put<FastingState>("/nutrition/fasting/settings", payload);
+  return data;
+}
+
+/* ---------- Conexión con HabitFer ---------- */
+
+export async function fetchHabitLinks() {
+  const { data } = await api.get<HabitLinks>("/nutrition/habits");
+  return data;
+}
+
+export async function linkHabit(source: AutoSource, habitId: string | null) {
+  const { data } = await api.put<HabitLinks>(`/nutrition/habits/${source}`, habitId ? { habitId } : {});
+  return data;
+}
+
+export async function createLinkedHabit(source: AutoSource) {
+  const { data } = await api.post<HabitLinks>(`/nutrition/habits/${source}`);
+  return data;
+}
+
+/* ---------- Plan de la semana y mercado ---------- */
+
+export async function fetchPlan(from: string) {
+  const { data } = await api.get<PlanWeek>("/nutrition/plan", { params: { from } });
+  return data;
+}
+
+export async function addPlanItem(payload: { date: string; meal: MealSlot; kind: PlanKind; refId: string; servings?: number }) {
+  const { data } = await api.post<{ id: string }>("/nutrition/plan", payload);
+  return data;
+}
+
+export async function updatePlanItem(id: string, payload: { servings?: number; date?: string; meal?: MealSlot }) {
+  await api.patch(`/nutrition/plan/${id}`, payload);
+}
+
+export async function deletePlanItem(id: string) {
+  await api.delete(`/nutrition/plan/${id}`);
+}
+
+export async function logPlanItem(id: string) {
+  const { data } = await api.post<{ date: string; meal: MealSlot; entries: number; kcal: number }>(`/nutrition/plan/${id}/log`);
+  return data;
+}
+
+export async function copyPlanWeek(from: string, to: string) {
+  const { data } = await api.post<{ copied: number }>("/nutrition/plan/copy", { from, to });
+  return data;
+}
+
+/* ---------- Cadenas colombianas ---------- */
+
+export async function fetchChains() {
+  const { data } = await api.get<Chain[]>("/nutrition/chains");
+  return data;
+}
+
+/* ---------- Tu mes en comida ---------- */
+
+export async function fetchMonthRecap(month: string) {
+  const { data } = await api.get<MonthRecap>("/nutrition/month", { params: { month } });
+  return data;
+}
+
+/* ---------- Respaldo ---------- */
+
+/** Descarga el respaldo de NutriFer (JSON) o el diario (CSV) como archivo. */
+export async function downloadNutritionBackup(kind: "json" | "csv") {
+  const res = await api.get<Blob>(kind === "json" ? "/nutrition/export" : "/nutrition/export/csv", { responseType: "blob" });
+  const disposition = String(res.headers["content-disposition"] ?? "");
+  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? (kind === "json" ? "nutrifer-respaldo.json" : "nutrifer-diario.csv");
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return name;
+}
+
+export async function importNutritionBackup(backup: unknown) {
+  const { data } = await api.post<NutritionImportReport>("/nutrition/export/import", backup, { timeout: 120000 });
   return data;
 }

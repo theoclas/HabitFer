@@ -2,8 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { FoodSource, Prisma, type MealEntry, type MealSlot } from '@prisma/client';
 import { addDays, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
+import { DEFAULT_GLASS_ML, DEFAULT_WATER_GOAL_ML } from './diary.constants';
 import { checkedDate, computeOr400, entryView, FOOD_FOR_ENTRY, fromTemplate, totalsOf, type FoodRow, type Template } from './entry.shared';
 import { amountText } from './entry.utils';
+import { NutriHabitsService } from './habits/nutri-habits.service';
 import { MEAL_ORDER, mealNames } from './meals';
 import type { BatchEntriesDto, CopyDto, CreateEntryDto, QuickEntryDto, RepeatEntryDto, UpdateEntryDto, WaterDto } from './nutrition.dto';
 import { roundTotals, scale, sumTotals } from './nutrition-math';
@@ -12,9 +14,8 @@ import { nutrientGoals } from './progress/goals';
 import { normalize } from './search.utils';
 import { habitualSuggestions, previousMeals } from './suggest.utils';
 
-/** Agua por defecto: 8 vasos de 250 ml. */
-export const DEFAULT_WATER_GOAL_ML = 2000;
-export const DEFAULT_GLASS_ML = 250;
+export { DEFAULT_GLASS_ML, DEFAULT_WATER_GOAL_ML };
+
 /** Días hacia atrás para saber «lo de siempre». */
 const HABIT_WINDOW_DAYS = 14;
 /** Hasta cuántos días atrás se ofrece «repetir lo de ayer». */
@@ -28,6 +29,7 @@ export class DiaryService {
   constructor(
     private prisma: PrismaService,
     private energy: EnergyService,
+    private nutriHabits: NutriHabitsService,
   ) {}
 
   private async loadFood(userId: string, foodId: string): Promise<FoodRow> {
@@ -70,6 +72,8 @@ export class DiaryService {
     const weekFrom = addDays(date, -6);
     // La revisión de la semana (meta que se ajusta sola) va antes de leer la meta.
     const adjust = await this.energy.ensureWeekly(userId);
+    // Los hábitos de HabitFer conectados (hoy o ayer) se marcan con lo anotado: la app relee el día tras cada cambio.
+    await this.nutriHabits.syncDay(userId, dateKey);
     const [entries, past, profile, extra, weekRows, photos] = await Promise.all([
       this.prisma.mealEntry.findMany({ where: { userId, date }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }),
       this.prisma.mealEntry.findMany({
@@ -405,6 +409,8 @@ export class DiaryService {
     const current = await this.prisma.nutritionDay.findUnique({ where: key });
     const ml = Math.max(0, Math.min(20000, (current?.waterMl ?? 0) + dto.deltaMl));
     await this.prisma.nutritionDay.upsert({ where: key, create: { userId, date, waterMl: ml }, update: { waterMl: ml } });
+    // El hábito de agua de HabitFer (si está conectado) se marca solo.
+    await this.nutriHabits.syncDay(userId, dto.date);
     return { date: dto.date, ml };
   }
 }

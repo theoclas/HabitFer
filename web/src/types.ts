@@ -65,6 +65,8 @@ export type Habit = {
   reminderTime: string | null;
   /** Todas las horas de aviso (HH:mm). */
   reminderTimes: string[];
+  /** Se marca solo desde NutriFer (anotar las comidas, proteína, agua o ayuno); null = a mano. */
+  autoSource?: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/com
 import { FoodSource, MealSlot, Prisma } from '@prisma/client';
 import { addDays, startOfToday } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
+import { CHAINS } from './data/chains';
 import { amountText } from './entry.utils';
 import type { CreateFoodDto } from './nutrition.dto';
 import { computeSeals, type Seal } from './packaged/seals';
@@ -185,6 +186,16 @@ export class FoodsService implements OnModuleInit {
   async search(userId: string, q: string): Promise<FoodResult[]> {
     const [ranked] = await this.searchMany(userId, [q], 25);
     return ranked;
+  }
+
+  /** Cadenas colombianas: dónde ver sus calorías (si las publican) y los platos propios de cada una. */
+  async chains(userId: string) {
+    const own = await this.prisma.food.findMany({
+      where: { ownerId: userId, archived: false, brand: { in: CHAINS.map((c) => c.name) } },
+      select: { ...SUMMARY_SELECT, brand: true },
+      orderBy: { name: 'asc' },
+    });
+    return CHAINS.map((c) => ({ ...c, foods: own.filter((f) => f.brand === c.name).map((f) => toResult(f)) }));
   }
 
   /** Varias búsquedas de una vez (para «escribe o dicta»): los alimentos propios y el uso se leen una sola vez. */

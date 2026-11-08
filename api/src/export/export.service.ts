@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { HabitKind, ScheduleType, TaskPriority, TaskStatus, TimeOfDay } from '@prisma/client';
 import { parseDateKey, startOfToday, toDateKey } from '../common/date.utils';
 import { parseScheduleDays } from '../habits/habit-rules';
+import { NutritionExportService, type NutritionImportReport } from '../nutrition/export/nutrition-export.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeReminderTimes } from '../reminders/reminder-text.utils';
 import {
@@ -41,6 +42,8 @@ export type ImportReport = {
   moods: number;
   projects: number;
   tasks: number;
+  /** Lo de NutriFer que se sumó (si el respaldo lo traía). */
+  nutrition?: NutritionImportReport;
 };
 
 /**
@@ -49,10 +52,13 @@ export type ImportReport = {
  */
 @Injectable()
 export class ExportService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private nutrition: NutritionExportService,
+  ) {}
 
   async exportJson(userId: string) {
-    const [user, habits, pauses, moods, projects, tasks] = await Promise.all([
+    const [user, habits, pauses, moods, projects, tasks, nutrition] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, fullName: true } }),
       this.prisma.habit.findMany({
         where: { userId },
@@ -70,6 +76,7 @@ export class ExportService {
       this.prisma.dayMood.findMany({ where: { userId }, orderBy: { date: 'asc' }, select: { date: true, mood: true } }),
       this.prisma.project.findMany({ where: { userId }, orderBy: { sortOrder: 'asc' } }),
       this.prisma.task.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+      this.nutrition.exportJson(userId),
     ]);
     const key = (d: Date | null) => (d ? toDateKey(d) : null);
     return {
@@ -77,6 +84,8 @@ export class ExportService {
       version: BACKUP_VERSION,
       exportedAt: new Date().toISOString(),
       user: user ? { username: user.username, fullName: user.fullName } : null,
+      /** Lo de NutriFer: diario de comida, agua, peso, ayunos, alimentos propios y comidas guardadas. */
+      nutrition,
       habits: habits.map((h) => ({
         id: h.id,
         title: h.title,
@@ -281,6 +290,9 @@ export class ExportService {
       });
       report.tasks++;
     }
+
+    // NutriFer viaja dentro del mismo respaldo.
+    if (isObj(body.nutrition)) report.nutrition = await this.nutrition.importJson(userId, body.nutrition);
 
     return report;
   }

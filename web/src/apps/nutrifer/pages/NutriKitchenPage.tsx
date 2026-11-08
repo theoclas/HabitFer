@@ -1,4 +1,4 @@
-import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, RightOutlined, StarFilled } from "@ant-design/icons";
+import { CalendarOutlined, CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, RightOutlined, StarFilled } from "@ant-design/icons";
 import { Button, Input, Modal, Popconfirm, Skeleton, message } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -83,6 +83,14 @@ export function NutriKitchenPage() {
       <div className="nf-kitchen__intro">
         <h1 className="nf-page-title">Cocina</h1>
         <p className="nf-page-lead">Tus recetas, tus comidas guardadas y tus favoritos: lo que anotas de un toque.</p>
+        <button type="button" className="nf-plancta" onClick={() => navigate("/app/nutrifer/cocina/plan")}>
+          <CalendarOutlined />
+          <span>
+            <b>Plan de la semana y mercado</b>
+            <small>Planea qué vas a comer con tus comidas guardadas y recetas, y saca la lista de mercado.</small>
+          </span>
+          <RightOutlined />
+        </button>
       </div>
 
       <section className="nf-card nf-kitchen__recipes" aria-labelledby="nf-k-recipes">

@@ -105,6 +105,8 @@ model User {
   bodyWeights           BodyWeight[]
   energyEstimates       EnergyEstimate[]
   nutritionShortcut     NutritionShortcut?
+  fasts                 Fast[]
+  mealPlanItems         MealPlanItem[]
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
@@ -235,6 +237,8 @@ model Habit {
   reminderTime     String?            @db.VarChar(5)
   /// Todas las horas de aviso (HH:mm), hasta 4.
   reminderTimes    Json               @default("[]")
+  /// Se marca solo desde NutriFer: NUTRI_LOG (anotar las comidas), NUTRI_PROTEIN, NUTRI_WATER o NUTRI_FAST (null = a mano).
+  autoSource       String?            @db.VarChar(20)
   sortOrder        Int                @default(0)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
@@ -1159,6 +1163,9 @@ model NutritionProfile {
   glassMl       Int?
   /// Meta que se ajusta sola: cada lunes se revisa con el peso de tendencia y, con datos suficientes, con el gasto real.
   adaptive      Boolean    @default(true)
+  /// Ayuno: horas de la meta (16 = 16:8) y si avisar al llegar.
+  fastGoalHours Int        @default(16)
+  fastNotify    Boolean    @default(true)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -1215,4 +1222,46 @@ model NutritionShortcut {
   hint       String    @db.VarChar(8)
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
+}
+
+/// Un ayuno: empieza y termina (endedAt null = en curso). Cuenta para la racha si llegó a su meta.
+model Fast {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt  DateTime
+  endedAt    DateTime?
+  /// Horas de la meta con que empezó (16, 18…).
+  goalHours  Int
+  /// Ya se avisó que llegó a la meta.
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, startedAt])
+}
+
+enum PlanKind {
+  /// Una comida guardada.
+  SAVED
+  /// Una receta propia (en porciones).
+  RECIPE
+  /// Un alimento (en su medida por defecto).
+  FOOD
+}
+
+/// Plan de la semana: qué se va a comer cada día y comida (sirve para la lista de mercado).
+model MealPlanItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  meal      MealSlot
+  kind      PlanKind
+  /// Id de la comida guardada, la receta o el alimento.
+  refId     String   @db.VarChar(40)
+  /// Cuántas: porciones de la receta, veces la comida guardada o medidas del alimento.
+  servings  Float    @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
 }

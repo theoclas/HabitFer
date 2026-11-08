@@ -1,10 +1,12 @@
-import { message } from "antd";
+import { StarFilled } from "@ant-design/icons";
+import { Button, message } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { todayKey } from "../../../utils/dates";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchInsights, fetchReport, fetchWeights } from "../api";
 import { DiscoveriesCard, EnergyCard } from "../components/InsightsCards";
+import { MonthRecap } from "../components/MonthRecap";
 import { WeekReport } from "../components/WeekReport";
 import { WeightCard, type WeightRange } from "../components/WeightCard";
 import type { Insights, Report, WeightsView } from "../types";
@@ -27,6 +29,8 @@ export function NutriProgressPage() {
   const [range, setRange] = useState<WeightRange>(90);
   const [weights, setWeights] = useState<WeightsView | null>(null);
   const [insights, setInsights] = useState<Insights | null>(null);
+  const [recapOpen, setRecapOpen] = useState(false);
+  const closeRecap = useCallback(() => setRecapOpen(false), []);
 
   const loadWeights = useCallback(async () => {
     try {
@@ -67,9 +71,15 @@ export function NutriProgressPage() {
   return (
     <div className="nf-progress">
       <header className="nf-progress__intro">
-        <h1>Progreso</h1>
-        <p>Tu peso real (sin los saltos de cada día), cómo te fue en la semana y lo que dicen tus datos.</p>
+        <div>
+          <h1>Progreso</h1>
+          <p>Tu peso real (sin los saltos de cada día), cómo te fue en la semana y lo que dicen tus datos.</p>
+        </div>
+        <Button icon={<StarFilled />} onClick={() => setRecapOpen(true)}>
+          Tu mes en comida
+        </Button>
       </header>
+      <MonthRecap open={recapOpen} onClose={closeRecap} />
       <div className="nf-progress__weight">
         <WeightCard
           data={weights}

@@ -11,6 +11,7 @@ import { AddFoodSheet } from "../components/AddFoodSheet";
 import { CopyModal, type CopySource } from "../components/CopyModal";
 import { CalorieRing, MacroBars } from "../components/DaySummary";
 import { EntrySheet } from "../components/EntrySheet";
+import { FastingCard } from "../components/FastingCard";
 import { MealCard } from "../components/MealCard";
 import { MealNutrientsSheet } from "../components/MealNutrientsSheet";
 import { NutrientBars } from "../components/Nutrients";
@@ -352,6 +353,9 @@ export function NutriTodayPage() {
               {day.targets && <NutrientBars totals={day.totals} targets={day.targets} known={day.known} />}
 
               <WaterCard water={day.water} busy={false} onChange={(d) => void changeWater(d)} />
+
+              {/* El ayuno va con el reloj de ahora: solo en el día de hoy. */}
+              {isToday && <FastingCard />}
             </>
           )}
         </aside>

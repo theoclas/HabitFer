@@ -3,6 +3,7 @@ import {
   CameraOutlined,
   DeleteOutlined,
   EditOutlined,
+  InfoCircleOutlined,
   LoadingOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -20,6 +21,7 @@ import {
   addEntry,
   addQuickEntry,
   deletePhoto,
+  fetchChains,
   fetchShortcuts,
   foodDetail,
   logSavedMeal,
@@ -40,6 +42,7 @@ import { shrinkPhoto } from "../photo";
 import type {
   AmountChoice,
   BarcodeResult,
+  Chain,
   BatchItem,
   Entry,
   FavoriteFood,
@@ -83,8 +86,10 @@ type Props = {
 type View =
   | { kind: "home" }
   | { kind: "detail"; food: FoodDetail }
-  /** Crear: desde «¿No está?» o con lo que se sabe de un código de barras. */
-  | { kind: "create"; barcode?: string; name?: string; brand?: string | null; note?: string }
+  /** Crear: desde «¿No está?», con lo que se sabe de un código de barras o un plato de una cadena. */
+  | { kind: "create"; barcode?: string; name?: string; brand?: string | null; note?: string; chain?: string }
+  /** Una cadena colombiana: sus platos ya creados y dónde ver sus calorías. */
+  | { kind: "chain"; chain: Chain }
   | { kind: "quick" }
   | { kind: "saved"; saved: SavedMealView }
   | { kind: "write" }
@@ -144,6 +149,15 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
   const [text, setText] = useState("");
   const [scanOpen, setScanOpen] = useState(false);
   const [offBusy, setOffBusy] = useState<string | null>(null);
+  const [chains, setChains] = useState<Chain[] | null>(null);
+
+  // Las cadenas (con los platos propios de cada una) se piden una vez por apertura.
+  useEffect(() => {
+    if (!open) return;
+    fetchChains()
+      .then(setChains)
+      .catch(() => setChains([]));
+  }, [open]);
 
   const loadShortcuts = useCallback(() => {
     if (!meal) return;
@@ -500,16 +514,75 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
   } else if (view.kind === "create") {
     body = (
       <CreateFoodForm
-        key={view.barcode ?? "new"}
-        initialName={view.barcode ? (view.name ?? "") : term}
+        key={view.barcode ?? view.chain ?? "new"}
+        initialName={view.barcode || view.chain ? (view.name ?? "") : term}
         barcode={view.barcode}
         brand={view.brand}
         note={view.note}
+        chain={view.chain}
         onCancel={home}
         onCreated={(food) => {
+          if (view.chain) void fetchChains().then(setChains).catch(() => undefined);
           void openFood(food.id);
         }}
       />
+    );
+  } else if (view.kind === "chain") {
+    const c = chains?.find((x) => x.name === view.chain.name) ?? view.chain;
+    body = (
+      <div className="nf-detail">
+        <button type="button" className="nf-back" onClick={home}>
+          ‹ Volver a la búsqueda
+        </button>
+        <header>
+          <h3 className="nf-detail__name">{c.name}</h3>
+          <p className="nf-detail__source">{c.info === "si" ? "Publica sus calorías" : c.info === "parcial" ? "Publica solo una parte" : "No publica sus calorías"}</p>
+        </header>
+        <p className="nf-note">
+          <InfoCircleOutlined />
+          <span>
+            {c.note} Cada plato se crea una vez y queda guardado para la próxima.
+            {c.url && (
+              <>
+                {" "}
+                <a href={c.url} target="_blank" rel="noopener noreferrer">
+                  Ver su página
+                </a>
+              </>
+            )}
+          </span>
+        </p>
+        {c.foods.length > 0 && (
+          <div>
+            <div className="nf-section-label">Tus platos de {c.name}</div>
+            <div className="nf-results">
+              {c.foods.map((f) => {
+                const amount = defaultAmount(f);
+                return (
+                  <FoodRow
+                    key={f.id}
+                    food={f}
+                    amount={amount}
+                    opening={opening === f.id}
+                    quickBusy={quickBusy === f.id}
+                    onOpen={() => void openFood(f.id)}
+                    onQuick={() => void quickAdd(f)}
+                    quickLabel={`Agregar ${f.name}, ${amount.text}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <Button
+          size="large"
+          type={c.foods.length ? "default" : "primary"}
+          icon={<PlusOutlined />}
+          onClick={() => setView({ kind: "create", chain: c.name, brand: c.name, note: `${c.note} Pon lo que sepas: si no tienes los macros, deja solo las calorías.` })}
+        >
+          Crear un plato de {c.name}
+        </Button>
+      </div>
     );
   } else if (view.kind === "looking") {
     body = (
@@ -752,6 +825,22 @@ export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, pho
                 </button>
               ))}
             </div>
+            {chains && chains.length > 0 && (
+              <>
+                <div className="nf-section-label">Restaurantes y cadenas</div>
+                <div className="nf-chips nf-chips--sm nf-chips--scroll" role="group" aria-label="Restaurantes y cadenas">
+                  {/* Primero las que ya tienen platos tuyos. */}
+                  {[...chains]
+                    .sort((a, b) => b.foods.length - a.foods.length)
+                    .map((c) => (
+                      <button key={c.name} type="button" className="nf-chip" onClick={() => setView({ kind: "chain", chain: c })}>
+                        {c.name}
+                        {c.foods.length > 0 && <small className="nf-chip__count">{c.foods.length}</small>}
+                      </button>
+                    ))}
+                </div>
+              </>
+            )}
             {shortcuts === null ? (
               <div className="nf-empty">Cargando…</div>
             ) : (

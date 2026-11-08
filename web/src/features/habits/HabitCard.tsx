@@ -184,6 +184,11 @@ export function HabitCard({ habit, loading, canToggle = true, riskWindow = false
                 <StreakChipFor n={habit.currentStreak} weeks={habit.streakUnit === "weeks"} />
               )}
               {atRisk && <span className="hf-card__risk">en riesgo</span>}
+              {habit.autoSource && (
+                <span className="hf-card__auto" title="Se marca solo con lo que anotas en NutriFer">
+                  🥑 NutriFer
+                </span>
+              )}
               {weekly ? (
                 <span className={`hf-week-chip${(habit.weekDone ?? 0) >= (habit.weeklyTarget ?? 3) ? " is-met" : ""}`}>
                   {(habit.weekDone ?? 0) >= (habit.weeklyTarget ?? 3)

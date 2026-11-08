@@ -350,6 +350,8 @@
   color: var(--hf-muted);
 }
 .hf-card__risk { color: var(--hf-ember); font-weight: 700; }
+/* Hábito que se marca solo desde NutriFer. */
+.hf-card__auto { font-weight: 700; font-size: 0.72rem; letter-spacing: 0.02em; color: var(--hf-muted); white-space: nowrap; }
 .hf-card__actions { display: flex; align-items: center; gap: 8px; }
 .hf-card__edit {
   width: 34px;

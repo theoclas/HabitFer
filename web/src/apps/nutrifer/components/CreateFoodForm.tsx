@@ -12,6 +12,8 @@ type Props = {
   brand?: string | null;
   /** Por qué se está creando (por ejemplo, «no conozco este código»). */
   note?: string;
+  /** Plato de una cadena (El Corral, Frisby…): la cadena queda como marca. */
+  chain?: string;
   onCancel: () => void;
   onCreated: (food: FoodResult) => void;
 };
@@ -19,7 +21,7 @@ type Props = {
 type Num = number | null;
 
 /** Alimento propio: lo que dice el empaque o lo que tú sepas, por porción o por 100 g. */
-export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note, onCancel, onCreated }: Props) {
+export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note, chain, onCancel, onCreated }: Props) {
   const [name, setName] = useState(initialName.trim());
   const [per, setPer] = useState<"portion" | "100g">("portion");
   const [portionLabel, setPortionLabel] = useState("");
@@ -51,6 +53,7 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
         fat: fat ?? 0,
         ...(per === "portion" ? { portionLabel: portionLabel.trim(), portionGrams: portionGrams ?? undefined } : {}),
         ...(barcode ? { barcode } : {}),
+        ...(chain && !more ? { brand: chain } : {}),
         ...(more
           ? {
               ...(brand.trim() ? { brand: brand.trim() } : {}),
@@ -61,7 +64,9 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
             }
           : {}),
       });
-      message.success(barcode ? "Producto creado: la próxima vez que lo escanees, sale solo" : "Alimento creado");
+      message.success(
+        barcode ? "Producto creado: la próxima vez que lo escanees, sale solo" : chain ? `Quedó guardado en ${chain}: la próxima vez sale de una` : "Alimento creado",
+      );
       onCreated(food);
     } catch (err) {
       message.error(apiErrorMessage(err, "No se pudo crear el alimento"));
@@ -88,12 +93,13 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
         ‹ Volver a la búsqueda
       </button>
       <header style={{ display: "grid", gap: 8 }}>
-        <h3 className="nf-detail__name">{barcode ? "Crear el producto" : "Crear un alimento"}</h3>
+        <h3 className="nf-detail__name">{barcode ? "Crear el producto" : chain ? `Un plato de ${chain}` : "Crear un alimento"}</h3>
         {barcode && (
           <span className="nf-code-chip">
             <BarcodeOutlined /> {barcode}
           </span>
         )}
+        {chain && <span className="nf-code-chip">{chain}</span>}
       </header>
       {note && (
         <p className="nf-note">
@@ -105,7 +111,14 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
         <label className="nf-label" htmlFor="nf-food-name">
           Nombre
         </label>
-        <Input id="nf-food-name" size="large" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Por ejemplo: Galletas Festival" />
+        <Input
+          id="nf-food-name"
+          size="large"
+          value={name}
+          maxLength={120}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={chain ? "Por ejemplo: Hamburguesa Corral con queso" : "Por ejemplo: Galletas Festival"}
+        />
       </div>
       <div className="nf-field">
         <span className="nf-label">Los valores son por</span>
