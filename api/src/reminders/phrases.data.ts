@@ -1,0 +1,3748 @@
+// Generado por web/scripts/sync-frases-api.mjs desde web/src/data (las frases del banner de la app).
+// No editar a mano: cambia los JSON de la web y vuelve a correr el script.
+
+export type Phrase = { frase: string; autor: string };
+
+/** Jhova, Feristoteles y Petlon (las favoritas: el banner las muestra 70 % de las veces). */
+export const FRIEND_PHRASES: Phrase[] = [
+  {
+    "frase": "Que se de dedo, que se de dedo; pero antes completa el habito.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Si la musica suena fuerte, tu disciplina debe sonar mas fuerte.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "No es perreo, es constancia con flow.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Levantate temprano aunque anoche hayas cantado hasta tarde.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "El que espera motivacion se queda en la sala de espera.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Hazlo por ti, no por la foto del progreso.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Un dia sin entrenar no te mata; dos dias seguidos empiezan a formar excusa.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "La racha es como un hit: si la sueltas, se olvida.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Sudor hoy, confianza manana; eso no sale en Spotify.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Cuando la mente dice no, el cuerpo obedece al calendario.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "No necesitas estar de buen humor para cumplir; necesitas aparecer.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "El habito es el feat que nadie escucha pero todos respetan.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Si puedes bailar una hora, puedes caminar veinte minutos.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "La disciplina no es castigo; es el puente a la version que quieres ser.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Hoy cuenta aunque nadie te aplauda.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Menos excusas, mas repeticiones.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "Tu yo de manana no quiere disculpas; quiere resultados.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "La excelencia no es un acto aislado; es un habito repetido con sabiduria.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Somos lo que hacemos cada dia, no lo que decimos los lunes.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Conocete a ti mismo: saber cuando descansar es tan sabio como saber cuando empujar.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "La virtud del habito esta en el medio: ni pereza extrema ni obsesion ciega.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "El proposito sin accion es solo teoria bonita.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Educar el caracter cuesta sudor; ignorarlo cuesta anos.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "La constancia es la madre de la maestria.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "No busques perfeccion; busca progreso medido.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Quien domina sus habitos domina su dia.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "El placer inmediato es barato; el arrepentimiento es caro.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Pensar sin actuar engorda la duda; actuar sin pensar engorda el error.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "La amistad con uno mismo empieza cumpliendo lo que te prometes.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Pequenas acciones diarias construyen grandes destinos.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "El coraje no es ausencia de miedo; es entrenar a pesar del miedo.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "La paciencia no es esperar sin hacer nada; es persistir mientras madura el fruto.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "El tiempo es el maestro mas justo: premia a quien aparece.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "La mente fuerte elige lo dificil cuando lo dificil es lo correcto.",
+    "autor": "Feristoteles"
+  },
+  {
+    "frase": "Pedalea aunque no tengas ganas; las ganas suelen llegar en el minuto diez.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Subir la cuesta mental es entrenamiento para la cuesta real.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "No compitas con el leaderboard; compite con tu ayer.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Cinco minutos en movimiento vencen a cero minutos esperando inspiracion.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "La resistencia se entrena en silencio, no en el discurso.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Cada pedalada es un voto por la version fuerte de ti.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "El sudor no miente; la excusa si.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Calienta bien, entrena mejor, recupera mejor.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "La meta no es llegar primero; es no dejar de avanzar.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Respira, enfoca, repite: asi se gana una clase y asi se gana un dia.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Tu cuerpo aprende por repeticion, no por deseos.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Un entrenamiento mediocre hecho supera al entrenamiento perfecto pospuesto.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "La cadencia constante vence al sprint emocional.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Hidratate, alimentate, duerme: el rendimiento empieza fuera del gym.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "Cuando quieras parar, baja un cambio; no te bajes del camino.",
+    "autor": "Petlon"
+  },
+  {
+    "frase": "La disciplina es el motor; la motivacion es solo la chispa.",
+    "autor": "Petlon"
+  }
+];
+
+/** Coleccion principal. */
+export const PHRASES: Phrase[] = [
+  {
+    "frase": "No controles el mundo; controla la forma en que respondes a él.",
+    "autor": "Inspirado en Epicteto"
+  },
+  {
+    "frase": "Un día bien vivido pesa más que cien promesas vacías.",
+    "autor": "Inspirado en Séneca"
+  },
+  {
+    "frase": "La incomodidad de hoy puede ser la libertad de mañana.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "Hazlo cansado, hazlo con miedo, hazlo imperfecto; pero hazlo.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu carácter se escribe en los momentos donde podrías abandonar.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Cada repetición es un voto silencioso por la persona que quieres ser.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La mente que aprende a esperar también aprende a vencer.",
+    "autor": "Ferstein"
+  },
+  {
+    "frase": "No necesitas motivación eterna; necesitas una decisión firme.",
+    "autor": "Preparador físico"
+  },
+  {
+    "frase": "Lo que toleras en tu rutina decide lo que recibes en tu vida.",
+    "autor": "Bad bunny beibe"
+  },
+  {
+    "frase": "La paz no llega cuando todo se ordena; llega cuando tú te ordenas.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Que se de dedo, que se de dedo",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "No controles el mundo; controla la forma en que respondes a el.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "Un dia bien vivido pesa mas que cien promesas vacias.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "La incomodidad de hoy puede ser la libertad de manana.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "Tu caracter se escribe en los momentos donde podrias abandonar.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Cada repeticion es un voto silencioso por la persona que quieres ser.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "La mente que aprende a esperar tambien aprende a vencer.",
+    "autor": "Ferstein"
+  },
+  {
+    "frase": "No necesitas motivacion eterna; necesitas una decision firme.",
+    "autor": "Preparador fisico"
+  },
+  {
+    "frase": "La paz no llega cuando todo se ordena; llega cuando tu te ordenas.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Que se de dedo, que se de dedo.",
+    "autor": "Jhova de aquino"
+  },
+  {
+    "frase": "No es lo que te ocurre, sino como reaccionas a ello.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "Sufrimos mas en la imaginacion que en la realidad.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "La felicidad de tu vida depende de la calidad de tus pensamientos.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Primero dite quien quieres ser y luego haz lo que debas.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "No recibas con fastidio lo que ocurre; acéptalo.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "El destino guia al que lo acepta y arrastra al que se resiste.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Mientras tardamos en deliberar, suelen pasar cosas peores.",
+    "autor": "Caton el Joven"
+  },
+  {
+    "frase": "No pidas que las cosas sean faciles; pide ser mas fuerte.",
+    "autor": "Inspirado en Epicteto"
+  },
+  {
+    "frase": "Quien teme a la muerte nunca hara nada digno de un hombre vivo.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "La suerte es lo que ocurre cuando la preparacion encuentra la oportunidad.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "El impedimento a la accion hace avanzar la accion. Lo que se interpone se convierte en el camino.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Si buscas la paz, no busques fuera; buscala en ti.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "No desperdicies el resto de tu vida en pensamientos sobre otros.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "El alma se tiñe del color de sus pensamientos.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "Haz cada acto de tu vida como si fuera el ultimo.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "La mejor venganza es no ser como tu enemigo.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "No pierdas mas tiempo discutiendo como debe ser un buen hombre. Se uno.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "No actues como si fueras a vivir diez mil anos. La muerte pende de ti.",
+    "autor": "Marco Aurelio"
+  },
+  {
+    "frase": "La riqueza consiste en no tener necesidades, no en tener mucho.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "El fuego prueba el oro; la adversidad prueba a los hombres fuertes.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Dificultades fortalecen la mente, asi como el trabajo fortalece el cuerpo.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Comienza a vivir inmediatamente y cuenta cada dia como una vida aparte.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "No hay viento favorable para quien no sabe a que puerto va.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "El hombre que sufre antes de que sea necesario sufre mas de lo necesario.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "El tiempo descubre la verdad.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Donde hay un humano, hay una oportunidad para la amistad.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "La vida es larga si sabes usarla.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "No es que tengamos poco tiempo, sino que perdemos mucho.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Elige un maestro cuya vida, palabra y mente te sirvan de modelo.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Solo hay un camino hacia la felicidad: dejar de aferrarse a lo que esta fuera de tu control.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "Ninguna gran cosa se crea de repente.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "No busques que los acontecimientos sucedan como quieres. Quierelos como suceden.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "La libertad es la unica meta digna. Solo es libre quien vive como quiere.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "Si quieres mejorar, acepta que te consideren tonto y superficial.",
+    "autor": "Epicteto"
+  },
+  {
+    "frase": "El que dice que puede y el que dice que no puede, suelen tener razon.",
+    "autor": "Henry Ford"
+  },
+  {
+    "frase": "El unico modo de hacer un gran trabajo es amar lo que haces.",
+    "autor": "Steve Jobs"
+  },
+  {
+    "frase": "No cuentes los dias; haz que los dias cuenten.",
+    "autor": "Muhammad Ali"
+  },
+  {
+    "frase": "Yo no fallo. Aprendo.",
+    "autor": "Michael Jordan"
+  },
+  {
+    "frase": "El dolor es temporal; rendirse dura para siempre.",
+    "autor": "Lance Armstrong"
+  },
+  {
+    "frase": "La diferencia entre lo imposible y lo posible esta en la determinacion.",
+    "autor": "Tommy Lasorda"
+  },
+  {
+    "frase": "El exito no es definitivo, el fracaso no es fatal: lo que cuenta es el valor de seguir.",
+    "autor": "Winston Churchill"
+  },
+  {
+    "frase": "No mires el reloj; haz lo que hace el reloj. Sigue adelante.",
+    "autor": "Sam Levenson"
+  },
+  {
+    "frase": "La unica persona que estas destinado a ser eres tu mismo.",
+    "autor": "Ralph Waldo Emerson"
+  },
+  {
+    "frase": "Cree que puedes y ya estas a mitad de camino.",
+    "autor": "Theodore Roosevelt"
+  },
+  {
+    "frase": "La mejor forma de predecir el futuro es crearlo.",
+    "autor": "Peter Drucker"
+  },
+  {
+    "frase": "Actua como si lo que haces marcara la diferencia. La marca.",
+    "autor": "William James"
+  },
+  {
+    "frase": "El secreto de salir adelante es empezar.",
+    "autor": "Mark Twain"
+  },
+  {
+    "frase": "No esperes. El momento perfecto nunca llegara.",
+    "autor": "Napoleon Hill"
+  },
+  {
+    "frase": "La disciplina es el puente entre metas y logros.",
+    "autor": "Jim Rohn"
+  },
+  {
+    "frase": "Los habitos son la gravedad de la vida.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Pequenos cambios, resultados notables.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "No te elevas al nivel de tus metas; caes al nivel de tus sistemas.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "La motivacion te pone en marcha; el habito te mantiene en el camino.",
+    "autor": "Jim Ryun"
+  },
+  {
+    "frase": "La excelencia no es un acto, sino un habito.",
+    "autor": "Aristoteles"
+  },
+  {
+    "frase": "Somos lo que hacemos repetidamente.",
+    "autor": "Aristoteles"
+  },
+  {
+    "frase": "El que domina a los demas es fuerte; el que se domina a si mismo es poderoso.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "Un viaje de mil millas comienza con un solo paso.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "El agua perfora la roca no por su fuerza, sino por su constancia.",
+    "autor": "Proverbio japones"
+  },
+  {
+    "frase": "Cae siete veces, levantate ocho.",
+    "autor": "Proverbio japones"
+  },
+  {
+    "frase": "Quien domina el amanecer domina el dia.",
+    "autor": "Proverbio"
+  },
+  {
+    "frase": "El hierro se templa con el fuego; el caracter con la dificultad.",
+    "autor": "Proverbio chino"
+  },
+  {
+    "frase": "Un arbol fuerte crece con vientos fuertes.",
+    "autor": "Proverbio japones"
+  },
+  {
+    "frase": "La paciencia es amarga, pero su fruto es dulce.",
+    "autor": "Jean-Jacques Rousseau"
+  },
+  {
+    "frase": "La constancia es la virtud por la que todas las demas dan fruto.",
+    "autor": "Voltaire"
+  },
+  {
+    "frase": "El genio es un uno por ciento de inspiracion y noventa y nueve de transpiracion.",
+    "autor": "Thomas Edison"
+  },
+  {
+    "frase": "No he fracasado; he encontrado diez mil formas que no funcionan.",
+    "autor": "Thomas Edison"
+  },
+  {
+    "frase": "La vida se encoge o se expande en proporcion al coraje de uno.",
+    "autor": "Anais Nin"
+  },
+  {
+    "frase": "Haz hoy lo que otros no quieren; manana viviras como otros no pueden.",
+    "autor": "Jerry Rice"
+  },
+  {
+    "frase": "Entrenar es celebrar lo que tu cuerpo puede hacer, no castigarlo por lo que comiste.",
+    "autor": "Coach de fitness"
+  },
+  {
+    "frase": "El sudor de hoy es la confianza de manana.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "Una mala serie no define tu carrera; tu respuesta si.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "Levanta pesado hoy para que la vida no te pese manana.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "El progreso, no la perfeccion.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un habito omitido es una oportunidad perdida de votar por quien quieres ser.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "La identidad cambia antes que el comportamiento: primero cree, luego actua.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Hazlo tan facil que sea mas dificil no hacerlo.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El entorno vence a la fuerza de voluntad casi siempre.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "La claridad vence a la motivacion.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Empieza ridiculamente pequeno; escala despacio.",
+    "autor": "BJ Fogg"
+  },
+  {
+    "frase": "Celebra cada victoria pequena; tu cerebro necesita la senal.",
+    "autor": "BJ Fogg"
+  },
+  {
+    "frase": "Anclar un habito nuevo a uno viejo multiplica tus chances.",
+    "autor": "BJ Fogg"
+  },
+  {
+    "frase": "La manana es cuando escribes el guion del dia.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Ganar la manana no garantiza el dia, pero lo inclina a tu favor.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Duerme bien: es el habito que hace posible todos los demas.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Bebe agua antes de cafe; tu cuerpo lleva horas en ayunas.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Caminar diez minutos cuenta mas que planear una hora de gym.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Lee diez paginas hoy; son mas de tres mil al ano.",
+    "autor": "Coach de aprendizaje"
+  },
+  {
+    "frase": "Aprender un poco cada dia supera a estudiar mucho de vez en cuando.",
+    "autor": "Coach de aprendizaje"
+  },
+  {
+    "frase": "La lectura es entrenamiento para la mente.",
+    "autor": "Coach de aprendizaje"
+  },
+  {
+    "frase": "Escribe tres lineas de gratitud; cambia el filtro del dia.",
+    "autor": "Coach de bienestar"
+  },
+  {
+    "frase": "Meditar cinco minutos no te hace monje; te hace mas presente.",
+    "autor": "Coach de bienestar"
+  },
+  {
+    "frase": "Respira antes de responder; la pausa es poder.",
+    "autor": "Coach de mindfulness"
+  },
+  {
+    "frase": "Tu atencion es tu activo mas valioso; protegela.",
+    "autor": "Cal Newport"
+  },
+  {
+    "frase": "El trabajo profundo crea valor; el trabajo superficial lo consume.",
+    "autor": "Cal Newport"
+  },
+  {
+    "frase": "Di no a lo bueno para decir si a lo excelente.",
+    "autor": "Stephen Covey"
+  },
+  {
+    "frase": "Empieza con el fin en mente.",
+    "autor": "Stephen Covey"
+  },
+  {
+    "frase": "Lo urgente rara vez es lo importante.",
+    "autor": "Dwight Eisenhower"
+  },
+  {
+    "frase": "Si no mides, no mejoras.",
+    "autor": "Peter Drucker"
+  },
+  {
+    "frase": "Lo que se mide se gestiona.",
+    "autor": "Peter Drucker"
+  },
+  {
+    "frase": "Un objetivo sin plan es solo un deseo.",
+    "autor": "Antoine de Saint-Exupery"
+  },
+  {
+    "frase": "Divide la montana en piedras pequenas.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Un paso feo sigue siendo un paso adelante.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "El perfeccionismo es procrastinacion con disfraz elegante.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Hecho es mejor que perfecto.",
+    "autor": "Sheryl Sandberg"
+  },
+  {
+    "frase": "La accion cura el miedo.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "El miedo pierde fuerza cuando lo nombras.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "Cuenta hasta cinco y muevete antes de que la mente te frene.",
+    "autor": "Mel Robbins"
+  },
+  {
+    "frase": "Tu yo futuro te esta viendo; no lo defraudes por comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "La comodidad es el enemigo silencioso del crecimiento.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "El aburrimiento es parte del proceso; no lo confundas con fracaso.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "La repeticion aburre al ego pero construye al experto.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Confia en el proceso cuando los resultados tardan.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "La racha no es suerte; es evidencia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Romper la racha duele; usarlo como leccion duele menos que rendirte.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Vuelve al habito manana; nunca esperes al lunes.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Dos dias seguidos sin fallar es el inicio de una racha real.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Treinta dias crean un cambio visible; noventa lo hacen parte de ti.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Tu version de manana agradece lo que haces hoy cansado.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "El gimnasio vacio a las seis de la manana tiene mas disciplina que el lleno a las seis de la tarde.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No busques motivacion; busca compromiso.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La barra no miente; tu constancia tampoco deberia.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "Un PR pequeno sigue siendo progreso.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "Entrena la tecnica antes que el ego.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "Descansa cuando toca; descansar tambien es entrenar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La proteina no construye musculo; la constancia con la proteina si.",
+    "autor": "Nutricionista deportivo"
+  },
+  {
+    "frase": "Comer bien un dia no compensa comer mal toda la semana.",
+    "autor": "Nutricionista deportivo"
+  },
+  {
+    "frase": "Planifica la comida como planificas el entrenamiento.",
+    "autor": "Nutricionista deportivo"
+  },
+  {
+    "frase": "El hambre emocional pasa; el habito alimenticio queda.",
+    "autor": "Nutricionista deportivo"
+  },
+  {
+    "frase": "Analizar sin ejecutar es entretenimiento disfrazado de trabajo.",
+    "autor": "Emprendedor"
+  },
+  {
+    "frase": "Una hora enfocado supera ocho horas distraido.",
+    "autor": "Cal Newport"
+  },
+  {
+    "frase": "Apaga notificaciones; enciende resultados.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Tu telefono es herramienta o ancla; tu decides cada vez que lo desbloqueas.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "La procrastinacion es el interes que pagas por no decidir.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Empieza con dos minutos; el resto suele seguir.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Prepara el entorno la noche anterior; regalate una victoria temprana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "La ropa de entrenar lista es media batalla ganada.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Pon el libro sobre la almohada si quieres leer mas.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Quita la app que te roba tiempo; no confies solo en fuerza de voluntad.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Rodéate de quienes ya viven como quieres vivir.",
+    "autor": "Jim Rohn"
+  },
+  {
+    "frase": "Eres el promedio de las cinco personas con las que pasas mas tiempo.",
+    "autor": "Jim Rohn"
+  },
+  {
+    "frase": "La disciplina es elegir entre lo que quieres ahora y lo que quieres mas.",
+    "autor": "Abraham Lincoln"
+  },
+  {
+    "frase": "El caracter es lo que haces cuando nadie te mira.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "Hazlo bien o no lo hagas.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "El esfuerzo y la actitud son cosas que controlas.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "Gana cada dia.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "La preparacion es la clave del exito.",
+    "autor": "Alexander Graham Bell"
+  },
+  {
+    "frase": "La fortuna favorece a los audaces.",
+    "autor": "Virgilio"
+  },
+  {
+    "frase": "Audacia, audacia y siempre audacia.",
+    "autor": "Georges Danton"
+  },
+  {
+    "frase": "El coraje no es ausencia de miedo; es avanzar con el.",
+    "autor": "Nelson Mandela"
+  },
+  {
+    "frase": "Parece imposible hasta que se hace.",
+    "autor": "Nelson Mandela"
+  },
+  {
+    "frase": "La educacion es el arma mas poderosa para cambiar el mundo.",
+    "autor": "Nelson Mandela"
+  },
+  {
+    "frase": "La vida se comprime o se expande segun tu coraje.",
+    "autor": "Anais Nin"
+  },
+  {
+    "frase": "No dejes que el miedo a perder sea mayor que la emocion de ganar.",
+    "autor": "Robert Kiyosaki"
+  },
+  {
+    "frase": "Invertir en ti mismo paga el mejor interes.",
+    "autor": "Benjamin Franklin"
+  },
+  {
+    "frase": "Una inversion en conocimiento paga los mejores dividendos.",
+    "autor": "Benjamin Franklin"
+  },
+  {
+    "frase": "Temprano a la cama y temprano a levantarse hace saludable, rico y sabio.",
+    "autor": "Benjamin Franklin"
+  },
+  {
+    "frase": "Bien hecho es mejor que bien dicho.",
+    "autor": "Benjamin Franklin"
+  },
+  {
+    "frase": "Sin sudor no hay logro.",
+    "autor": "Theodore Roosevelt"
+  },
+  {
+    "frase": "Haz lo que puedas, con lo que tienes, donde estas.",
+    "autor": "Theodore Roosevelt"
+  },
+  {
+    "frase": "El compararte contigo mismo es el unico comparativo que importa.",
+    "autor": "Coach de crecimiento"
+  },
+  {
+    "frase": "Tu unico competidor de ayer eres tu.",
+    "autor": "Coach de crecimiento"
+  },
+  {
+    "frase": "Celebra el uno por ciento de mejora; se acumula.",
+    "autor": "Coach de crecimiento"
+  },
+  {
+    "frase": "La curva del aprendizaje es empinada al inicio; eso es normal.",
+    "autor": "Coach de aprendizaje"
+  },
+  {
+    "frase": "Equivocarse rapido y barato es mejor que equivocarse lento y caro.",
+    "autor": "Emprendedor"
+  },
+  {
+    "frase": "Pregunta que puedes aprender, no quien tiene la culpa.",
+    "autor": "Carol Dweck"
+  },
+  {
+    "frase": "Todavia no lo domino es mejor que no puedo.",
+    "autor": "Carol Dweck"
+  },
+  {
+    "frase": "La mentalidad de crecimiento convierte el esfuerzo en camino, no en verguenza.",
+    "autor": "Carol Dweck"
+  },
+  {
+    "frase": "El fracaso es informacion, no identidad.",
+    "autor": "Carol Dweck"
+  },
+  {
+    "frase": "La gratitud no niega lo dificil; lo pone en contexto.",
+    "autor": "Coach de bienestar"
+  },
+  {
+    "frase": "Agradecer tres cosas al despertar cambia el tono del dia.",
+    "autor": "Coach de bienestar"
+  },
+  {
+    "frase": "El estres sin recuperacion se convierte en agotamiento.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Recuperar no es flojera; es parte del rendimiento.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Camina despues de comer; tu glucosa lo agradece.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "El sol de la manana regula mas de lo que crees.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "La pantalla antes de dormir le roba horas a tu manana.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Duerme como si fuera tu trabajo secundario mas importante.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "La energia no aparece; se construye con sueno, comida y movimiento.",
+    "autor": "Coach de salud"
+  },
+  {
+    "frase": "Hoy puedes elegir la version facil o la version que te respeta.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "La version facil tiene intereses altos.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada habito es un interes compuesto sobre tu futuro.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "Los malos habitos tambien se acumulan; elige el interes que pagas.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "No rompas la cadena.",
+    "autor": "Jerry Seinfeld"
+  },
+  {
+    "frase": "Un calendario con X marcadas es la motivacion mas honesta.",
+    "autor": "Jerry Seinfeld"
+  },
+  {
+    "frase": "La consistencia convierte lo ordinario en extraordinario.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Lo extraordinario es lo ordinario hecho durante mucho tiempo.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "El talento abre puertas; la disciplina te deja dentro.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "La suerte favorece al preparado que aparece.",
+    "autor": "Seneca"
+  },
+  {
+    "frase": "Aparece. Eso ya te pone por encima de la mitad.",
+    "autor": "Woody Allen"
+  },
+  {
+    "frase": "El ochenta por ciento hecho hoy supera al cien por ciento planeado para manana.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "La accion crea claridad; la duda crea mas duda.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "Moverte un poco vence a pensar mucho sin moverte.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "El primer paso no tiene que ser grande; tiene que ser real.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "Empieza donde estas, usa lo que tienes, haz lo que puedas.",
+    "autor": "Arthur Ashe"
+  },
+  {
+    "frase": "La confianza viene despues de la accion, no antes.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "Haz la cosa y tendras energia para hacer la cosa.",
+    "autor": "William James"
+  },
+  {
+    "frase": "La energia sigue al compromiso, no al revés.",
+    "autor": "William James"
+  },
+  {
+    "frase": "Tu cuerpo puede aguantar casi cualquier cosa; convencer a la mente es el trabajo.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando crees que estas acabado, apenas vas un cuarenta por ciento.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "El sufrimiento voluntario es una prueba honesta de quien eres.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Calla la excusa y abre el calendario.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "La voz que dice no puedo suele mentir.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Entrena tu mente como entrenas tu cuerpo: con repeticiones.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "La comodidad es un veneno lento.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "El dolor de la disciplina pesa gramos; el dolor del arrepentimiento pesa toneladas.",
+    "autor": "Jim Rohn"
+  },
+  {
+    "frase": "La disciplina pesa onzas; el arrepentimiento pesa toneladas.",
+    "autor": "Jim Rohn"
+  },
+  {
+    "frase": "Cuida tus pensamientos; se convierten en palabras.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "Cuida tus palabras; se convierten en acciones.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "Cuida tus acciones; se convierten en habitos.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "Cuida tus habitos; se convierten en caracter.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "Cuida tu caracter; se convierte en destino.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "El silencio es un amigo que nunca traiciona.",
+    "autor": "Confucio"
+  },
+  {
+    "frase": "Dondequiera que vayas, ve con todo tu corazon.",
+    "autor": "Confucio"
+  },
+  {
+    "frase": "El hombre superior actua antes de hablar y despues habla segun sus actos.",
+    "autor": "Confucio"
+  },
+  {
+    "frase": "La naturaleza no tiene prisa, y sin embargo todo se cumple.",
+    "autor": "Lao Tse"
+  },
+  {
+    "frase": "Conoce a tu enemigo y conocete a ti mismo; en cien batallas no estarás en peligro.",
+    "autor": "Sun Tzu"
+  },
+  {
+    "frase": "La victoria pertenece a quien tiene mas disciplina, no solo mas fuerza.",
+    "autor": "Sun Tzu"
+  },
+  {
+    "frase": "Un habito a la vez. Un dia a la vez.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Menos metas, mas repeticion.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "La simplicidad es la maxima sofisticacion en los habitos.",
+    "autor": "Leonardo da Vinci"
+  },
+  {
+    "frase": "Aprender nunca agota la mente.",
+    "autor": "Leonardo da Vinci"
+  },
+  {
+    "frase": "Los obstaculos no pueden aplastarte si el proposito es claro.",
+    "autor": "Leonardo da Vinci"
+  },
+  {
+    "frase": "El tiempo es quien mejor explica la intencion de la pintura.",
+    "autor": "Leonardo da Vinci"
+  },
+  {
+    "frase": "La simplicidad es la clave de la brillantez.",
+    "autor": "Bruce Lee"
+  },
+  {
+    "frase": "No temas al hombre que practico diez mil patadas una vez; teme al que practico una patada diez mil veces.",
+    "autor": "Proverbio"
+  },
+  {
+    "frase": "Vacía tu mente; se adaptable como el agua.",
+    "autor": "Bruce Lee"
+  },
+  {
+    "frase": "El agua puede fluir o golpear. Se adapta.",
+    "autor": "Bruce Lee"
+  },
+  {
+    "frase": "La derrota es un estado temporal; rendirse lo hace permanente.",
+    "autor": "Bruce Lee"
+  },
+  {
+    "frase": "El autoconocimiento es el primer paso de la maestria.",
+    "autor": "Bruce Lee"
+  },
+  {
+    "frase": "Hoy es un buen dia para ser valiente.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "Hoy es suficiente. Manana puedes ser mas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "No necesitas sentirte listo; necesitas empezar.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "La lista corta hecha vale mas que la lista larga soñada.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Un habito malo menos hoy ya es victoria.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Tu racha de hoy empieza con la proxima accion.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy entrenar es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy estudiar es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy meditar es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy escribir es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy leer es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy caminar es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy correr es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy levantarte temprano es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy comer bien es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy dormir a tu hora es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy hidratar tu cuerpo es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy practicar es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy enfocarte es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy terminar lo que empiezas es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy cuidar tu salud es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy respirar con calma es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy organizar tu dia es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy decir que no es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy pedir ayuda es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy celebrar el progreso es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy revisar tus metas es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy moverte es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy descansar bien es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy aprender algo nuevo es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy ser amable contigo es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy mantener la palabra es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy hacer la tarea dificil primero es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy evitar la distraccion es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy elegir lo importante es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy mostrarte es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy seguir adelante es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy volver despues de fallar es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy prepararte es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy contar tu progreso es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy mejorar un uno por ciento es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy actuar con integridad es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy entrenar tu mente es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy fortalecer tu cuerpo es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy alimentarte con intencion es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy priorizar el sueno es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy cuidar tu energia es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Hoy hacer el trabajo invisible es un regalo para tu yo de manana.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cada dia que entrenar te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que estudiar te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que meditar te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que escribir te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que leer te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que caminar te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que correr te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que levantarte temprano te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que comer bien te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que dormir a tu hora te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que hidratar tu cuerpo te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que practicar te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que enfocarte te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que terminar lo que empiezas te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que cuidar tu salud te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que respirar con calma te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que organizar tu dia te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que decir que no te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que pedir ayuda te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que celebrar el progreso te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que revisar tus metas te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que moverte te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que descansar bien te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que aprender algo nuevo te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que ser amable contigo te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que mantener la palabra te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que hacer la tarea dificil primero te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que evitar la distraccion te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que elegir lo importante te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que mostrarte te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que seguir adelante te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que volver despues de fallar te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que prepararte te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que contar tu progreso te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que mejorar un uno por ciento te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que actuar con integridad te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que entrenar tu mente te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que fortalecer tu cuerpo te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que alimentarte con intencion te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que priorizar el sueno te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que cuidar tu energia te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Cada dia que hacer el trabajo invisible te acerca a quien quieres ser.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "No esperes inspiracion para entrenar; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para estudiar; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para meditar; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para escribir; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para leer; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para caminar; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para correr; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para levantarte temprano; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para comer bien; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para dormir a tu hora; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para hidratar tu cuerpo; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para practicar; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para enfocarte; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para terminar lo que empiezas; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para cuidar tu salud; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para respirar con calma; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para organizar tu dia; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para decir que no; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para pedir ayuda; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para celebrar el progreso; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para revisar tus metas; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para moverte; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para descansar bien; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para aprender algo nuevo; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para ser amable contigo; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para mantener la palabra; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para hacer la tarea dificil primero; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para evitar la distraccion; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para elegir lo importante; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para mostrarte; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para seguir adelante; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para volver despues de fallar; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para prepararte; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para contar tu progreso; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para mejorar un uno por ciento; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para actuar con integridad; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para entrenar tu mente; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para fortalecer tu cuerpo; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para alimentarte con intencion; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para priorizar el sueno; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para cuidar tu energia; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "No esperes inspiracion para hacer el trabajo invisible; la inspiracion suele llegar despues.",
+    "autor": "Coach de accion"
+  },
+  {
+    "frase": "Si puedes entrenar un lunes, puedes entrenar cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes estudiar un lunes, puedes estudiar cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes meditar un lunes, puedes meditar cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes escribir un lunes, puedes escribir cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes leer un lunes, puedes leer cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes caminar un lunes, puedes caminar cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes correr un lunes, puedes correr cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes levantarte temprano un lunes, puedes levantarte temprano cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes comer bien un lunes, puedes comer bien cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes dormir a tu hora un lunes, puedes dormir a tu hora cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes hidratar tu cuerpo un lunes, puedes hidratar tu cuerpo cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes practicar un lunes, puedes practicar cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes enfocarte un lunes, puedes enfocarte cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes terminar lo que empiezas un lunes, puedes terminar lo que empiezas cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes cuidar tu salud un lunes, puedes cuidar tu salud cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes respirar con calma un lunes, puedes respirar con calma cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes organizar tu dia un lunes, puedes organizar tu dia cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes decir que no un lunes, puedes decir que no cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes pedir ayuda un lunes, puedes pedir ayuda cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes celebrar el progreso un lunes, puedes celebrar el progreso cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes revisar tus metas un lunes, puedes revisar tus metas cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes moverte un lunes, puedes moverte cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes descansar bien un lunes, puedes descansar bien cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes aprender algo nuevo un lunes, puedes aprender algo nuevo cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes ser amable contigo un lunes, puedes ser amable contigo cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes mantener la palabra un lunes, puedes mantener la palabra cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes hacer la tarea dificil primero un lunes, puedes hacer la tarea dificil primero cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes evitar la distraccion un lunes, puedes evitar la distraccion cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes elegir lo importante un lunes, puedes elegir lo importante cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes mostrarte un lunes, puedes mostrarte cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes seguir adelante un lunes, puedes seguir adelante cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes volver despues de fallar un lunes, puedes volver despues de fallar cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes prepararte un lunes, puedes prepararte cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes contar tu progreso un lunes, puedes contar tu progreso cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes mejorar un uno por ciento un lunes, puedes mejorar un uno por ciento cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes actuar con integridad un lunes, puedes actuar con integridad cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes entrenar tu mente un lunes, puedes entrenar tu mente cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes fortalecer tu cuerpo un lunes, puedes fortalecer tu cuerpo cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes alimentarte con intencion un lunes, puedes alimentarte con intencion cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes priorizar el sueno un lunes, puedes priorizar el sueno cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes cuidar tu energia un lunes, puedes cuidar tu energia cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Si puedes hacer el trabajo invisible un lunes, puedes hacer el trabajo invisible cualquier dia.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "La version de ti que entrenar no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que estudiar no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que meditar no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que escribir no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que leer no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que caminar no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que correr no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que levantarte temprano no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que comer bien no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que dormir a tu hora no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que hidratar tu cuerpo no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que practicar no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que enfocarte no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que terminar lo que empiezas no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que cuidar tu salud no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que respirar con calma no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que organizar tu dia no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que decir que no no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que pedir ayuda no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que celebrar el progreso no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que revisar tus metas no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que moverte no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que descansar bien no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que aprender algo nuevo no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que ser amable contigo no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que mantener la palabra no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que hacer la tarea dificil primero no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que evitar la distraccion no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que elegir lo importante no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que mostrarte no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que seguir adelante no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que volver despues de fallar no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que prepararte no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que contar tu progreso no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que mejorar un uno por ciento no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que actuar con integridad no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que entrenar tu mente no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que fortalecer tu cuerpo no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que alimentarte con intencion no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que priorizar el sueno no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que cuidar tu energia no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "La version de ti que hacer el trabajo invisible no nace sola; la entrenas.",
+    "autor": "Entrenador personal"
+  },
+  {
+    "frase": "Antes de dudar si puedes entrenar, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes estudiar, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes meditar, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes escribir, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes leer, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes caminar, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes correr, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes levantarte temprano, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes comer bien, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes dormir a tu hora, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes hidratar tu cuerpo, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes practicar, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes enfocarte, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes terminar lo que empiezas, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes cuidar tu salud, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes respirar con calma, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes organizar tu dia, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes decir que no, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes pedir ayuda, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes celebrar el progreso, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes revisar tus metas, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes moverte, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes descansar bien, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes aprender algo nuevo, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes ser amable contigo, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes mantener la palabra, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes hacer la tarea dificil primero, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes evitar la distraccion, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes elegir lo importante, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes mostrarte, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes seguir adelante, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes volver despues de fallar, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes prepararte, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes contar tu progreso, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes mejorar un uno por ciento, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes actuar con integridad, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes entrenar tu mente, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes fortalecer tu cuerpo, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes alimentarte con intencion, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes priorizar el sueno, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes cuidar tu energia, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Antes de dudar si puedes hacer el trabajo invisible, preguntate si quieres el resultado.",
+    "autor": "Coach de metas"
+  },
+  {
+    "frase": "Cinco minutos de entrenar vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de estudiar vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de meditar vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de escribir vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de leer vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de caminar vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de correr vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de levantarte temprano vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de comer bien vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de dormir a tu hora vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de hidratar tu cuerpo vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de practicar vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de enfocarte vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de terminar lo que empiezas vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de cuidar tu salud vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de respirar con calma vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de organizar tu dia vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de decir que no vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de pedir ayuda vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de celebrar el progreso vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de revisar tus metas vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de moverte vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de descansar bien vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de aprender algo nuevo vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de ser amable contigo vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de mantener la palabra vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de hacer la tarea dificil primero vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de evitar la distraccion vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de elegir lo importante vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de mostrarte vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de seguir adelante vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de volver despues de fallar vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de prepararte vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de contar tu progreso vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de mejorar un uno por ciento vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de actuar con integridad vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de entrenar tu mente vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de fortalecer tu cuerpo vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de alimentarte con intencion vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de priorizar el sueno vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de cuidar tu energia vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Cinco minutos de hacer el trabajo invisible vencen a cero minutos de excusas.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges entrenar sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges estudiar sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges meditar sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges escribir sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges leer sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges caminar sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges correr sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges levantarte temprano sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges comer bien sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges dormir a tu hora sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges hidratar tu cuerpo sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges practicar sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges enfocarte sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges terminar lo que empiezas sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges cuidar tu salud sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges respirar con calma sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges organizar tu dia sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges decir que no sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges pedir ayuda sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges celebrar el progreso sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges revisar tus metas sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges moverte sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges descansar bien sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges aprender algo nuevo sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges ser amable contigo sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges mantener la palabra sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges hacer la tarea dificil primero sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges evitar la distraccion sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges elegir lo importante sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges mostrarte sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges seguir adelante sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges volver despues de fallar sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges prepararte sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges contar tu progreso sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges mejorar un uno por ciento sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges actuar con integridad sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges entrenar tu mente sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges fortalecer tu cuerpo sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges alimentarte con intencion sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges priorizar el sueno sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges cuidar tu energia sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "Tu futuro agradece cada vez que eliges hacer el trabajo invisible sobre la comodidad.",
+    "autor": "Coach de disciplina"
+  },
+  {
+    "frase": "El habito de entrenar empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de estudiar empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de meditar empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de escribir empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de leer empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de caminar empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de correr empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de levantarte temprano empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de comer bien empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de dormir a tu hora empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de hidratar tu cuerpo empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de practicar empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de enfocarte empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de terminar lo que empiezas empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de cuidar tu salud empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de respirar con calma empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de organizar tu dia empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de decir que no empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de pedir ayuda empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de celebrar el progreso empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de revisar tus metas empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de moverte empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de descansar bien empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de aprender algo nuevo empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de ser amable contigo empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de mantener la palabra empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de hacer la tarea dificil primero empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de evitar la distraccion empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de elegir lo importante empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de mostrarte empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de seguir adelante empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de volver despues de fallar empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de prepararte empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de contar tu progreso empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de mejorar un uno por ciento empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de actuar con integridad empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de entrenar tu mente empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de fortalecer tu cuerpo empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de alimentarte con intencion empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de priorizar el sueno empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de cuidar tu energia empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "El habito de hacer el trabajo invisible empieza feo y termina poderoso.",
+    "autor": "James Clear"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de entrenar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de estudiar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de meditar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de escribir.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de leer.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de caminar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de correr.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de levantarte temprano.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de comer bien.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de dormir a tu hora.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de hidratar tu cuerpo.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de practicar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de enfocarte.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de terminar lo que empiezas.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de cuidar tu salud.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de respirar con calma.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de organizar tu dia.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de decir que no.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de pedir ayuda.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de celebrar el progreso.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de revisar tus metas.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de moverte.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de descansar bien.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de aprender algo nuevo.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de ser amable contigo.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de mantener la palabra.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de hacer la tarea dificil primero.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de evitar la distraccion.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de elegir lo importante.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de mostrarte.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de seguir adelante.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de volver despues de fallar.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de prepararte.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de contar tu progreso.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de mejorar un uno por ciento.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de actuar con integridad.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de entrenar tu mente.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de fortalecer tu cuerpo.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de alimentarte con intencion.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de priorizar el sueno.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de cuidar tu energia.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "No negocies contigo mismo antes de hacer el trabajo invisible.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en entrenar es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en estudiar es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en meditar es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en escribir es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en leer es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en caminar es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en correr es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en levantarte temprano es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en comer bien es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en dormir a tu hora es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en hidratar tu cuerpo es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en practicar es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en enfocarte es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en terminar lo que empiezas es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en cuidar tu salud es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en respirar con calma es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en organizar tu dia es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en decir que no es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en pedir ayuda es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en celebrar el progreso es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en revisar tus metas es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en moverte es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en descansar bien es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en aprender algo nuevo es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en ser amable contigo es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en mantener la palabra es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en hacer la tarea dificil primero es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en evitar la distraccion es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en elegir lo importante es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en mostrarte es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en seguir adelante es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en volver despues de fallar es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en prepararte es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en contar tu progreso es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en mejorar un uno por ciento es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en actuar con integridad es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en entrenar tu mente es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en fortalecer tu cuerpo es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en alimentarte con intencion es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en priorizar el sueno es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en cuidar tu energia es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "La constancia en hacer el trabajo invisible es mas valiosa que la intensidad ocasional.",
+    "autor": "Coach de fuerza"
+  },
+  {
+    "frase": "Cuando no quieras entrenar, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras estudiar, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras meditar, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras escribir, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras leer, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras caminar, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras correr, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras levantarte temprano, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras comer bien, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras dormir a tu hora, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras hidratar tu cuerpo, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras practicar, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras enfocarte, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras terminar lo que empiezas, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras cuidar tu salud, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras respirar con calma, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras organizar tu dia, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras decir que no, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras pedir ayuda, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras celebrar el progreso, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras revisar tus metas, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras moverte, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras descansar bien, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras aprender algo nuevo, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras ser amable contigo, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras mantener la palabra, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras hacer la tarea dificil primero, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras evitar la distraccion, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras elegir lo importante, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras mostrarte, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras seguir adelante, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras volver despues de fallar, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras prepararte, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras contar tu progreso, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras mejorar un uno por ciento, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras actuar con integridad, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras entrenar tu mente, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras fortalecer tu cuerpo, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras alimentarte con intencion, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras priorizar el sueno, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras cuidar tu energia, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "Cuando no quieras hacer el trabajo invisible, es cuando mas cuenta.",
+    "autor": "David Goggins"
+  },
+  {
+    "frase": "entrenar en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "estudiar en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "meditar en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "escribir en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "leer en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "caminar en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "correr en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "levantarte temprano en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "comer bien en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "dormir a tu hora en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "hidratar tu cuerpo en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "practicar en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "enfocarte en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "terminar lo que empiezas en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "cuidar tu salud en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "respirar con calma en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "organizar tu dia en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "decir que no en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "pedir ayuda en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "celebrar el progreso en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "revisar tus metas en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "moverte en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "descansar bien en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "aprender algo nuevo en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "ser amable contigo en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "mantener la palabra en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "hacer la tarea dificil primero en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "evitar la distraccion en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "elegir lo importante en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "mostrarte en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "seguir adelante en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "volver despues de fallar en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "prepararte en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "contar tu progreso en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "mejorar un uno por ciento en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "actuar con integridad en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "entrenar tu mente en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "fortalecer tu cuerpo en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "alimentarte con intencion en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "priorizar el sueno en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "cuidar tu energia en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "hacer el trabajo invisible en silencio construye confianza en publico.",
+    "autor": "John Wooden"
+  },
+  {
+    "frase": "Un dia sin entrenar no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin estudiar no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin meditar no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin escribir no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin leer no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin caminar no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin correr no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin levantarte temprano no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin comer bien no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin dormir a tu hora no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin hidratar tu cuerpo no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin practicar no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin enfocarte no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin terminar lo que empiezas no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin cuidar tu salud no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin respirar con calma no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin organizar tu dia no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin decir que no no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin pedir ayuda no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin celebrar el progreso no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin revisar tus metas no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin moverte no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin descansar bien no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin aprender algo nuevo no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin ser amable contigo no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin mantener la palabra no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin hacer la tarea dificil primero no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin evitar la distraccion no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin elegir lo importante no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin mostrarte no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin seguir adelante no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin volver despues de fallar no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin prepararte no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin contar tu progreso no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin mejorar un uno por ciento no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin actuar con integridad no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin entrenar tu mente no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin fortalecer tu cuerpo no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin alimentarte con intencion no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin priorizar el sueno no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin cuidar tu energia no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Un dia sin hacer el trabajo invisible no te arruina; dos seguidos empiezan a formar patron.",
+    "autor": "Coach de habitos"
+  },
+  {
+    "frase": "Planifica entrenar como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica estudiar como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica meditar como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica escribir como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica leer como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica caminar como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica correr como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica levantarte temprano como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica comer bien como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica dormir a tu hora como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica hidratar tu cuerpo como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica practicar como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica enfocarte como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica terminar lo que empiezas como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica cuidar tu salud como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica respirar con calma como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica organizar tu dia como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica decir que no como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica pedir ayuda como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica celebrar el progreso como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica revisar tus metas como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica moverte como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica descansar bien como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica aprender algo nuevo como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica ser amable contigo como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica mantener la palabra como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica hacer la tarea dificil primero como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica evitar la distraccion como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica elegir lo importante como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica mostrarte como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica seguir adelante como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica volver despues de fallar como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica prepararte como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica contar tu progreso como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica mejorar un uno por ciento como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica actuar con integridad como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica entrenar tu mente como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica fortalecer tu cuerpo como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica alimentarte con intencion como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica priorizar el sueno como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica cuidar tu energia como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  },
+  {
+    "frase": "Planifica hacer el trabajo invisible como si fuera una cita innegociable.",
+    "autor": "Coach de productividad"
+  }
+];

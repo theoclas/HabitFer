@@ -53,6 +53,24 @@ export function summaryText(p: { title: string; body: string; items: string[]; a
   return lines.join('\n');
 }
 
+/** Mensaje de la mañana: lo de hoy, la racha y la frase del día (en cursiva). */
+export function morningText(p: {
+  title: string;
+  plan: string;
+  spark: string;
+  quote: { frase: string; autor: string };
+  items: string[];
+  appUrl: string;
+}): string {
+  const items = p.items.slice(0, MAX_ITEMS).map(oneLine);
+  if (p.items.length > MAX_ITEMS) items.push(`y ${p.items.length - MAX_ITEMS} más`);
+  const quote = `_«${oneLine(p.quote.frase).replace(/_/g, '')}»_${p.quote.autor ? ` — ${oneLine(p.quote.autor)}` : ''}`;
+  const lines = [bold(p.title), oneLine(p.plan)];
+  if (items.length) lines.push(...items);
+  lines.push('', oneLine(p.spark), '', quote, '', `Abrir HabitFer: ${p.appUrl}/app/habitfer`);
+  return lines.join('\n');
+}
+
 export function coachText(p: { text: string }): string {
   return [`🔥 ${bold('Tu coach de la semana')}`, '', p.text.trim()].join('\n');
 }

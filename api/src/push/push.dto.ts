@@ -40,6 +40,12 @@ export class PushSettingsDto {
   @IsString()
   @Matches(HHMM)
   summaryTime?: string | null;
+
+  /** Hora del mensaje de la mañana (HH:mm) o null para apagarlo. */
+  @IsOptional()
+  @IsString()
+  @Matches(HHMM)
+  morningTime?: string | null;
 }
 
 export class PushActionDto {

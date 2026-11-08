@@ -98,6 +98,8 @@ model User {
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
   habitSummaryTime      String?                @db.VarChar(5)
+  /// Hora (HH:mm) del mensaje de la mañana (lo de hoy, la racha y una frase); null = apagado.
+  morningTime           String?                @db.VarChar(5)
   /// Que avisos llegan tambien por correo (a User.email).
   emailReminders        ReminderLevel          @default(OFF)
   /// Que avisos llegan tambien por WhatsApp (a sus WhatsappNumber, maximo 2).
@@ -169,6 +171,8 @@ enum ReminderSourceType {
   HABIT
   TASK
   SUMMARY
+  /// Mensaje de la mañana.
+  MORNING
 }
 
 model ReminderLog {

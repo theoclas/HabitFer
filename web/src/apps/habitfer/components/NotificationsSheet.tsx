@@ -16,21 +16,10 @@ import {
 import { apiErrorMessage } from "../format";
 import { disablePush, enablePush, pushState, type PushState } from "../push";
 import { isIos, isStandalone } from "../pwa";
+import { LEVEL_OPTIONS, digestNote, levelHint } from "./notifyHints";
 import { WhatsappSection } from "./WhatsappSection";
 
 type Props = { open: boolean; onClose: () => void };
-
-const EMAIL_OPTIONS: { label: string; value: EmailLevel }[] = [
-  { label: "Apagado", value: "OFF" },
-  { label: "Resumen", value: "SUMMARY" },
-  { label: "Todo", value: "ALL" },
-];
-
-const EMAIL_HINT: Record<EmailLevel, string> = {
-  OFF: "No te llegan correos.",
-  SUMMARY: "Te llega el resumen de la noche y el mensaje del coach de cada domingo.",
-  ALL: "Te llega cada recordatorio de tus hábitos y tareas, con un botón para marcarlo hecho, además del resumen y el coach.",
-};
 
 const STATE_TEXT: Record<PushState, string> = {
   on: "Activadas en este dispositivo.",
@@ -99,6 +88,11 @@ export function NotificationsSheet({ open, onClose }: Props) {
       setSettings(await updatePushSettings({ summaryTime: value }));
     });
 
+  const saveMorning = (value: string | null) =>
+    run(async () => {
+      setSettings(await updatePushSettings({ morningTime: value }));
+    });
+
   const saveEmailLevel = (level: EmailLevel) =>
     run(async () => {
       setEmail(await updateEmailReminders(level));
@@ -114,6 +108,7 @@ export function NotificationsSheet({ open, onClose }: Props) {
     ? "Las notificaciones necesitan la dirección segura: https://habitfer.fersuastudio.com."
     : "Este navegador no permite notificaciones push.";
   const summaryTime: Dayjs | null = settings?.summaryTime ? dayjs(settings.summaryTime, "HH:mm") : null;
+  const morningTime: Dayjs | null = settings?.morningTime ? dayjs(settings.morningTime, "HH:mm") : null;
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} centered width={460} title="Notificaciones">
@@ -149,6 +144,35 @@ export function NotificationsSheet({ open, onClose }: Props) {
           <p className="hf-note">
             {settings.devices === 1 ? "1 dispositivo recibe tus avisos." : `${settings.devices} dispositivos reciben tus avisos.`}
           </p>
+        )}
+      </section>
+
+      <section className="hf-notif">
+        <div className="hf-notif__head">
+          <span aria-hidden="true">☀️</span>
+          <b>Mensaje de la mañana</b>
+          <Switch
+            style={{ marginLeft: "auto" }}
+            checked={Boolean(settings?.morningTime)}
+            disabled={!settings || busy}
+            onChange={(on) => void saveMorning(on ? "07:00" : null)}
+            aria-label="Mensaje de la mañana"
+          />
+        </div>
+        <p className="hf-note" style={{ marginTop: 4 }}>
+          Para arrancar el día: lo que tienes para hoy, tu mejor racha y una frase de ánimo.
+        </p>
+        {settings?.morningTime && (
+          <TimePicker
+            format="HH:mm"
+            minuteStep={5}
+            value={morningTime}
+            allowClear={false}
+            inputReadOnly
+            onChange={(v) => v && void saveMorning(v.format("HH:mm"))}
+            style={{ marginTop: 10, width: 140 }}
+            aria-label="Hora del mensaje de la mañana"
+          />
         )}
       </section>
 
@@ -196,7 +220,7 @@ export function NotificationsSheet({ open, onClose }: Props) {
         </p>
         <Segmented<EmailLevel>
           block
-          options={EMAIL_OPTIONS}
+          options={LEVEL_OPTIONS}
           value={email?.level ?? "OFF"}
           disabled={!email || busy}
           onChange={(value) => void saveEmailLevel(value)}
@@ -204,8 +228,8 @@ export function NotificationsSheet({ open, onClose }: Props) {
         />
         {email && (
           <p className="hf-note" style={{ marginTop: 8 }}>
-            {EMAIL_HINT[email.level]}
-            {email.level !== "OFF" && !settings?.summaryTime && " El resumen solo llega si activas «Resumen de la noche» arriba."}
+            {levelHint(email.level, "correo")}
+            {digestNote(email.level, settings?.morningTime ?? null, settings?.summaryTime ?? null)}
           </p>
         )}
         {email && !email.enabled && (
@@ -222,7 +246,7 @@ export function NotificationsSheet({ open, onClose }: Props) {
         )}
       </section>
 
-      <WhatsappSection open={open} summaryTime={settings?.summaryTime ?? null} />
+      <WhatsappSection open={open} summaryTime={settings?.summaryTime ?? null} morningTime={settings?.morningTime ?? null} />
 
       <p className="hf-note" style={{ marginTop: 14 }}>
         Los avisos de cada hábito se configuran en el hábito: Editar → Recordatorio (hasta 4 horas).

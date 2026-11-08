@@ -353,14 +353,15 @@ export async function unsubscribePush(endpoint: string) {
   return data;
 }
 
-export type PushSettings = { enabled: boolean; devices: number; summaryTime: string | null };
+export type PushSettings = { enabled: boolean; devices: number; summaryTime: string | null; morningTime: string | null };
 
 export async function fetchPushSettings() {
   const { data } = await api.get<PushSettings>("/push/settings");
   return data;
 }
 
-export async function updatePushSettings(payload: { summaryTime: string | null }) {
+/** Horas del resumen de la noche y del mensaje de la mañana (HH:mm, o null para apagarlos). */
+export async function updatePushSettings(payload: { summaryTime?: string | null; morningTime?: string | null }) {
   const { data } = await api.patch<PushSettings>("/push/settings", payload);
   return data;
 }

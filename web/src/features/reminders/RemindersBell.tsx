@@ -1,4 +1,4 @@
-import { BellOutlined, CheckOutlined, CheckSquareOutlined, FireOutlined, MoonOutlined } from "@ant-design/icons";
+import { BellOutlined, CheckOutlined, CheckSquareOutlined, FireOutlined, MoonOutlined, SunOutlined } from "@ant-design/icons";
 import { Badge, Button, Drawer, Empty, List, Space, Typography, message } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
@@ -53,7 +53,7 @@ export function RemindersBell() {
       navigate(
         item.sourceType === "HABIT"
           ? "/app/habitfer/habits/" + item.sourceId
-          : item.sourceType === "SUMMARY"
+          : item.sourceType === "SUMMARY" || item.sourceType === "MORNING"
             ? "/app/habitfer"
             : "/app/habitfer/tasks",
       );
@@ -108,6 +108,8 @@ export function RemindersBell() {
                       <FireOutlined style={{ color: "#FF7A1A" }} />
                     ) : item.sourceType === "SUMMARY" ? (
                       <MoonOutlined style={{ color: "#F5B841" }} />
+                    ) : item.sourceType === "MORNING" ? (
+                      <SunOutlined style={{ color: "#F5B841" }} />
                     ) : (
                       <CheckSquareOutlined style={{ color: "#4FD1E8" }} />
                     )

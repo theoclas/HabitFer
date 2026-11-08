@@ -12,6 +12,7 @@ import { ReminderLevel, UserRole, UserStatus } from '@prisma/client';
 import { firstName } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActionLinksService } from '../push/action-links.service';
+import type { MorningText } from '../reminders/morning.utils';
 import { levelAllows, type ReminderKind } from '../reminders/reminder-level';
 import { WaClient, type WaStatus } from './wa-client';
 import {
@@ -20,6 +21,7 @@ import {
   formatPhone,
   habitText,
   maskPhone,
+  morningText,
   normalizePhone,
   summaryText,
   taskText,
@@ -126,6 +128,11 @@ export class WhatsappRemindersService {
 
   coach(userId: string, text: string) {
     return this.deliver(userId, 'digest', () => coachText({ text }));
+  }
+
+  /** Mensaje de la mañana (con el resumen y el coach: niveles SUMMARY y ALL). */
+  morning(userId: string, m: MorningText) {
+    return this.deliver(userId, 'digest', () => morningText({ ...m, appUrl: this.appUrl }));
   }
 
   /* ---------- Ajustes (Notificaciones…) ---------- */

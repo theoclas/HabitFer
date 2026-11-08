@@ -1,4 +1,4 @@
-import { coachText, formatPhone, habitText, maskPhone, normalizePhone, summaryText, taskText, testText } from './whatsapp-text';
+import { coachText, formatPhone, habitText, maskPhone, morningText, normalizePhone, summaryText, taskText, testText } from './whatsapp-text';
 
 describe('números de WhatsApp', () => {
   it('normaliza celulares colombianos con o sin indicativo', () => {
@@ -48,6 +48,31 @@ describe('textos de WhatsApp', () => {
     expect(text).toContain('• Hábito 12\n• y 2 más');
     expect(text).not.toContain('Hábito 13');
     expect(text.endsWith('Cerrar el día: https://h.co/app/habitfer')).toBe(true);
+  });
+
+  it('mañana: título en negrita, lo de hoy, ánimo y la frase en cursiva', () => {
+    const text = morningText({
+      title: '☀️ Buenos días, Fernando',
+      plan: 'Hoy tienes 1 hábito y 1 tarea:',
+      spark: 'Ayer cumpliste todo. Hoy, igual. 💪',
+      quote: { frase: 'Hoy cuenta aunque nadie te aplauda.', autor: 'Jhova de aquino' },
+      items: ['🔥 Leer', '☑️ Llamar a Juan · 3:00 p. m.'],
+      appUrl: 'https://h.co',
+    });
+    expect(text).toBe(
+      [
+        '*☀️ Buenos días, Fernando*',
+        'Hoy tienes 1 hábito y 1 tarea:',
+        '🔥 Leer',
+        '☑️ Llamar a Juan · 3:00 p. m.',
+        '',
+        'Ayer cumpliste todo. Hoy, igual. 💪',
+        '',
+        '_«Hoy cuenta aunque nadie te aplauda.»_ — Jhova de aquino',
+        '',
+        'Abrir HabitFer: https://h.co/app/habitfer',
+      ].join('\n'),
+    );
   });
 
   it('coach y prueba', () => {

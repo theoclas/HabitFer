@@ -53,21 +53,28 @@ function layout(p: {
   heading: string;
   paragraphs: string[];
   list?: string[];
+  /** Párrafos después de la lista. */
+  after?: string[];
+  /** Viñeta de la lista (por defecto la llama; '' si los elementos ya traen su emoji). */
+  bullet?: string;
   buttons: Button[];
   footer: string;
 }): string {
-  const paragraphs = p.paragraphs
-    .filter((t) => t.trim())
-    .map(
-      (t) =>
-        `<tr><td style="padding:10px 24px 0;font:400 16px/1.55 ${FONT};color:${C.body};">${escapeHtml(t).replace(/\n/g, '<br>')}</td></tr>`,
-    )
-    .join('');
+  const toRows = (list: string[]) =>
+    list
+      .filter((t) => t.trim())
+      .map(
+        (t) =>
+          `<tr><td style="padding:10px 24px 0;font:400 16px/1.55 ${FONT};color:${C.body};">${escapeHtml(t).replace(/\n/g, '<br>')}</td></tr>`,
+      )
+      .join('');
+  const paragraphs = toRows(p.paragraphs);
+  const after = toRows(p.after ?? []);
   const list = p.list?.length
     ? `<tr><td style="padding:12px 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.emberSoft};border-radius:12px;">${p.list
         .map(
           (item) =>
-            `<tr><td style="padding:9px 14px;font:500 15px/1.4 ${FONT};color:${C.ink};border-bottom:1px solid ${C.card};">🔥&nbsp; ${escapeHtml(item)}</td></tr>`,
+            `<tr><td style="padding:9px 14px;font:500 15px/1.4 ${FONT};color:${C.ink};border-bottom:1px solid ${C.card};">${p.bullet === '' ? '' : `${escapeHtml(p.bullet ?? '🔥')}&nbsp; `}${escapeHtml(item)}</td></tr>`,
         )
         .join('')}</table></td></tr>`
     : '';
@@ -83,15 +90,24 @@ function layout(p: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:${C.card};border:1px solid ${C.line};border-radius:18px;">
 <tr><td style="padding:22px 24px 4px;font:700 13px/1.4 ${FONT};color:${C.ember};letter-spacing:0.06em;text-transform:uppercase;">🔥 HabitFer</td></tr>
 <tr><td style="padding:4px 24px 0;font:700 22px/1.3 ${FONT};color:${C.ink};">${escapeHtml(p.heading)}</td></tr>
-${paragraphs}${list}${buttons}
+${paragraphs}${list}${after}${buttons}
 <tr><td style="padding:18px 24px 22px;font:400 12px/1.5 ${FONT};color:${C.muted};">${escapeHtml(p.footer)} <a href="${escapeHtml(settingsUrl)}" style="color:${C.muted};">Cambiar mis avisos</a></td></tr>
 </table></td></tr></table>
 </body></html>`;
 }
 
-function textVersion(p: { heading: string; paragraphs: string[]; list?: string[]; buttons: Button[]; footer: string; appUrl: string }): string {
+function textVersion(p: {
+  heading: string;
+  paragraphs: string[];
+  list?: string[];
+  after?: string[];
+  buttons: Button[];
+  footer: string;
+  appUrl: string;
+}): string {
   const lines = [p.heading, '', ...p.paragraphs.filter((t) => t.trim())];
   if (p.list?.length) lines.push('', ...p.list.map((i) => `- ${i}`));
+  for (const extra of (p.after ?? []).filter((t) => t.trim())) lines.push('', extra);
   if (p.buttons.length) lines.push('', ...p.buttons.map((b) => `${b.label}: ${b.url}`));
   lines.push('', '--', `${p.footer} Cambiar mis avisos: ${p.appUrl}/app/habitfer?avisos=1`);
   return lines.join('\n');
@@ -104,6 +120,8 @@ function build(p: {
   heading: string;
   paragraphs: string[];
   list?: string[];
+  after?: string[];
+  bullet?: string;
   buttons: Button[];
 }): MailContent {
   const footer = 'Te llega porque activaste los avisos por correo en HabitFer.';
@@ -176,6 +194,29 @@ export function coachMail(p: { appUrl: string; text: string }): MailContent {
     heading: 'Tu coach de la semana',
     paragraphs,
     buttons: [{ ...openApp(p.appUrl, '/app/habitfer/stats'), primary: true }],
+  });
+}
+
+/** Mensaje de la mañana: lo de hoy, la racha y la frase del día. */
+export function morningMail(p: {
+  appUrl: string;
+  title: string;
+  plan: string;
+  spark: string;
+  quote: { frase: string; autor: string };
+  items: string[];
+}): MailContent {
+  const quote = `«${p.quote.frase}»${p.quote.autor ? `\n— ${p.quote.autor}` : ''}`;
+  return build({
+    appUrl: p.appUrl,
+    subject: p.title,
+    preheader: `${p.plan.replace(/:$/, '.')} ${p.spark}`,
+    heading: p.title.replace(/^☀️\s*/, ''),
+    paragraphs: [p.plan],
+    list: p.items,
+    bullet: '',
+    after: [p.spark, quote],
+    buttons: [{ ...openApp(p.appUrl), label: 'Empezar el día en HabitFer', primary: true }],
   });
 }
 

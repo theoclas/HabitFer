@@ -5,13 +5,15 @@ import {
   currentStreak,
   isPlannedOn,
   isRequiredOn,
+  shiftKey,
+  streakUnit,
   weekDoneCount,
   weeklyTargetOf,
   weekStartKey,
 } from '../habits/habit-rules';
 import { HABIT_FULL_INCLUDE } from '../habits/habit-view';
 import { toDateKey } from '../habits/habits.utils';
-import { EmailRemindersService } from '../mail/email-reminders.service';
+import { EmailRemindersService, firstName } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
 import { WhatsappRemindersService } from '../whatsapp/whatsapp-reminders.service';
@@ -25,6 +27,7 @@ import {
   measurableReminderBody,
   weeklyReminderBody,
 } from './reminder-text.utils';
+import { buildMorning, pickPhrase } from './morning.utils';
 import { endOfMinute, formatHHmm, startOfMinute, startOfToday } from './reminders.utils';
 
 @Injectable()
@@ -237,6 +240,72 @@ export class RemindersService {
       select: { id: true },
     });
     for (const u of users) await this.sendSummary(u.id, today, todayKey, minuteStart);
+
+    // Mensaje de la mañana: lo de hoy, la racha que hay que cuidar y una frase.
+    const early = await this.prisma.user.findMany({
+      where: { morningTime: hhmm, ...(userId ? { id: userId } : {}) },
+      select: { id: true },
+    });
+    for (const u of early) await this.sendMorning(u.id, today, todayKey, minuteStart);
+  }
+
+  /** Lo que toca hoy (sin pausas ni congelados), la mejor racha viva y la frase del día. */
+  private async sendMorning(userId: string, today: Date, todayKey: string, minuteStart: Date) {
+    // Uno por día: si cambia la hora después de recibirlo, no llega otro.
+    const already = await this.prisma.reminderLog.findFirst({
+      where: { userId, sourceType: ReminderSourceType.MORNING, sourceId: `morning-${todayKey}` },
+      select: { id: true },
+    });
+    if (already) return;
+    const [user, habits, pauses, progress, tasks] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId }, select: { fullName: true, username: true } }),
+      this.prisma.habit.findMany({ where: { userId, archived: false, kind: HabitKind.BUILD }, include: HABIT_FULL_INCLUDE }),
+      loadPauses(this.prisma, userId),
+      this.prisma.habitProgress.findMany({ where: { userId, date: today }, select: { habitId: true, value: true } }),
+      this.prisma.task.findMany({
+        where: { userId, status: { not: TaskStatus.DONE }, dueDate: today },
+        orderBy: [{ dueTime: 'asc' }, { createdAt: 'asc' }],
+        select: { title: true, dueTime: true },
+        take: 20,
+      }),
+    ]);
+    if (!user || (habits.length === 0 && tasks.length === 0)) return;
+
+    const yesterday = shiftKey(todayKey, -1);
+    const valueById = new Map(progress.map((p) => [p.habitId, p.value]));
+    const all = habits.map((h) => ({ h, hist: toHistoryHabit(h, pauses) }));
+    const pending = all
+      .filter(({ hist }) => isRequiredOn(hist, todayKey) && !hist.doneKeys.has(todayKey))
+      .map(({ h }) => (h.goal > 1 ? `${h.title} (${valueById.get(h.id) ?? 0}/${h.goal}${h.unit ? ` ${h.unit}` : ''})` : h.title));
+    const requiredYesterday = all.filter(({ hist }) => isRequiredOn(hist, yesterday));
+    const yesterdayPerfect = requiredYesterday.length > 0 && requiredYesterday.every(({ hist }) => hist.doneKeys.has(yesterday));
+    const best =
+      all
+        .filter(({ h }) => h.streakEnabled)
+        .map(({ h, hist }) => ({ title: h.title, streak: currentStreak(hist, todayKey), unit: streakUnit(hist) }))
+        .filter((b) => b.streak >= 2)
+        .sort((a, b) => b.streak - a.streak)[0] ?? null;
+
+    const text = buildMorning({
+      name: firstName(user),
+      pending,
+      tasks,
+      best,
+      yesterdayPerfect,
+      quote: pickPhrase(`${userId}:${todayKey}`),
+    });
+    const created = await this.createIfNew({
+      userId,
+      sourceType: ReminderSourceType.MORNING,
+      sourceId: `morning-${todayKey}`,
+      title: text.title,
+      body: text.pushBody,
+      triggerAt: minuteStart,
+    });
+    if (!created) return;
+    await this.push.sendToUser(userId, { title: text.title, body: text.pushBody, tag: `morning-${todayKey}`, url: '/app/habitfer' });
+    this.later(() => this.emails.morning(userId, text));
+    this.later(() => this.whatsapp.morning(userId, text));
   }
 
   /** Lo que se pedia hoy y falta (sin pausas ni congelados; los medibles con su avance). */

@@ -12,21 +12,10 @@ import {
   type WhatsappSettings,
 } from "../../../api/client";
 import { apiErrorMessage } from "../format";
+import { LEVEL_OPTIONS, digestNote, levelHint } from "./notifyHints";
 import { WhatsappLinkModal } from "./WhatsappLinkModal";
 
-type Props = { open: boolean; summaryTime: string | null };
-
-const OPTIONS: { label: string; value: EmailLevel }[] = [
-  { label: "Apagado", value: "OFF" },
-  { label: "Resumen", value: "SUMMARY" },
-  { label: "Todo", value: "ALL" },
-];
-
-const HINT: Record<EmailLevel, string> = {
-  OFF: "No te llegan mensajes.",
-  SUMMARY: "Te llega el resumen de la noche y el mensaje del coach de cada domingo.",
-  ALL: "Te llega cada recordatorio de tus hábitos y tareas, con un enlace para marcarlo hecho, además del resumen y el coach.",
-};
+type Props = { open: boolean; summaryTime: string | null; morningTime: string | null };
 
 function senderLine(wa: WhatsappSettings): string {
   const { state, phone } = wa.sender;
@@ -37,7 +26,7 @@ function senderLine(wa: WhatsappSettings): string {
 }
 
 /** Avisos por WhatsApp: tus números (máximo 2), qué te llega y, si eres admin, el celular que envía. */
-export function WhatsappSection({ open, summaryTime }: Props) {
+export function WhatsappSection({ open, summaryTime, morningTime }: Props) {
   const [wa, setWa] = useState<WhatsappSettings | null>(null);
   const [failed, setFailed] = useState(false);
   const [phone, setPhone] = useState("");
@@ -176,15 +165,15 @@ export function WhatsappSection({ open, summaryTime }: Props) {
 
           <Segmented<EmailLevel>
             block
-            options={OPTIONS}
+            options={LEVEL_OPTIONS}
             value={wa.level}
             disabled={busy}
             onChange={(value) => void saveLevel(value)}
             style={{ marginTop: 10 }}
           />
           <p className="hf-note" style={{ marginTop: 8 }}>
-            {HINT[wa.level]}
-            {wa.level !== "OFF" && !summaryTime && " El resumen solo llega si activas «Resumen de la noche» arriba."}
+            {levelHint(wa.level, "whatsapp")}
+            {digestNote(wa.level, morningTime, summaryTime)}
           </p>
           {connected && wa.numbers.length > 0 && (
             <div className="hf-notif__actions">

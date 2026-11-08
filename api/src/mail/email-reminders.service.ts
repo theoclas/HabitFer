@@ -1,11 +1,13 @@
 import { BadGatewayException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { UserStatus, type ReminderLevel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { MorningText } from '../reminders/morning.utils';
 import { levelAllows, type ReminderKind } from '../reminders/reminder-level';
 import {
   actionLink,
   coachMail,
   habitReminderMail,
+  morningMail,
   summaryMail,
   taskReminderMail,
   testMail,
@@ -86,6 +88,11 @@ export class EmailRemindersService {
 
   coach(userId: string, text: string) {
     return this.deliver(userId, 'digest', (appUrl) => coachMail({ appUrl, text }));
+  }
+
+  /** Mensaje de la mañana (va con el resumen y el coach: niveles SUMMARY y ALL). */
+  morning(userId: string, m: MorningText) {
+    return this.deliver(userId, 'digest', (appUrl) => morningMail({ appUrl, ...m }));
   }
 
   /* ---------- Ajustes (Notificaciones…) ---------- */

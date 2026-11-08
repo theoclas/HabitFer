@@ -3,6 +3,7 @@ import {
   coachMail,
   escapeHtml,
   habitReminderMail,
+  morningMail,
   summaryMail,
   taskReminderMail,
   testMail,
@@ -85,6 +86,23 @@ describe('plantillas de correo', () => {
     expect(mail.html).toContain('Hola Fer.');
     expect(mail.html).toContain('Esta semana leíste 5 días.<br>Sigue así.');
     expect(mail.html).toContain(`${APP}/app/habitfer/stats`);
+  });
+
+  it('mañana: plan, lista sin la llama repetida, ánimo y frase con su autor', () => {
+    const mail = morningMail({
+      appUrl: APP,
+      title: '☀️ Buenos días, Fernando',
+      plan: 'Hoy tienes 1 hábito y 1 tarea:',
+      spark: '🔥 Tu mejor racha: Leer, 12 días. Hoy la llevas a 13.',
+      quote: { frase: 'Hoy cuenta aunque nadie te aplauda.', autor: 'Jhova de aquino' },
+      items: ['🔥 Leer', '☑️ Llamar a Juan · 3:00 p. m.'],
+    });
+    expect(mail.subject).toBe('☀️ Buenos días, Fernando');
+    expect(mail.html).toContain('>Buenos días, Fernando<');
+    expect(mail.html).toContain('☑️ Llamar a Juan · 3:00 p. m.');
+    expect(mail.html).not.toContain('🔥&nbsp; 🔥 Leer');
+    expect(mail.text).toContain('Hoy tienes 1 hábito y 1 tarea:\n\n- 🔥 Leer\n- ☑️ Llamar a Juan · 3:00 p. m.\n\n🔥 Tu mejor racha');
+    expect(mail.text).toContain('«Hoy cuenta aunque nadie te aplauda.»\n— Jhova de aquino');
   });
 
   it('prueba: saluda por el nombre', () => {

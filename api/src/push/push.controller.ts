@@ -53,19 +53,24 @@ export class PushController {
 
   @Get('settings')
   async settings(@CurrentUser() user: AuthUserPayload) {
-    const row = await this.prisma.user.findUnique({ where: { id: user.userId }, select: { habitSummaryTime: true } });
+    const row = await this.prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { habitSummaryTime: true, morningTime: true },
+    });
     return {
       enabled: this.push.enabled,
       devices: await this.push.devices(user.userId),
       summaryTime: row?.habitSummaryTime ?? null,
+      morningTime: row?.morningTime ?? null,
     };
   }
 
   @Patch('settings')
   async updateSettings(@CurrentUser() user: AuthUserPayload, @Body() dto: PushSettingsDto) {
-    if (dto.summaryTime !== undefined) {
-      await this.prisma.user.update({ where: { id: user.userId }, data: { habitSummaryTime: dto.summaryTime ?? null } });
-    }
+    const data: { habitSummaryTime?: string | null; morningTime?: string | null } = {};
+    if (dto.summaryTime !== undefined) data.habitSummaryTime = dto.summaryTime ?? null;
+    if (dto.morningTime !== undefined) data.morningTime = dto.morningTime ?? null;
+    if (Object.keys(data).length) await this.prisma.user.update({ where: { id: user.userId }, data });
     return this.settings(user);
   }
 
