@@ -1,4 +1,5 @@
 import {
+  CameraOutlined,
   CheckOutlined,
   CloseOutlined,
   CopyOutlined,
@@ -12,8 +13,9 @@ import {
 } from "@ant-design/icons";
 import { Dropdown, type MenuProps } from "antd";
 import { thingsText } from "../format";
+import { usePhotoUrl } from "../hooks";
 import { gramsText, kcalText, relativeDay } from "../math";
-import type { Entry, MealView, Suggestion } from "../types";
+import type { Entry, MealView, PendingPhoto, Suggestion } from "../types";
 
 type Props = {
   meal: MealView;
@@ -30,10 +32,48 @@ type Props = {
   onCopy: () => void;
   onSave: () => void;
   onClear: () => void;
+  /** Completar o borrar una foto pendiente. */
+  onPhoto: (p: PendingPhoto) => void;
+  onPhotoDelete: (p: PendingPhoto) => void;
 };
 
-/** Una comida del día: lo anotado, «lo de siempre» por confirmar, repetir lo de ayer y su menú. */
-export function MealCard({ meal: m, date, hidden, busyKey, onAdd, onEdit, onConfirm, onDismiss, onRepeat, onCopy, onSave, onClear }: Props) {
+/** Una foto para anotar después: miniatura, hora y nota. */
+function PhotoRow({ photo, onOpen, onDelete }: { photo: PendingPhoto; onOpen: () => void; onDelete: () => void }) {
+  const url = usePhotoUrl(photo.id);
+  const time = new Date(photo.createdAt).toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+  return (
+    <div className="nf-photo-row">
+      <button type="button" className="nf-photo-row__main" onClick={onOpen}>
+        <span className="nf-photo-row__thumb">{url ? <img src={url} alt="" /> : <CameraOutlined />}</span>
+        <span className="nf-photo-row__text">
+          Foto de las {time}
+          <small>{photo.note ?? "Pendiente: toca para anotar lo que había"}</small>
+        </span>
+      </button>
+      <button type="button" className="nf-photo-row__del" aria-label={`Borrar la foto de las ${time}`} onClick={onDelete}>
+        <CloseOutlined />
+      </button>
+    </div>
+  );
+}
+
+/** Una comida del día: lo anotado, fotos pendientes, «lo de siempre» por confirmar, repetir lo de ayer y su menú. */
+export function MealCard({
+  meal: m,
+  date,
+  hidden,
+  busyKey,
+  onAdd,
+  onEdit,
+  onConfirm,
+  onDismiss,
+  onRepeat,
+  onCopy,
+  onSave,
+  onClear,
+  onPhoto,
+  onPhotoDelete,
+}: Props) {
   const empty = m.entries.length === 0;
   const suggestions = m.suggestions.filter((s) => !hidden.has(`${m.slot}:${s.foodId}`));
   const when = m.previous ? relativeDay(m.previous.date, date) : "";
@@ -95,6 +135,10 @@ export function MealCard({ meal: m, date, hidden, busyKey, onAdd, onEdit, onConf
           <span className="nf-entry__kcal">{kcalText(e.kcal)}</span>
           <RightOutlined className="nf-entry__chev" aria-hidden="true" />
         </button>
+      ))}
+
+      {m.photos.map((p) => (
+        <PhotoRow key={p.id} photo={p} onOpen={() => onPhoto(p)} onDelete={() => onPhotoDelete(p)} />
       ))}
 
       {suggestions.length > 0 && (

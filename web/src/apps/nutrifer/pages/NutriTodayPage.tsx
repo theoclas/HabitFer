@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { todayKey } from "../../../utils/dates";
 import { apiErrorMessage } from "../../habitfer/format";
-import { addWater, copyEntries, fetchDay, removeEntries, repeatEntry } from "../api";
+import { addWater, copyEntries, deletePhoto, fetchDay, removeEntries, repeatEntry } from "../api";
+import { forgetPhoto } from "../hooks";
 import { AddFoodSheet } from "../components/AddFoodSheet";
 import { CopyModal, type CopySource } from "../components/CopyModal";
 import { CalorieRing, MacroBars } from "../components/DaySummary";
@@ -17,7 +18,7 @@ import { WaterCard } from "../components/WaterCard";
 import { WeekStrip } from "../components/WeekStrip";
 import { inMeal, thingsText } from "../format";
 import { kcalText, mlText, relativeDay } from "../math";
-import type { DayView, Entry, MealSlot, MealView, Remaining, Suggestion } from "../types";
+import type { DayView, Entry, MealSlot, MealView, PendingPhoto, Remaining, Suggestion } from "../types";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -62,6 +63,8 @@ export function NutriTodayPage() {
   const [date, setDate] = useState(todayKey);
   const [day, setDay] = useState<DayView | null>(null);
   const [adding, setAdding] = useState<MealSlot | null>(null);
+  /** Foto pendiente que se está completando (abre «escribe o dicta» con la foto). */
+  const [photo, setPhoto] = useState<PendingPhoto | null>(null);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [copySource, setCopySource] = useState<CopySource | null>(null);
   const [saveSource, setSaveSource] = useState<SaveSource | null>(null);
@@ -181,6 +184,27 @@ export function NutriTodayPage() {
           message.success(`${m.name} quedó vacío`);
         } catch (err) {
           message.error(apiErrorMessage(err, "No se pudo vaciar"));
+        }
+      },
+    });
+  };
+
+  const removePhoto = (p: PendingPhoto) => {
+    modal.confirm({
+      title: "¿Borrar la foto?",
+      content: "Se borra sin anotar nada. Si ya anotaste lo que había, está bien borrarla.",
+      okText: "Borrar",
+      okButtonProps: { danger: true },
+      cancelText: "No",
+      rootClassName: "nf-drawer",
+      centered: true,
+      onOk: async () => {
+        try {
+          await deletePhoto(p.id);
+          forgetPhoto(p.id);
+          await load();
+        } catch (err) {
+          message.error(apiErrorMessage(err, "No se pudo borrar la foto"));
         }
       },
     });
@@ -328,6 +352,11 @@ export function NutriTodayPage() {
               onCopy={() => setCopySource({ date, meal: m.slot, label: `${m.name.toLowerCase()} de ${relativeDay(date, today)}` })}
               onSave={() => setSaveSource({ date, meal: m.slot, mealName: m.name, count: m.entries.length })}
               onClear={() => clearMeal(m)}
+              onPhoto={(p) => {
+                setPhoto(p);
+                setAdding(m.slot);
+              }}
+              onPhotoDelete={(p) => removePhoto(p)}
             />
           ))}
 
@@ -345,9 +374,14 @@ export function NutriTodayPage() {
         open={adding !== null}
         meal={adding}
         mealName={mealName(adding)}
+        meals={mealList}
         date={date}
         remaining={remaining}
-        onClose={() => setAdding(null)}
+        photo={photo}
+        onClose={() => {
+          setAdding(null);
+          setPhoto(null);
+        }}
         onAdded={() => void load()}
         onWater={waterFromSheet}
       />

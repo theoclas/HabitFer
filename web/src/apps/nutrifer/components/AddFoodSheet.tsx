@@ -1,17 +1,43 @@
-import { LoadingOutlined, PlusOutlined, SearchOutlined, StarFilled, StarOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import {
+  CameraOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  StarFilled,
+  StarOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
 import { Button, Checkbox, Drawer, Input, message, type InputRef } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { apiErrorMessage } from "../../habitfer/format";
-import { addEntry, addQuickEntry, fetchShortcuts, foodDetail, logSavedMeal, removeEntries, repeatEntry, setFavorite, type QuickInput } from "../api";
+import {
+  addEntriesBatch,
+  addEntry,
+  addQuickEntry,
+  deletePhoto,
+  fetchShortcuts,
+  foodDetail,
+  logSavedMeal,
+  removeEntries,
+  repeatEntry,
+  setFavorite,
+  understandText,
+  uploadPhoto,
+  type QuickInput,
+} from "../api";
 import { defaultAmount, inMeal, lastAmount, thingsText } from "../format";
-import { useFoodSearch } from "../hooks";
-import { kcalText } from "../math";
-import type { AmountChoice, Entry, FavoriteFood, FoodDetail, FoodResult, MealSlot, Remaining, SavedMealView, Shortcuts } from "../types";
+import { forgetPhoto, useFoodSearch, usePhotoUrl } from "../hooks";
+import { kcalText, usualChoice } from "../math";
+import { shrinkPhoto } from "../photo";
+import type { AmountChoice, BatchItem, Entry, FavoriteFood, FoodDetail, FoodResult, MealSlot, PendingPhoto, Remaining, SavedMealView, Shortcuts, TextItem } from "../types";
 import { AmountEditor } from "./AmountEditor";
 import { CreateFoodForm } from "./CreateFoodForm";
 import { FoodRow } from "./FoodRow";
 import { QuickEntryForm } from "./QuickEntryForm";
+import { TextReview } from "./TextReview";
 import { GlassIcon } from "./WaterCard";
 import { notifyUndo } from "./undo";
 
@@ -19,16 +45,45 @@ type Props = {
   open: boolean;
   meal: MealSlot | null;
   mealName: string;
+  /** Las cinco comidas (para «escribe o dicta», que puede repartir en varias). */
+  meals: { slot: MealSlot; name: string }[];
   date: string;
   /** Lo que falta para la meta del día («anotar por meta»). */
   remaining: Remaining | null;
+  /** Foto pendiente que se va a completar (abre en «escribe o dicta» con la foto arriba). */
+  photo?: PendingPhoto | null;
   onClose: () => void;
   onAdded: () => void;
   /** Un vaso de agua (va al contador del día, no a la comida). */
   onWater: () => void;
 };
 
-type View = { kind: "home" } | { kind: "detail"; food: FoodDetail } | { kind: "create" } | { kind: "quick" } | { kind: "saved"; saved: SavedMealView };
+type View =
+  | { kind: "home" }
+  | { kind: "detail"; food: FoodDetail }
+  | { kind: "create" }
+  | { kind: "quick" }
+  | { kind: "saved"; saved: SavedMealView }
+  | { kind: "write" }
+  | { kind: "review"; items: TextItem[] };
+
+/** Ejemplos para el primer uso: un toque los copia en el cuadro. */
+const EXAMPLES = ["Desayuné dos arepas con queso y un tinto", "Almorcé arroz, fríjoles, carne asada, maduro y aguacate", "Un pocillo de chocolate y un pandebono"];
+
+/** La foto pendiente, grande, con su nota. */
+function PhotoPreview({ photo }: { photo: PendingPhoto }) {
+  const url = usePhotoUrl(photo.id);
+  const time = new Date(photo.createdAt).toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+  return (
+    <figure className="nf-photo-big">
+      {url ? <img src={url} alt={`Foto de las ${time}`} /> : <div className="nf-photo-big__wait">Cargando la foto…</div>}
+      <figcaption>
+        Foto de las {time}
+        {photo.note ? ` · ${photo.note}` : ""}
+      </figcaption>
+    </figure>
+  );
+}
 
 /** Atajos de bebidas: buscan la familia y cada resultado se agrega con su medida (pocillo, vaso, botella). */
 const DRINKS: { label: string; q: string }[] = [
@@ -47,9 +102,10 @@ const DRINKS: { label: string; q: string }[] = [
  * Buscar y agregar a una comida. Arriba, lo de un toque: solo calorías, agua, bebidas, comidas
  * guardadas, favoritos y lo que más anotas aquí. Queda abierta para seguir agregando.
  */
-export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, onAdded, onWater }: Props) {
+export function AddFoodSheet({ open, meal, mealName, meals, date, remaining, photo, onClose, onAdded, onWater }: Props) {
   const isMobile = useIsMobile();
   const inputRef = useRef<InputRef>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const results = useFoodSearch(q);
   const [shortcuts, setShortcuts] = useState<Shortcuts | null>(null);
@@ -58,6 +114,7 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
   const [busy, setBusy] = useState(false);
   const [quickBusy, setQuickBusy] = useState<string | null>(null);
   const [picked, setPicked] = useState<Record<string, boolean>>({});
+  const [text, setText] = useState("");
 
   const loadShortcuts = useCallback(() => {
     if (!meal) return;
@@ -69,12 +126,14 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
   useEffect(() => {
     if (!open || !meal) return;
     setQ("");
-    setView({ kind: "home" });
+    setText("");
+    setView(photo ? { kind: "write" } : { kind: "home" });
     setShortcuts(null);
     loadShortcuts();
+    if (photo) return;
     const t = window.setTimeout(() => inputRef.current?.focus(), 200);
     return () => window.clearTimeout(t);
-  }, [open, meal, loadShortcuts]);
+  }, [open, meal, photo, loadShortcuts]);
 
   const home = () => {
     setView({ kind: "home" });
@@ -181,6 +240,76 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
     }
   };
 
+  /* ---------- Escribe o dicta ---------- */
+
+  const understand = async () => {
+    const t = text.trim();
+    if (!t) return;
+    setBusy(true);
+    try {
+      const items = await understandText(t);
+      if (items.length === 0) {
+        message.info("No encontré comida en ese texto. Prueba con algo como «dos arepas y un tinto».");
+        return;
+      }
+      setView({ kind: "review", items });
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo entender"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveReview = async (items: BatchItem[], aliases: { phrase: string; foodId: string }[]) => {
+    setBusy(true);
+    try {
+      const r = await addEntriesBatch({ date, items, aliases, ...(photo ? { photoId: photo.id } : {}) });
+      if (photo) forgetPhoto(photo.id);
+      done(`Anotado: ${thingsText(r.entries.length)} · ${kcalText(r.kcal)} kcal`, r.entries);
+      setText("");
+      if (photo) onClose();
+      else home();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo guardar"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* ---------- Foto para después ---------- */
+
+  const savePhotoForLater = async (file: File) => {
+    if (!meal) return;
+    setBusy(true);
+    try {
+      const { base64, mime } = await shrinkPhoto(file);
+      await uploadPhoto({ date, meal, image: base64, mime });
+      message.success(`La foto quedó en ${where}: complétala cuando puedas`);
+      onAdded();
+      onClose();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo guardar la foto"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const discardPhoto = async () => {
+    if (!photo) return;
+    setBusy(true);
+    try {
+      await deletePhoto(photo.id);
+      forgetPhoto(photo.id);
+      message.success("Foto borrada");
+      onAdded();
+      onClose();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo borrar la foto"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const term = q.trim();
   const favRow = (f: FavoriteFood) => {
     const amount = f.last ? lastAmount(f.last) : defaultAmount(f);
@@ -200,7 +329,81 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
   };
 
   let body;
-  if (view.kind === "create") {
+  if (view.kind === "write") {
+    body = (
+      <div className="nf-detail">
+        {!photo && (
+          <button type="button" className="nf-back" onClick={home}>
+            ‹ Volver a la búsqueda
+          </button>
+        )}
+        {photo && <PhotoPreview photo={photo} />}
+        <header>
+          <h3 className="nf-detail__name">{photo ? "¿Qué había en la foto?" : "Escribe o dicta"}</h3>
+          <p className="nf-detail__source">Como lo dirías: «desayuné dos arepas con queso y un tinto». Para dictar, toca el micrófono del teclado.</p>
+        </header>
+        <Input.TextArea
+          className="nf-write"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          autoSize={{ minRows: 3, maxRows: 8 }}
+          maxLength={600}
+          autoFocus
+          enterKeyHint="done"
+          placeholder="Un pocillo de chocolate, una arepa con queso y medio banano…"
+          aria-label="Lo que comiste"
+          onPressEnter={(e) => {
+            if (!e.shiftKey) {
+              e.preventDefault();
+              void understand();
+            }
+          }}
+        />
+        {!text.trim() && (
+          <div className="nf-chips nf-chips--sm" role="group" aria-label="Ejemplos">
+            {EXAMPLES.map((ex) => (
+              <button key={ex} type="button" className="nf-chip nf-chip--ghost" onClick={() => setText(ex)}>
+                {ex}
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="nf-hint" style={{ margin: 0 }}>
+          Lo entiendo aquí mismo, sin inteligencia artificial y sin costo. Antes de guardar te muestro lo que entendí.
+        </p>
+        {photo && (
+          <button type="button" className="nf-link-danger" onClick={() => void discardPhoto()} disabled={busy}>
+            <DeleteOutlined /> Ya lo anoté: borrar la foto
+          </button>
+        )}
+        <div className="nf-actions">
+          {photo && (
+            <Button size="large" onClick={onClose}>
+              Después
+            </Button>
+          )}
+          <Button type="primary" size="large" loading={busy} disabled={!text.trim()} onClick={() => void understand()}>
+            Entender
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (view.kind === "review" && meal) {
+    body = (
+      <>
+        {photo && <PhotoPreview photo={photo} />}
+        <TextReview
+          key={view.items.map((i) => i.key + i.phrase).join("|")}
+          items={view.items}
+          defaultMeal={meal}
+          meals={meals}
+          busy={busy}
+          onBack={() => setView({ kind: "write" })}
+          onSubmit={(items, aliases) => void saveReview(items, aliases)}
+        />
+      </>
+    );
+  } else if (view.kind === "create") {
     body = (
       <CreateFoodForm
         initialName={term}
@@ -270,9 +473,11 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
             {food.favorite ? <StarFilled /> : <StarOutlined />}
           </button>
         </header>
+        {food.usual && <p className="nf-usual-note">Empieza con lo que anotaste la última vez.</p>}
         <AmountEditor
           key={food.id}
           food={food}
+          initial={usualChoice(food)}
           busy={busy}
           remaining={remaining}
           submitLabel={(k) => `Agregar · ${kcalText(k)} kcal`}
@@ -323,6 +528,12 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
         ) : (
           <>
             <div className="nf-quickbar">
+              <button type="button" className="nf-quickbar__btn nf-quickbar__btn--main" onClick={() => setView({ kind: "write" })}>
+                <EditOutlined /> Escribe o dicta
+              </button>
+              <button type="button" className="nf-quickbar__btn" disabled={busy} onClick={() => fileRef.current?.click()}>
+                {busy ? <LoadingOutlined /> : <CameraOutlined />} Foto para después
+              </button>
               <button type="button" className="nf-quickbar__btn" onClick={() => setView({ kind: "quick" })}>
                 <ThunderboltOutlined /> Solo calorías
               </button>
@@ -335,6 +546,17 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
               >
                 <GlassIcon level={0.7} /> Un vaso de agua
               </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void savePhotoForLater(file);
+                }}
+              />
             </div>
             <div className="nf-section-label">Bebidas</div>
             <div className="nf-chips nf-chips--sm nf-chips--scroll" role="group" aria-label="Bebidas">
@@ -425,7 +647,7 @@ export function AddFoodSheet({ open, meal, mealName, date, remaining, onClose, o
 
   return (
     <Drawer
-      title={`Agregar a ${where}`}
+      title={photo ? `Foto de ${where}` : `Agregar a ${where}`}
       open={open}
       onClose={onClose}
       placement={isMobile ? "bottom" : "right"}

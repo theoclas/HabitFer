@@ -1,12 +1,14 @@
 import { api } from "../../api/client";
 import type {
   AmountChoice,
+  BatchItem,
   DayView,
   Entry,
   FavoriteFood,
   FoodDetail,
   FoodResult,
   MealSlot,
+  PendingPhoto,
   ProfileInput,
   ProfileResponse,
   RecentFood,
@@ -16,6 +18,7 @@ import type {
   SavedMealView,
   Shortcuts,
   Targets,
+  TextItem,
 } from "./types";
 
 /** Llamadas de NutriFer a /api/nutrition. */
@@ -116,6 +119,33 @@ export type CopyInput = { fromDate: string; fromMeal?: MealSlot; toDate: string;
 export async function copyEntries(payload: CopyInput) {
   const { data } = await api.post<{ entries: Entry[]; kcal: number }>("/nutrition/copy", payload);
   return data;
+}
+
+/* ---------- Escribe o dicta y fotos para después ---------- */
+
+export async function understandText(text: string) {
+  const { data } = await api.post<{ items: TextItem[] }>("/nutrition/understand", { text });
+  return data.items;
+}
+
+export async function addEntriesBatch(payload: { date: string; items: BatchItem[]; aliases?: { phrase: string; foodId: string }[]; photoId?: string }) {
+  const { data } = await api.post<{ entries: Entry[]; kcal: number }>("/nutrition/entries/batch", payload);
+  return data;
+}
+
+export async function uploadPhoto(payload: { date: string; meal: MealSlot; image: string; mime: string; note?: string }) {
+  const { data } = await api.post<PendingPhoto & { meal: MealSlot }>("/nutrition/photos", payload);
+  return data;
+}
+
+/** La foto como blob (la ruta pide la sesión, así que no sirve un <img src> directo). */
+export async function fetchPhotoBlob(id: string) {
+  const { data } = await api.get<Blob>(`/nutrition/photos/${id}`, { responseType: "blob" });
+  return data;
+}
+
+export async function deletePhoto(id: string) {
+  await api.delete(`/nutrition/photos/${id}`);
 }
 
 export async function addWater(date: string, deltaMl: number) {

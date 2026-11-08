@@ -1,13 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Put, Query, StreamableFile, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
 import { DiaryService } from './diary.service';
 import { FoodsService } from './foods.service';
 import {
+  BatchEntriesDto,
   CopyDto,
   CreateEntryDto,
   CreateFoodDto,
   DayQueryDto,
+  PhotoDto,
   ProfileDto,
   QuickEntryDto,
   RecipeDto,
@@ -17,12 +19,15 @@ import {
   SavedMealLogDto,
   SavedMealUpdateDto,
   SearchQueryDto,
+  UnderstandDto,
   UpdateEntryDto,
   WaterDto,
 } from './nutrition.dto';
+import { MealPhotosService } from './meal-photos.service';
 import { ProfileService } from './profile.service';
 import { RecipesService } from './recipes.service';
 import { SavedMealsService } from './saved-meals.service';
+import { FoodTextService } from './text/food-text.service';
 
 /** NutriFer: alimentos, diario de comidas, comidas guardadas, recetas, agua y meta. */
 @Controller('nutrition')
@@ -34,7 +39,40 @@ export class NutritionController {
     private profiles: ProfileService,
     private saved: SavedMealsService,
     private recipes: RecipesService,
+    private text: FoodTextService,
+    private photos: MealPhotosService,
   ) {}
+
+  /* ---------- Escribe o dicta (sin IA) y fotos para después ---------- */
+
+  /** Entiende el texto y propone qué y cuánto; no guarda nada. */
+  @Post('understand')
+  understand(@CurrentUser() user: AuthUserPayload, @Body() dto: UnderstandDto) {
+    return this.text.understand(user.userId, dto.text);
+  }
+
+  /** Guarda de una vez lo confirmado (y aprende los nombres corregidos). */
+  @Post('entries/batch')
+  addMany(@CurrentUser() user: AuthUserPayload, @Body() dto: BatchEntriesDto) {
+    return this.diary.addMany(user.userId, dto);
+  }
+
+  @Post('photos')
+  addPhoto(@CurrentUser() user: AuthUserPayload, @Body() dto: PhotoDto) {
+    return this.photos.create(user.userId, dto);
+  }
+
+  @Get('photos/:id')
+  @Header('Cache-Control', 'private, max-age=86400')
+  async photo(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    const p = await this.photos.file(user.userId, id);
+    return new StreamableFile(Buffer.from(p.data), { type: p.mime });
+  }
+
+  @Delete('photos/:id')
+  removePhoto(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.photos.remove(user.userId, id);
+  }
 
   /* ---------- Alimentos ---------- */
 

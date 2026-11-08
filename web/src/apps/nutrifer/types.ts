@@ -57,6 +57,16 @@ export type Per100 = {
   satFat?: number | null;
 };
 
+/** Lo que se anotó la última vez de un alimento (el editor arranca con eso: «aprende tus porciones»). */
+export type UsualAmount = {
+  portionLabel: string | null;
+  quantity: number;
+  grams: number | null;
+  prep: Prep | null;
+  oilGrams: number | null;
+  parts: EntryPart[] | null;
+};
+
 export type FoodDetail = {
   id: string;
   name: string;
@@ -66,6 +76,7 @@ export type FoodDetail = {
   sourceLabel: string;
   own: boolean;
   favorite?: boolean;
+  usual?: UsualAmount | null;
   per100: Per100;
   extra: { key: string; label: string; unit: string; value: number }[];
   portions: (Portion & { isDefault: boolean })[];
@@ -110,6 +121,9 @@ export type PreviousMeal = { date: string; count: number; kcal: number };
 
 export type WaterView = { ml: number; goalMl: number; glassMl: number };
 
+/** Foto para anotar después. */
+export type PendingPhoto = { id: string; note: string | null; createdAt: string };
+
 export type MealView = {
   slot: MealSlot;
   name: string;
@@ -117,6 +131,52 @@ export type MealView = {
   totals: Totals;
   suggestions: Suggestion[];
   previous: PreviousMeal | null;
+  photos: PendingPhoto[];
+};
+
+/* ---------- Escribe o dicta ---------- */
+
+/** Un alimento posible para lo que se escribió, con lo necesario para cambiar la cantidad sin volver a preguntar. */
+export type TextCandidate = {
+  id: string;
+  name: string;
+  source: FoodSource;
+  isDish: boolean;
+  canPrep: boolean;
+  per100: Per100;
+  portions: (Portion & { isDefault: boolean })[];
+};
+
+export type TextProposal = {
+  portionId: string | null;
+  quantity: number;
+  grams: number | null;
+  prep: Prep | null;
+  oilGrams: number | null;
+  how: "gramos" | "medida" | "lo-de-siempre" | "por-defecto";
+};
+
+export type TextItem = {
+  key: string;
+  phrase: string;
+  name: string;
+  /** Para recordar el alimento elegido si se corrige. */
+  aliasKey: string;
+  meal: MealSlot | null;
+  /** El primer candidato es el que el usuario eligió otra vez para esta frase. */
+  learned: boolean;
+  candidates: TextCandidate[];
+  proposals: Record<string, TextProposal>;
+};
+
+export type BatchItem = {
+  meal: MealSlot;
+  foodId: string;
+  portionId?: string;
+  grams?: number;
+  quantity?: number;
+  prep?: Prep;
+  oilGrams?: number;
 };
 
 export type DayView = {

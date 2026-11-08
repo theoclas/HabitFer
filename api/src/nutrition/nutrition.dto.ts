@@ -6,6 +6,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsObject,
@@ -256,6 +257,110 @@ export class CopyDto {
   @IsOptional()
   @IsEnum(MealSlot, { message: 'Comida no válida.' })
   toMeal?: MealSlot;
+}
+
+/** «Escribe o dicta»: el texto como se dijo («desayuné dos arepas y un tinto»). */
+export class UnderstandDto {
+  @IsString()
+  @MinLength(1, { message: 'Escribe lo que comiste.' })
+  @MaxLength(600, { message: 'Es mucho texto de una vez: divídelo en partes.' })
+  text!: string;
+}
+
+/** Un alimento confirmado de «escribe o dicta». */
+export class BatchItemDto {
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  meal!: MealSlot;
+
+  @IsString()
+  @MaxLength(40)
+  foodId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  portionId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1, { message: 'Los gramos deben ser mayores que cero.' })
+  @Max(5000, { message: 'Son demasiados gramos para una sola anotación.' })
+  grams?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.05, { message: 'La cantidad debe ser mayor que cero.' })
+  @Max(50, { message: 'La cantidad es demasiado grande.' })
+  quantity?: number;
+
+  @IsOptional()
+  @IsEnum(CookMethod, { message: 'Preparación no válida.' })
+  prep?: CookMethod;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(300)
+  oilGrams?: number;
+}
+
+/** Nombre aprendido: «esta frase era este alimento». */
+export class AliasDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  phrase!: string;
+
+  @IsString()
+  @MaxLength(40)
+  foodId!: string;
+}
+
+export class BatchEntriesDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Elige al menos una cosa.' })
+  @ArrayMaxSize(40, { message: 'Son demasiadas cosas de una vez.' })
+  @ValidateNested({ each: true })
+  @Type(() => BatchItemDto)
+  items!: BatchItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => AliasDto)
+  aliases?: AliasDto[];
+
+  /** La foto pendiente que se acaba de completar (se borra). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  photoId?: string;
+}
+
+/** «Foto ahora, anoto después»: la foto en base64, ya achicada por el teléfono. */
+export class PhotoDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  date!: string;
+
+  @IsEnum(MealSlot, { message: 'Comida no válida.' })
+  meal!: MealSlot;
+
+  @IsString()
+  @MinLength(100, { message: 'La foto llegó vacía.' })
+  @MaxLength(6_000_000, { message: 'La foto es muy grande (máximo 4 MB).' })
+  image!: string;
+
+  @IsIn(['image/jpeg', 'image/png', 'image/webp'], { message: 'La foto debe ser JPEG, PNG o WebP.' })
+  mime!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200, { message: 'La nota es muy larga.' })
+  note?: string;
 }
 
 export class WaterDto {

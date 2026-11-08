@@ -96,6 +96,37 @@ export function previewAmount(food: FoodDetail, choice: AmountChoice): { grams: 
   return { grams, totals: oil > 0 ? add(base, scale(OIL_PER100, oil)) : base };
 }
 
+/* ---------- Aprende tus porciones ---------- */
+
+/** Lo que se anotó la última vez, en el formato del editor (así arranca con tu porción, no con la de la tabla). */
+export function usualChoice(food: FoodDetail): AmountChoice | undefined {
+  const u = food.usual;
+  if (!u) return undefined;
+  if (food.parts.length > 0) {
+    return { quantity: u.quantity, ...(u.parts ? { parts: u.parts.map((p) => ({ partId: p.partId, included: p.included })) } : {}) };
+  }
+  const prep = { prep: u.prep, oilGrams: u.oilGrams };
+  if (u.portionLabel) {
+    const wanted = u.portionLabel.toLowerCase();
+    const portion = food.portions.find((p) => p.label.toLowerCase() === wanted);
+    if (portion) return { portionId: portion.id, quantity: u.quantity, ...prep };
+  }
+  if (u.grams && u.grams > 0) return { grams: u.grams, quantity: 1, ...prep };
+  return undefined;
+}
+
+/** Gramos, calorías y proteína de una cantidad (la revisión de «escribe o dicta»). */
+export function amountOf(
+  food: { per100: Per100; portions: { id: string; grams: number }[] },
+  a: { portionId: string | null; quantity: number; grams: number | null; oilGrams?: number | null },
+): { grams: number; kcal: number; protein: number } {
+  const portion = a.portionId ? food.portions.find((p) => p.id === a.portionId) : undefined;
+  const grams = portion ? portion.grams * a.quantity : (a.grams ?? 100);
+  const t = scale(food.per100, grams);
+  const oil = a.oilGrams && a.oilGrams > 0 ? a.oilGrams : 0;
+  return { grams, kcal: t.kcal + (oil * OIL_PER100.kcal) / 100, protein: t.protein };
+}
+
 /* ---------- Recetas ---------- */
 
 /** Toda la olla, el peso con que se reparte (el de la olla si se pesó) y una porción. */

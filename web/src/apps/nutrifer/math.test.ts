@@ -2,6 +2,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  amountOf,
+  usualChoice,
   canPrep,
   gramsForGoal,
   gramsText,
@@ -149,4 +151,25 @@ test("textos de las filas", () => {
   assert.equal(portionText("2 huevos", 1), "2 huevos");
   assert.equal(portionText("2 huevos", 2), "2 × 2 huevos");
   assert.equal(portionText("Pocillo", 1.5), "1½ × pocillo");
+});
+
+test("aprende tus porciones: el editor arranca con lo de la última vez", () => {
+  assert.equal(usualChoice(arepa), undefined, "sin historia, la medida por defecto");
+  const conMedida = usualChoice({ ...arepa, usual: { portionLabel: "Arepa pequeña", quantity: 2, grams: 112, prep: null, oilGrams: null, parts: null } });
+  assert.deepEqual(conMedida, { portionId: "peq", quantity: 2, prep: null, oilGrams: null });
+  const enGramos = usualChoice({ ...arepa, usual: { portionLabel: null, quantity: 1, grams: 120, prep: "ASADO", oilGrams: 5, parts: null } });
+  assert.deepEqual(enGramos, { grams: 120, quantity: 1, prep: "ASADO", oilGrams: 5 });
+  const plato = usualChoice({
+    ...bandeja,
+    usual: { portionLabel: "Plato", quantity: 1, grams: 150, prep: null, oilGrams: null, parts: [{ partId: "chich", label: "Chicharrón", foodId: "y", grams: 80, included: false }] },
+  });
+  assert.deepEqual(plato, { quantity: 1, parts: [{ partId: "chich", included: false }] });
+});
+
+test("cuánto en la revisión de «escribe o dicta»", () => {
+  const a = amountOf(arepa, { portionId: "peq", quantity: 2, grams: null });
+  assert.equal(a.grams, 112);
+  assert.equal(Math.round(a.kcal), 176);
+  const frita = amountOf(pechuga, { portionId: null, quantity: 1, grams: 100, oilGrams: 10 });
+  assert.equal(Math.round(frita.kcal), 120 + 90);
 });

@@ -156,13 +156,19 @@ export class FoodsService implements OnModuleInit {
   }
 
   async search(userId: string, q: string): Promise<FoodResult[]> {
+    const [ranked] = await this.searchMany(userId, [q], 25);
+    return ranked;
+  }
+
+  /** Varias búsquedas de una vez (para «escribe o dicta»): los alimentos propios y el uso se leen una sola vez. */
+  async searchMany(userId: string, queries: string[], limit = 25): Promise<FoodResult[][]> {
     await this.refresh();
     const [own, uses] = await Promise.all([
       this.prisma.food.findMany({ where: { ownerId: userId, archived: false }, select: SUMMARY_SELECT }),
       this.usage(userId),
     ]);
     const items = [...own.map(toIndexed), ...this.shared].map((it) => ({ ...it, uses: uses.get(it.id) ?? 0 }));
-    return rank(items, q, 25).map((it) => toResult(it.row));
+    return queries.map((q) => rank(items, q, limit).map((it) => toResult(it.row)));
   }
 
   /**
@@ -267,7 +273,7 @@ export class FoodsService implements OnModuleInit {
   }
 
   async detail(userId: string, id: string) {
-    const [food, fav] = await Promise.all([
+    const [food, fav, last] = await Promise.all([
       this.prisma.food.findFirst({
         where: { id, OR: [{ ownerId: null }, { ownerId: userId }] },
         include: {
@@ -280,6 +286,12 @@ export class FoodsService implements OnModuleInit {
         },
       }),
       this.prisma.foodFavorite.findUnique({ where: { userId_foodId: { userId, foodId: id } }, select: { foodId: true } }),
+      // Lo de siempre: la última vez que lo anotó (así el editor arranca con su porción, no con la de la tabla).
+      this.prisma.mealEntry.findFirst({
+        where: { userId, foodId: id, quick: false },
+        orderBy: { createdAt: 'desc' },
+        select: { portionLabel: true, quantity: true, grams: true, prep: true, oilGrams: true, parts: true },
+      }),
     ]);
     if (!food) throw new NotFoundException('Ese alimento no existe.');
     const extra = food.nutrients && typeof food.nutrients === 'object' && !Array.isArray(food.nutrients) ? (food.nutrients as Record<string, unknown>) : {};
@@ -296,6 +308,7 @@ export class FoodsService implements OnModuleInit {
           : SOURCE_LABELS[food.source],
       own: food.ownerId === userId,
       favorite: fav !== null,
+      usual: last,
       per100: {
         kcal: Math.round(food.kcal),
         protein: r1(food.protein),

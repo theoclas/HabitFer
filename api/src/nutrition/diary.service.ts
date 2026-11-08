@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, type MealSlot } from '@prisma/client';
+import { Prisma, type MealEntry, type MealSlot } from '@prisma/client';
 import { addDays, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { checkedDate, computeOr400, entryView, FOOD_FOR_ENTRY, fromTemplate, totalsOf, type FoodRow, type Template } from './entry.shared';
 import { amountText } from './entry.utils';
 import { MEAL_ORDER, mealNames } from './meals';
-import type { CopyDto, CreateEntryDto, QuickEntryDto, RepeatEntryDto, UpdateEntryDto, WaterDto } from './nutrition.dto';
+import type { BatchEntriesDto, CopyDto, CreateEntryDto, QuickEntryDto, RepeatEntryDto, UpdateEntryDto, WaterDto } from './nutrition.dto';
 import { roundTotals, scale, sumTotals } from './nutrition-math';
+import { normalize } from './search.utils';
 import { habitualSuggestions, previousMeals } from './suggest.utils';
 
 /** Agua por defecto: 8 vasos de 250 ml. */
@@ -36,7 +37,7 @@ export class DiaryService {
   async day(userId: string, dateKey: string) {
     const date = checkedDate(dateKey);
     const weekFrom = addDays(date, -6);
-    const [entries, past, profile, extra, weekRows] = await Promise.all([
+    const [entries, past, profile, extra, weekRows, photos] = await Promise.all([
       this.prisma.mealEntry.findMany({ where: { userId, date }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }),
       this.prisma.mealEntry.findMany({
         where: { userId, date: { gte: addDays(date, -HABIT_WINDOW_DAYS), lt: date } },
@@ -50,6 +51,12 @@ export class DiaryService {
         where: { userId, date: { gte: weekFrom, lte: date } },
         _sum: { kcal: true },
         _count: { _all: true },
+      }),
+      // Fotos pendientes (sin los bytes: el teléfono las pide aparte).
+      this.prisma.mealPhoto.findMany({
+        where: { userId, date },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, meal: true, note: true, createdAt: true },
       }),
     ]);
     const weekBy = new Map(weekRows.map((r) => [toDateKey(r.date), r]));
@@ -84,6 +91,10 @@ export class DiaryService {
         })),
         /** La última vez que esta comida tuvo algo (para «repetir lo de ayer»). */
         previous: previous.meals.get(slot) ?? null,
+        /** Fotos para anotar después. */
+        photos: photos
+          .filter((p) => p.meal === slot)
+          .map((p) => ({ id: p.id, note: p.note, createdAt: p.createdAt.toISOString() })),
       };
     });
     return {
@@ -126,6 +137,60 @@ export class DiaryService {
       },
     });
     return entryView(created);
+  }
+
+  /**
+   * Varias anotaciones de una vez (lo que se confirmó de «escribe o dicta»), cada una en su comida.
+   * Guarda los nombres aprendidos (la frase que se corrigió → el alimento elegido) y, si venía de una
+   * foto pendiente, la borra. Todo o nada.
+   */
+  async addMany(userId: string, dto: BatchEntriesDto) {
+    const date = checkedDate(dto.date);
+    const ids = [...new Set(dto.items.map((i) => i.foodId))];
+    const foods = await this.prisma.food.findMany({
+      where: { id: { in: ids }, OR: [{ ownerId: null }, { ownerId: userId }] },
+      include: FOOD_FOR_ENTRY,
+    });
+    const byId = new Map(foods.map((f) => [f.id, f]));
+    const base = Date.now();
+    const entries = dto.items.map((item, i) => {
+      const food = byId.get(item.foodId);
+      if (!food) throw new NotFoundException('Uno de los alimentos ya no existe.');
+      const v = computeOr400(food, item);
+      const data: Prisma.MealEntryUncheckedCreateInput = {
+        userId,
+        date,
+        meal: item.meal,
+        foodId: food.id,
+        name: v.name,
+        portionLabel: v.portionLabel,
+        portionGrams: v.portionGrams,
+        quantity: v.quantity,
+        grams: v.grams,
+        ...v.totals,
+        parts: v.parts ?? Prisma.DbNull,
+        prep: v.prep,
+        oilGrams: v.oilGrams,
+        // Un milisegundo de diferencia para que se queden en el orden en que se dijeron.
+        createdAt: new Date(base + i),
+      };
+      return this.prisma.mealEntry.create({ data });
+    });
+    // Solo se aprenden nombres de alimentos que están en lo que se guarda.
+    const aliases = (dto.aliases ?? [])
+      .map((a) => ({ phrase: normalize(a.phrase).slice(0, 120), foodId: a.foodId }))
+      .filter((a) => a.phrase && byId.has(a.foodId))
+      .map((a) =>
+        this.prisma.foodAlias.upsert({
+          where: { userId_phrase: { userId, phrase: a.phrase } },
+          create: { userId, phrase: a.phrase, foodId: a.foodId },
+          update: { foodId: a.foodId, uses: { increment: 1 } },
+        }),
+      );
+    const photo = dto.photoId ? [this.prisma.mealPhoto.deleteMany({ where: { id: dto.photoId, userId } })] : [];
+    const results = await this.prisma.$transaction([...entries, ...aliases, ...photo]);
+    const created = results.slice(0, entries.length) as MealEntry[];
+    return { entries: created.map(entryView), kcal: Math.round(created.reduce((s, e) => s + e.kcal, 0)) };
   }
 
   /** Solo un número de calorías (y los macros que se sepan), sin buscar el alimento. */

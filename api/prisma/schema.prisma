@@ -100,6 +100,8 @@ model User {
   foodFavorites         FoodFavorite[]
   savedMeals            SavedMeal[]
   nutritionDays         NutritionDay[]
+  foodAliases           FoodAlias[]
+  mealPhotos            MealPhoto[]
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
@@ -942,6 +944,7 @@ model Food {
   usedIn      RecipeIngredient[] @relation("IngredientFood")
   favorites   FoodFavorite[]
   savedItems  SavedMealItem[]
+  aliases     FoodAlias[]
 
   @@unique([source, sourceCode])
   @@index([ownerId])
@@ -1094,6 +1097,37 @@ model NutritionDay {
   waterMl Int      @default(0)
 
   @@id([userId, date])
+}
+
+/// Nombre propio aprendido: cuando el usuario corrige que alimento era una frase («mi arepita» = Arepa de maiz...).
+model FoodAlias {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Frase normalizada (minusculas, sin tildes).
+  phrase    String   @db.VarChar(120)
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  uses      Int      @default(1)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, phrase])
+  @@index([foodId])
+}
+
+/// Foto de una comida para anotarla despues (se borra al completarla).
+model MealPhoto {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  meal      MealSlot
+  mime      String   @db.VarChar(40)
+  data      Bytes    @db.MediumBlob
+  note      String?  @db.VarChar(200)
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
 }
 
 /// Datos para calcular la meta, y preferencias de NutriFer.

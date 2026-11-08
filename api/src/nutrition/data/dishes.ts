@@ -106,6 +106,20 @@ export const DISHES: DishDef[] = [
     ],
   },
   {
+    // La del corrientazo: la tabla del ICBF no trae una «ensalada» genérica.
+    name: 'Ensalada de la casa',
+    aliases: ['ensalada', 'ensalada verde', 'ensalada de tomate', 'ensalada fresca'],
+    portion: 'Porción',
+    category: 'Acompañamientos',
+    parts: [
+      { label: 'Tomate', code: 'B103', grams: 50 },
+      { label: 'Lechuga', code: 'B059', grams: 30 },
+      { label: 'Zanahoria rallada', code: 'B110', grams: 20 },
+      { label: 'Cebolla', code: 'B027', grams: 15 },
+      { label: 'Limón', code: 'C044', grams: 5 },
+    ],
+  },
+  {
     name: 'Tinto con azúcar',
     aliases: ['tinto', 'cafe con azucar'],
     portion: 'Pocillo tintero',
@@ -144,6 +158,17 @@ export const DISHES: DishDef[] = [
     parts: [
       { label: 'Agua', code: 'agua', grams: 220 },
       { label: 'Panela', code: 'K033', grams: 30 },
+    ],
+  },
+  {
+    name: 'Limonada',
+    aliases: ['limonada natural', 'agua de limon', 'limonada con azucar'],
+    portion: 'Vaso',
+    category: 'Bebidas',
+    parts: [
+      { label: 'Agua', code: 'agua', grams: 210 },
+      { label: 'Jugo de limón', code: 'C044', grams: 30 },
+      { label: 'Azúcar (3 cucharaditas)', code: 'K003', grams: 15 },
     ],
   },
   ...(
