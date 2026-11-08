@@ -1008,6 +1008,15 @@
   transform: translateY(-1px);
 }
 
+.app-switcher-btn--compact {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1rem;
+}
+
 /* Kanban board */
 .kanban-board {
   display: grid;

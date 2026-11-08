@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -13,7 +14,9 @@ function parseCorsOrigins(): string[] {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Los respaldos que se importan pueden pasar de los 100 KB que trae Express por defecto.
+  app.useBodyParser('json', { limit: '10mb' });
   app.setGlobalPrefix('api');
 
   app.use(helmet());

@@ -5,6 +5,7 @@ import {
   FireOutlined,
   LineChartOutlined,
   PlusOutlined,
+  SearchOutlined,
   TrophyOutlined,
   UserOutlined,
 } from "@ant-design/icons";
@@ -22,9 +23,15 @@ import { MotivationalBanner } from "../components/MotivationalBanner";
 import { NotificationsSheet } from "../components/NotificationsSheet";
 import { OfflineChip } from "../components/OfflineChip";
 import { PauseSheet } from "../components/PauseSheet";
+import { CommandPalette } from "../components/CommandPalette";
+import { DataSheet } from "../components/DataSheet";
+import { FocusTimer } from "../components/FocusTimer";
+import { MonthWrapped } from "../components/MonthWrapped";
 import { notifyHabitsChanged } from "../effects";
+import { FOCUS_EVENT, loadFocusSession, startFocus, type FocusHabit, type FocusSession } from "../focus";
 import { flushQueue, queuedCount } from "../offline";
 import { resyncPush } from "../push";
+import { WRAPPED_EVENT } from "../wrapped";
 import { brasaThemeFor } from "../theme/brasaTheme";
 import { useHfTheme } from "../theme/useHfTheme";
 import "../theme/brasa.css";
@@ -32,11 +39,14 @@ import "../theme/brasa-data.css";
 import "../theme/brasa-app.css";
 import "../theme/brasa-habits.css";
 import "../theme/brasa-day.css";
+import "../theme/brasa-extras.css";
 
 const { Content, Sider, Header } = Layout;
 /** La marca usa la llama naranja: en tamano chico la azul se lee como una gota. */
 const BRAND_STAGE = FLAME_STAGES[1];
 const BASE = "/app/habitfer";
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
+const SEARCH_KEYS = IS_MAC ? "⌘ K" : "Ctrl K";
 
 const navItems = [
   { key: BASE, icon: <CalendarOutlined />, label: "Hoy" },
@@ -75,6 +85,14 @@ export function HabitFerShell() {
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
+  const [wrapped, setWrapped] = useState<{ month?: string } | null>(null);
+  // Si se recargo la app con el temporizador andando, se retoma donde iba.
+  const [focus, setFocus] = useState<{ habit: FocusHabit; resume: FocusSession | null } | null>(() => {
+    const saved = loadFocusSession();
+    return saved ? { habit: saved.habit, resume: saved } : null;
+  });
   const selectedKey = navItems.find((item) => isNavActive(location.pathname, item.key))?.key ?? BASE;
   const onToday = selectedKey === BASE && !location.pathname.startsWith(`${BASE}/habits/`);
 
@@ -85,7 +103,40 @@ export function HabitFerShell() {
       setCreatorOpen(true);
       navigate(location.pathname, { replace: true });
     }
+    // Resumen del mes: /app/habitfer?mes=1 (o ?mes=2026-10)
+    const month = params.get("mes");
+    if (month) {
+      setWrapped({ month: /^\d{4}-\d{2}$/.test(month) ? month : undefined });
+      navigate(location.pathname, { replace: true });
+    }
   }, [location.search, location.pathname, navigate]);
+
+  // Ctrl/Cmd + K abre la búsqueda (paleta de comandos).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // El enfoque y el resumen del mes se abren desde cualquier pantalla con un evento.
+  useEffect(() => {
+    const onFocus = (e: Event) => {
+      const habit = (e as CustomEvent<FocusHabit>).detail;
+      if (habit) setFocus((cur) => cur ?? { habit, resume: null });
+    };
+    const onWrapped = (e: Event) => setWrapped({ month: (e as CustomEvent<string | undefined>).detail });
+    window.addEventListener(FOCUS_EVENT, onFocus);
+    window.addEventListener(WRAPPED_EVENT, onWrapped);
+    return () => {
+      window.removeEventListener(FOCUS_EVENT, onFocus);
+      window.removeEventListener(WRAPPED_EVENT, onWrapped);
+    };
+  }, []);
 
   // Lo marcado sin conexion se envia al volver la señal (y al abrir o volver a la app).
   useEffect(() => {
@@ -172,8 +223,26 @@ export function HabitFerShell() {
                   </span>
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <AppSwitcher />
-                  <DisplayMenu pref={pref} mode={mode} onPref={setPref} onNotifications={() => setNotifOpen(true)} onPause={() => setPauseOpen(true)} />
+                  {isMobile ? (
+                    <button type="button" className="profile-trigger profile-trigger--habit" onClick={() => setPaletteOpen(true)} aria-label="Buscar">
+                      <SearchOutlined />
+                    </button>
+                  ) : (
+                    <button type="button" className="hf-search-pill" onClick={() => setPaletteOpen(true)} aria-label={`Buscar (${SEARCH_KEYS})`}>
+                      <SearchOutlined /> Buscar <kbd>{SEARCH_KEYS}</kbd>
+                    </button>
+                  )}
+                  <AppSwitcher compact={isMobile} />
+                  <DisplayMenu
+                    pref={pref}
+                    mode={mode}
+                    onPref={setPref}
+                    onNotifications={() => setNotifOpen(true)}
+                    onPause={() => setPauseOpen(true)}
+                    onBackup={() => setDataOpen(true)}
+                    onWrapped={() => setWrapped({})}
+                    onSearch={() => setPaletteOpen(true)}
+                  />
                   <RemindersBell />
                   <button type="button" className="profile-trigger profile-trigger--habit" onClick={openProfile} aria-label="Perfil">
                     <UserOutlined />
@@ -215,6 +284,20 @@ export function HabitFerShell() {
           <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
           <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
           <PauseSheet open={pauseOpen} onClose={() => setPauseOpen(false)} />
+          <DataSheet open={dataOpen} onClose={() => setDataOpen(false)} />
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            onNewHabit={openCreator}
+            onPause={() => setPauseOpen(true)}
+            onNotifications={() => setNotifOpen(true)}
+            onBackup={() => setDataOpen(true)}
+            onWrapped={() => setWrapped({})}
+            onTheme={setPref}
+            onFocus={startFocus}
+          />
+          {focus && <FocusTimer key={focus.habit.id} habit={focus.habit} resume={focus.resume} onClose={() => setFocus(null)} />}
+          {wrapped && <MonthWrapped month={wrapped.month} onClose={() => setWrapped(null)} />}
           <HabitEditorDrawer
             open={creatorOpen}
             habit={null}

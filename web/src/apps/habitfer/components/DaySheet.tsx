@@ -1,4 +1,4 @@
-import { MinusOutlined, PlusOutlined } from "@ant-design/icons";
+import { CaretRightOutlined, MinusOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Input, Modal, message } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState, type CSSProperties } from "react";
@@ -6,6 +6,7 @@ import { completeHabit, freezeHabitDay, setHabitProgress, unfreezeHabitDay } fro
 import { habitEmoji, isMeasurable, unitFor } from "../../../features/habits/habitUtils";
 import type { CompleteHabitResponse, FreezeBalance, Habit, HabitToday } from "../../../types";
 import { buzz } from "../effects";
+import { canFocus, startFocus } from "../focus";
 import { apiErrorMessage } from "../format";
 
 type Props = {
@@ -148,6 +149,18 @@ export function DaySheet({ open, habit, date, freezesAvailable, onClose, onSaved
           <button type="button" onClick={() => setValue(0)} disabled={value === 0}>
             Poner en 0
           </button>
+          {isToday && canFocus(habit) && (
+            <button
+              type="button"
+              className="is-focus"
+              onClick={() => {
+                onClose();
+                startFocus(habit);
+              }}
+            >
+              <CaretRightOutlined /> Enfoque
+            </button>
+          )}
         </div>
       )}
 

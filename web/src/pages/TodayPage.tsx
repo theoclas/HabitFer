@@ -4,14 +4,18 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { endPause, fetchHabitsToday, fetchMoods, fetchStatsOverview, fetchTasksToday } from "../api/client";
+import { CoachCard } from "../apps/habitfer/components/CoachCard";
 import { DaySheet } from "../apps/habitfer/components/DaySheet";
 import { Flame, PERFECT_STAGE } from "../apps/habitfer/components/Flame";
+import { TodayInsight } from "../apps/habitfer/components/Insights";
 import { InstallCard } from "../apps/habitfer/components/InstallCard";
 import { MoodPicker } from "../apps/habitfer/components/MoodPicker";
 import { ProgressOrb } from "../apps/habitfer/components/ProgressOrb";
 import { LevelBar } from "../apps/habitfer/components/StatsWidgets";
 import { TodayTasks } from "../apps/habitfer/components/TodayTasks";
+import { WrappedBanner } from "../apps/habitfer/components/WrappedBanner";
 import { HABITS_CHANGED_EVENT } from "../apps/habitfer/effects";
+import { startFocus } from "../apps/habitfer/focus";
 import { apiErrorMessage, friendlyDay } from "../apps/habitfer/format";
 import { setAppBadge } from "../apps/habitfer/pwa";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
@@ -352,6 +356,14 @@ export function TodayPage() {
       </p>
     ) : null;
 
+  // Arriba solo lo del momento: el resumen del mes (dias 1 a 3) y el coach (domingo y lunes).
+  const highlights = isToday ? (
+    <>
+      <WrappedBanner />
+      <CoachCard variant="today" />
+    </>
+  ) : null;
+
   const card = (habit: HabitToday) => (
     <HabitCard
       key={habit.id}
@@ -363,6 +375,7 @@ export function TodayPage() {
       onEdit={openEdit}
       onNote={canMark && !isQuit(habit) ? openDay : undefined}
       onRelapse={canMark ? (h) => actions.relapse(h as HabitToday) : undefined}
+      onFocus={isToday ? startFocus : undefined}
     />
   );
   const listClass = `hf-list${isMobile ? "" : " hf-list--grid"}`;
@@ -425,6 +438,7 @@ export function TodayPage() {
             {isMobile ? "Mantén presionado un hábito" : "Haz clic derecho en un hábito"} para la nota del día, la cantidad o un congelador.
           </p>
         )}
+        {isToday && <TodayInsight />}
         {isToday && <TodayTasks tasks={tasks} onChange={setTasks} />}
         <MoodPicker date={dateKey} value={mood} editable={canMark} onChange={setMoodValue} />
         {isToday && <InstallCard />}
@@ -439,6 +453,7 @@ export function TodayPage() {
           <WeekCalendarStrip selected={selectedDate} onSelect={selectDate} progressByDate={ringProgress} />
           {orbCard}
           {pauseBanner}
+          {highlights}
           {list}
         </>
       ) : (
@@ -450,6 +465,7 @@ export function TodayPage() {
           <section style={{ minWidth: 0 }}>
             {header}
             {pauseBanner}
+            {highlights}
             {list}
           </section>
         </div>

@@ -1,4 +1,15 @@
-import { BellOutlined, CheckOutlined, DownloadOutlined, MoonOutlined, PauseCircleOutlined, SoundOutlined, SunOutlined } from "@ant-design/icons";
+import {
+  BellOutlined,
+  CheckOutlined,
+  CloudDownloadOutlined,
+  DownloadOutlined,
+  MoonOutlined,
+  PauseCircleOutlined,
+  SearchOutlined,
+  SoundOutlined,
+  StarOutlined,
+  SunOutlined,
+} from "@ant-design/icons";
 import { Dropdown, Modal, type MenuProps } from "antd";
 import { useState } from "react";
 import { playTick, setSoundEnabled, soundEnabled } from "../effects";
@@ -12,6 +23,12 @@ type Props = {
   onNotifications: () => void;
   /** Pausar todos los habitos (vacaciones). */
   onPause: () => void;
+  /** Respaldo: exportar e importar. */
+  onBackup: () => void;
+  /** Tu mes en HabitFer. */
+  onWrapped: () => void;
+  /** Paleta de comandos. */
+  onSearch: () => void;
 };
 
 const OPTIONS: { key: HfThemePref; label: string }[] = [
@@ -21,7 +38,7 @@ const OPTIONS: { key: HfThemePref; label: string }[] = [
 ];
 
 /** Ajustes de la app: tema, sonido, notificaciones e instalacion. */
-export function DisplayMenu({ pref, mode, onPref, onNotifications, onPause }: Props) {
+export function DisplayMenu({ pref, mode, onPref, onNotifications, onPause, onBackup, onWrapped, onSearch }: Props) {
   const [sound, setSound] = useState(soundEnabled);
   const { canPrompt, iosManual, promptInstall } = useInstallState();
 
@@ -36,8 +53,11 @@ export function DisplayMenu({ pref, mode, onPref, onNotifications, onPause }: Pr
       })),
     },
     { type: "divider" },
+    { key: "search", icon: <SearchOutlined />, label: "Buscar y comandos (Ctrl K)" },
+    { key: "wrapped", icon: <StarOutlined />, label: "Tu mes en HabitFer" },
     { key: "notifications", icon: <BellOutlined />, label: "Notificaciones…" },
     { key: "pause", icon: <PauseCircleOutlined />, label: "Pausar todo (vacaciones)…" },
+    { key: "backup", icon: <CloudDownloadOutlined />, label: "Respaldo de datos…" },
     {
       key: "sound",
       icon: <SoundOutlined />,
@@ -62,6 +82,18 @@ export function DisplayMenu({ pref, mode, onPref, onNotifications, onPause }: Pr
     }
     if (key === "pause") {
       onPause();
+      return;
+    }
+    if (key === "backup") {
+      onBackup();
+      return;
+    }
+    if (key === "wrapped") {
+      onWrapped();
+      return;
+    }
+    if (key === "search") {
+      onSearch();
       return;
     }
     if (key === "install") {

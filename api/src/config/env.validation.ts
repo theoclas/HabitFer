@@ -10,4 +10,6 @@ export const envValidationSchema = Joi.object({
   VAPID_PUBLIC_KEY: Joi.string().allow('').optional(),
   VAPID_PRIVATE_KEY: Joi.string().allow('').optional(),
   VAPID_SUBJECT: Joi.string().allow('').optional(),
+  /** Coach semanal con Claude (opcional: sin ella el coach queda apagado). */
+  ANTHROPIC_API_KEY: Joi.string().allow('').optional(),
 });

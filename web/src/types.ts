@@ -383,3 +383,66 @@ export type StatsRange = {
 };
 
 export type DayMood = { date: string; mood: number };
+
+/** Frase sacada de tus datos (sin IA). */
+export type Insight = {
+  id: string;
+  emoji: string;
+  title: string;
+  text: string;
+  tone: "good" | "tip" | "info";
+  habitId?: string;
+  score: number;
+};
+
+type MonthHabit = { id: string; title: string; icon: string | null; color: string; rate: number; completed: number };
+
+/** Tu mes en HabitFer (para las tarjetas del resumen). */
+export type MonthSummary = {
+  month: string;
+  from: string;
+  to: string;
+  complete: boolean;
+  firstMonth: string;
+  totals: { scheduled: number; completed: number; rate: number; perfectDays: number; activeDays: number; days: number };
+  bestDay: { date: string; completed: number } | null;
+  bestWeekday: { weekday: number; rate: number } | null;
+  bestHour: number | null;
+  starHabit: MonthHabit | null;
+  topHabits: MonthHabit[];
+  longestStreak: { id: string; title: string; icon: string | null; color: string; days: number; unit: StreakUnit } | null;
+  xp: number;
+  levelStart: number;
+  levelEnd: number;
+  cleanDays: number;
+  moodAverage: number | null;
+  previousRate: number | null;
+  challengesWon: { id: string; days: number; title: string; icon: string | null; color: string }[];
+};
+
+export type ImportReport = {
+  habitsCreated: number;
+  habitsMerged: number;
+  completions: number;
+  amounts: number;
+  relapses: number;
+  freezes: number;
+  achievements: number;
+  challenges: number;
+  pauses: number;
+  moods: number;
+  projects: number;
+  tasks: number;
+};
+
+export type CoachMessage = { id: string; weekStart: string; text: string; createdAt: string; readAt: string | null };
+
+export type CoachState = {
+  /** El servidor tiene la llave de Claude. */
+  enabled: boolean;
+  /** El usuario quiere recibirlo. */
+  optedIn: boolean;
+  week: string;
+  message: CoachMessage | null;
+  canGenerate: boolean;
+};

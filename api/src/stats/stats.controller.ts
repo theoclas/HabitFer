@@ -23,6 +23,16 @@ export class StatsController {
     return this.stats.range(user.userId, from, to, habitId || undefined);
   }
 
+  @Get('insights')
+  insights(@CurrentUser() user: AuthUserPayload) {
+    return this.stats.insights(user.userId);
+  }
+
+  @Get('month')
+  month(@CurrentUser() user: AuthUserPayload, @Query('month') month?: string) {
+    return this.stats.month(user.userId, month);
+  }
+
   @Get('habits/:id')
   habit(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
     return this.stats.habitDetail(user.userId, id);

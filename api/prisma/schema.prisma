@@ -93,6 +93,9 @@ model User {
   streakFreezes         StreakFreeze[]
   habitPauses           HabitPause[]
   challengeResults      ChallengeResult[]
+  coachMessages         CoachMessage[]
+  /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
+  coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
   habitSummaryTime      String?                @db.VarChar(5)
 }
@@ -283,6 +286,22 @@ model HabitPause {
 
   @@index([userId, endDate])
   @@index([habitId])
+}
+
+/// Mensaje semanal del coach (Claude) para un usuario: uno por semana (lunes de esa semana).
+model CoachMessage {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart    DateTime  @db.Date
+  text         String    @db.Text
+  model        String    @db.VarChar(60)
+  inputTokens  Int       @default(0)
+  outputTokens Int       @default(0)
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([userId, weekStart])
 }
 
 /// Reto cumplido: queda como medalla aunque el habito siga o se borre el reto.

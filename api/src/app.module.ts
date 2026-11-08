@@ -4,8 +4,10 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { CoachModule } from './coach/coach.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { envValidationSchema } from './config/env.validation';
+import { ExportModule } from './export/export.module';
 import { OriginGuard } from './common/guards/origin.guard';
 import { FernanceModule } from './fernance/fernance.module';
 import { HabitsModule } from './habits/habits.module';
@@ -40,6 +42,8 @@ import { UsersModule } from './users/users.module';
     PushModule,
     RemindersModule,
     StatsModule,
+    ExportModule,
+    CoachModule,
     UsersModule,
     ProyecFerModule,
     FernanceModule,

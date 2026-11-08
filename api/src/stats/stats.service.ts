@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { HabitKind, TaskStatus } from '@prisma/client';
 import { countsOn, currentStreak, isDoneOn, longestStreak, shiftKey, streakUnit } from '../habits/habit-rules';
 import { PrismaService } from '../prisma/prisma.service';
 import { loadHistory } from './history.loader';
-import { buildDays, byHour, byWeekday, moodSummary, ranking } from './history.utils';
+import { buildDays, byHour, byWeekday, earliestKey, moodSummary, ranking } from './history.utils';
+import { computeInsights } from './insights.utils';
+import { lastDayOfMonth, monthSummary } from './month.utils';
 import { computePerfectStreak } from './perfect-days.utils';
 import { computeProgress } from './progress.utils';
 import { addDays, dayLabel, lastNDays, localDayStart, parseDateKey, startOfToday, toDateKey } from './stats.utils';
@@ -181,6 +183,47 @@ export class StatsService {
       longestStreak: longestStreak(h, todayKey),
       completionRate30d: scheduled ? Math.round((completed / scheduled) * 100) : 0,
       calendar,
+    };
+  }
+
+  /** Frases sacadas del historial (ultimas 8 semanas y meses anteriores). */
+  async insights(userId: string) {
+    const todayKey = toDateKey(startOfToday());
+    const [{ history }, moodRows] = await Promise.all([
+      loadHistory(this.prisma, userId),
+      this.prisma.dayMood.findMany({
+        where: { userId, date: { gte: parseDateKey(shiftKey(todayKey, -60)) } },
+        select: { date: true, mood: true },
+      }),
+    ]);
+    return computeInsights(history, new Map(moodRows.map((m) => [toDateKey(m.date), m.mood])), todayKey);
+  }
+
+  /** Resumen de un mes (YYYY-MM; por defecto el actual) para las tarjetas "tu mes". */
+  async month(userId: string, month?: string) {
+    const todayKey = toDateKey(startOfToday());
+    if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new BadRequestException('Mes inválido: usa el formato AAAA-MM.');
+    const monthKey = month || todayKey.slice(0, 7);
+    const from = `${monthKey}-01`;
+    if (from > todayKey) throw new BadRequestException('Ese mes todavía no llega.');
+    const end = lastDayOfMonth(monthKey);
+    const [{ history }, moodRows, wins] = await Promise.all([
+      loadHistory(this.prisma, userId),
+      this.prisma.dayMood.findMany({
+        where: { userId, date: { gte: parseDateKey(from), lte: parseDateKey(end) } },
+        select: { date: true, mood: true },
+      }),
+      this.prisma.challengeResult.findMany({
+        where: { userId, wonAt: { gte: localDayStart(parseDateKey(from)), lt: localDayStart(addDays(parseDateKey(end), 1)) } },
+        orderBy: { wonAt: 'asc' },
+        include: { habit: { select: { title: true, icon: true, color: true } } },
+      }),
+    ]);
+    const summary = monthSummary(history, new Map(moodRows.map((m) => [toDateKey(m.date), m.mood])), monthKey, todayKey);
+    return {
+      ...summary,
+      firstMonth: earliestKey(history, todayKey).slice(0, 7),
+      challengesWon: wins.map((w) => ({ id: w.id, days: w.days, title: w.habit.title, icon: w.habit.icon, color: w.habit.color })),
     };
   }
 

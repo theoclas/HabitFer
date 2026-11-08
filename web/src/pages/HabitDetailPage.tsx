@@ -1,4 +1,4 @@
-import { ArrowLeftOutlined, CheckOutlined, EditOutlined, FormOutlined, MinusOutlined, PlusOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, CaretRightOutlined, CheckOutlined, EditOutlined, FormOutlined, MinusOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Modal, Select, Skeleton, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
@@ -20,7 +20,8 @@ import { MonthCalendar } from "../apps/habitfer/components/MonthCalendar";
 import { PauseSheet } from "../apps/habitfer/components/PauseSheet";
 import { WeekdayBars } from "../apps/habitfer/components/StatsWidgets";
 import { YearHeatmap } from "../apps/habitfer/components/YearHeatmap";
-import { burstSparks, buzz, playTick } from "../apps/habitfer/effects";
+import { burstSparks, buzz, HABITS_CHANGED_EVENT, playTick } from "../apps/habitfer/effects";
+import { canFocus, startFocus } from "../apps/habitfer/focus";
 import { apiErrorMessage, fmtInt, friendlyDay } from "../apps/habitfer/format";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { useAchievements } from "../features/achievements/AchievementContext";
@@ -145,6 +146,13 @@ export function HabitDetailPage() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  // Lo que se marque desde otra parte (enfoque, paleta, otra pestaña) se refleja aquí.
+  useEffect(() => {
+    const onChanged = () => void load({ quiet: true });
+    window.addEventListener(HABITS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(HABITS_CHANGED_EVENT, onChanged);
   }, [load]);
 
   useEffect(() => {
@@ -398,8 +406,13 @@ export function HabitDetailPage() {
                     {habit.completedToday ? "Hecho hoy · desmarcar" : "Marcar hoy"}
                   </Button>
                 )}
+                {measurable && canFocus(habit) && (
+                  <Button type="primary" size="large" icon={<CaretRightOutlined />} onClick={() => startFocus(habit)} style={{ flex: 1 }}>
+                    Enfoque
+                  </Button>
+                )}
                 <Button size="large" icon={<FormOutlined />} onClick={() => setDayOpen(true)} aria-label="Tu día con este hábito" style={measurable ? { flex: 1 } : undefined}>
-                  {measurable ? "Escribir cantidad o nota" : habit.note ? "Editar nota" : "Nota"}
+                  {measurable ? (canFocus(habit) ? "Cantidad o nota" : "Escribir cantidad o nota") : habit.note ? "Editar nota" : "Nota"}
                 </Button>
               </div>
               {weekly && (

@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fetchHabits, fetchStatsOverview, fetchStatsRange, fetchTaskStats } from "../api/client";
+import { CoachCard } from "../apps/habitfer/components/CoachCard";
 import { Flame, PERFECT_STAGE } from "../apps/habitfer/components/Flame";
+import { InsightsPanel } from "../apps/habitfer/components/Insights";
 import {
   HourBars,
   LevelBar,
@@ -16,6 +18,7 @@ import {
 } from "../apps/habitfer/components/StatsWidgets";
 import { YearHeatmap } from "../apps/habitfer/components/YearHeatmap";
 import { fmtInt } from "../apps/habitfer/format";
+import { openWrapped } from "../apps/habitfer/wrapped";
 import type { DayStat, StatsOverview, StatsRange, TaskStatsSummary } from "../types";
 
 type RangeDays = 7 | 30 | 365;
@@ -118,9 +121,14 @@ export function StatsPage() {
             { label: "Año", value: 365 },
           ]}
         />
-        <Button icon={<TrophyOutlined />} onClick={() => navigate("/app/habitfer/logros", { viewTransition: true })}>
-          Logros
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button icon={<span aria-hidden="true">✨</span>} onClick={() => openWrapped()}>
+            Tu mes
+          </Button>
+          <Button icon={<TrophyOutlined />} onClick={() => navigate("/app/habitfer/logros", { viewTransition: true })}>
+            Logros
+          </Button>
+        </div>
       </div>
 
       {overview ? (
@@ -146,6 +154,9 @@ export function StatsPage() {
         />
         <Kpi label="Perfectos en total" value={overview ? overview.habits.perfectDaysTotal : "—"} sub="desde el inicio" />
       </div>
+
+      <InsightsPanel />
+      <CoachCard variant="stats" />
 
       <Panel title="Tu año" hint="azul = día perfecto">
         <YearHeatmap year={year} days={yearDays} mode="global" minYear={minYear} onYearChange={setYear} />

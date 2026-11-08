@@ -10,7 +10,8 @@ function detectCurrentApp(pathname: string): AppId {
   return "habitfer";
 }
 
-export function AppSwitcher() {
+/** `compact`: solo el icono (en el celular el encabezado no da para el nombre). */
+export function AppSwitcher({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
   const current = detectCurrentApp(location.pathname);
@@ -37,7 +38,9 @@ export function AppSwitcher() {
     <Dropdown menu={{ items, onClick, selectedKeys: [current] }} trigger={["click"]}>
       <button
         type="button"
-        className="app-switcher-btn"
+        className={`app-switcher-btn${compact ? " app-switcher-btn--compact" : ""}`}
+        aria-label={compact ? `Cambiar de app (ahora: ${config.name})` : undefined}
+        title={compact ? config.name : undefined}
         style={{
           "--switcher-border": `${config.color}44`,
           "--switcher-bg": `${config.color}14`,
@@ -45,8 +48,8 @@ export function AppSwitcher() {
         } as React.CSSProperties}
       >
         <AppstoreOutlined />
-        {config.name}
-        <DownOutlined style={{ fontSize: 10, opacity: 0.7 }} />
+        {!compact && config.name}
+        {!compact && <DownOutlined style={{ fontSize: 10, opacity: 0.7 }} />}
       </button>
     </Dropdown>
   );

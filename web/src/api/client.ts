@@ -70,6 +70,11 @@ import type {
   HabitAchievementRow,
   HabitPause,
   HabitToday,
+  CoachMessage,
+  CoachState,
+  ImportReport,
+  Insight,
+  MonthSummary,
   StatsRange,
 } from "../types";
 
@@ -180,6 +185,58 @@ export async function fetchPauses() {
 /** Sin habitId, pausa todos los habitos (vacaciones). */
 export async function createPause(payload: { habitId?: string; startDate: string; endDate: string; note?: string }) {
   const { data } = await api.post<HabitPause>("/habits/pauses", payload);
+  return data;
+}
+
+export async function fetchInsights() {
+  const { data } = await api.get<Insight[]>("/stats/insights");
+  return data;
+}
+
+/** Resumen de un mes (YYYY-MM; por defecto el actual). */
+export async function fetchMonthSummary(month?: string) {
+  const { data } = await api.get<MonthSummary>("/stats/month", { params: month ? { month } : undefined });
+  return data;
+}
+
+/** Descarga el respaldo (JSON completo) o el historial (CSV) como archivo. */
+export async function downloadBackup(kind: "json" | "csv") {
+  const res = await api.get<Blob>(kind === "json" ? "/export" : "/export/csv", { responseType: "blob" });
+  const disposition = String(res.headers["content-disposition"] ?? "");
+  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? (kind === "json" ? "habitfer-respaldo.json" : "habitfer-historial.csv");
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return name;
+}
+
+/** Importa un respaldo: suma lo que falta, nunca borra. */
+export async function importBackup(backup: unknown) {
+  const { data } = await api.post<ImportReport>("/export/import", backup, { timeout: 120000 });
+  return data;
+}
+
+export async function fetchCoach() {
+  const { data } = await api.get<CoachState>("/coach");
+  return data;
+}
+
+export async function generateCoach() {
+  const { data } = await api.post<CoachMessage>("/coach/generate", undefined, { timeout: 150000 });
+  return data;
+}
+
+export async function markCoachRead(id: string) {
+  await api.post("/coach/" + id + "/read");
+}
+
+export async function setCoachEnabled(enabled: boolean) {
+  const { data } = await api.patch<CoachState>("/coach/settings", { enabled });
   return data;
 }
 

@@ -1,8 +1,9 @@
-import { EditOutlined, FormOutlined } from "@ant-design/icons";
+import { CaretRightOutlined, EditOutlined, FormOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { Flame, StreakChip } from "../../apps/habitfer/components/Flame";
 import { burstSparks, buzz, playTick } from "../../apps/habitfer/effects";
+import { canFocus } from "../../apps/habitfer/focus";
 import type { Habit, HabitToday } from "../../types";
 import {
   amountLabel,
@@ -30,6 +31,8 @@ type Props = {
   onNote?: (habit: Habit | HabitToday) => void;
   /** Dejar algo: registrar una recaida. */
   onRelapse?: (habit: Habit | HabitToday) => void;
+  /** Temporizador de enfoque (medibles en minutos). */
+  onFocus?: (habit: Habit | HabitToday) => void;
 };
 
 /** Nombre compartido con la cabecera del detalle para la transicion entre pantallas. */
@@ -38,7 +41,7 @@ export const HABIT_HERO_TRANSITION = "hf-habit-hero";
 const LONG_PRESS_MS = 520;
 const RING = 2 * Math.PI * 15.5;
 
-export function HabitCard({ habit, loading, canToggle = true, riskWindow = false, onToggle, onOpen, onEdit, onNote, onRelapse }: Props) {
+export function HabitCard({ habit, loading, canToggle = true, riskWindow = false, onToggle, onOpen, onEdit, onNote, onRelapse, onFocus }: Props) {
   const quit = isQuit(habit);
   const measurable = isMeasurable(habit);
   const weekly = isWeeklyCount(habit);
@@ -229,6 +232,20 @@ export function HabitCard({ habit, loading, canToggle = true, riskWindow = false
             }}
           >
             <EditOutlined />
+          </button>
+        )}
+        {onFocus && canToggle && !completed && canFocus(habit) && (
+          <button
+            type="button"
+            className="hf-card__edit hf-card__focus"
+            aria-label={`Enfoque: temporizador para ${habit.title}`}
+            title="Temporizador de enfoque"
+            onClick={(e) => {
+              e.stopPropagation();
+              onFocus(habit);
+            }}
+          >
+            <CaretRightOutlined />
           </button>
         )}
         {quit ? (
