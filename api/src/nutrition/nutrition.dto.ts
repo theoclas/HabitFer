@@ -605,6 +605,11 @@ export class ProfileDto {
   @IsBoolean()
   manual?: boolean;
 
+  /** Meta que se ajusta sola cada semana con el peso y lo comido. */
+  @IsOptional()
+  @IsBoolean()
+  adaptive?: boolean;
+
   @IsOptional()
   @IsInt()
   @Min(800, { message: 'La meta de calorías debe estar entre 800 y 6.000.' })
@@ -646,4 +651,31 @@ export class ProfileDto {
   @Min(100, { message: 'El vaso debe tener entre 100 y 1.000 ml.' })
   @Max(1000, { message: 'El vaso debe tener entre 100 y 1.000 ml.' })
   glassMl?: number;
+}
+
+/* ---------- Peso, informe y descubrimientos ---------- */
+
+export class WeightDto {
+  @IsNumber({}, { message: 'El peso debe ser un número.' })
+  @Min(25, { message: 'El peso va en kilos (entre 25 y 350).' })
+  @Max(350, { message: 'El peso va en kilos (entre 25 y 350).' })
+  kg!: number;
+}
+
+export class WeightsQueryDto {
+  /** Días hacia atrás (3.650 = todo). */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(7)
+  @Max(3650)
+  days?: number;
+}
+
+export class RangeQueryDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  from!: string;
+
+  @Matches(DATE_KEY, DATE_MSG)
+  to!: string;
 }

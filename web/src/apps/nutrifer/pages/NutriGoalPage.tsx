@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchProfile, previewProfile, saveProfile } from "../api";
-import { gramsText, kcalText, mlText } from "../math";
+import { gramsText, intText, kcalText, mlText, nutrientGoals } from "../math";
 import { MEAL_ORDER, type ActivityLevel, type MealSlot, type ProfileInput, type Sex, type Targets, type WeightGoal } from "../types";
 
 type Form = {
@@ -16,6 +16,8 @@ type Form = {
   goal: WeightGoal;
   ratePerWeek: number;
   manual: boolean;
+  /** Meta que se ajusta sola cada semana. */
+  adaptive: boolean;
   kcalTarget: number | null;
   proteinTarget: number | null;
   fatTarget: number | null;
@@ -55,6 +57,8 @@ export function NutriGoalPage() {
   const [hadProfile, setHadProfile] = useState(false);
   const [preview, setPreview] = useState<Targets | null>(null);
   const [saving, setSaving] = useState(false);
+  /** El peso de tendencia de hoy (si hay pesadas recientes en Progreso). */
+  const [trendKg, setTrendKg] = useState<number | null>(null);
 
   useEffect(() => {
     fetchProfile()
@@ -62,6 +66,7 @@ export function NutriGoalPage() {
         setLevels(r.activityLevels);
         setHadProfile(r.profile !== null);
         const p = r.profile;
+        setTrendKg(p?.trendKg ?? null);
         setForm({
           sex: p?.sex ?? null,
           birthYear: p?.birthYear ?? null,
@@ -71,6 +76,7 @@ export function NutriGoalPage() {
           goal: p?.goal ?? "MAINTAIN",
           ratePerWeek: p && p.ratePerWeek > 0 ? p.ratePerWeek : 0.5,
           manual: p?.manual ?? false,
+          adaptive: p?.adaptive ?? true,
           kcalTarget: p?.targets.kcal ?? null,
           proteinTarget: p?.targets.protein ?? null,
           fatTarget: p?.targets.fat ?? null,
@@ -84,6 +90,8 @@ export function NutriGoalPage() {
   }, []);
 
   const input = useMemo(() => (form ? toInput(form) : null), [form]);
+  const adaptive = form?.adaptive ?? true;
+  const manual = form?.manual ?? false;
 
   // La meta calculada, al instante mientras se llena (la calcula el servidor, igual que al guardar).
   useEffect(() => {
@@ -93,7 +101,7 @@ export function NutriGoalPage() {
     }
     const ctrl = new AbortController();
     const t = window.setTimeout(() => {
-      previewProfile(input, ctrl.signal)
+      previewProfile({ ...input, adaptive, manual }, ctrl.signal)
         .then(setPreview)
         .catch((err) => {
           if (!axios.isCancel(err)) setPreview(null);
@@ -103,7 +111,7 @@ export function NutriGoalPage() {
       window.clearTimeout(t);
       ctrl.abort();
     };
-  }, [input]);
+  }, [input, adaptive, manual]);
 
   if (!form) {
     return (
@@ -122,6 +130,7 @@ export function NutriGoalPage() {
       await saveProfile({
         ...input,
         manual: form.manual,
+        adaptive: form.adaptive,
         ...(form.manual
           ? {
               kcalTarget: form.kcalTarget ?? preview?.kcal,
@@ -196,6 +205,14 @@ export function NutriGoalPage() {
             <InputNumber id="nf-weight" min={30} max={300} step={0.1} placeholder="78" value={form.weightKg} inputMode="decimal" onChange={(v) => set("weightKg", typeof v === "number" ? v : null)} style={{ width: "100%" }} />
           </div>
         </div>
+        {trendKg != null && trendKg !== form.weightKg && (
+          <p className="nf-hint" style={{ margin: 0 }}>
+            Tu peso de tendencia hoy es <b>{String(trendKg).replace(".", ",")} kg</b>.{" "}
+            <button type="button" className="nf-link" onClick={() => set("weightKg", trendKg)}>
+              Usarlo
+            </button>
+          </p>
+        )}
       </section>
 
       <section className="nf-card" aria-labelledby="nf-goal-activity">
@@ -262,20 +279,50 @@ export function NutriGoalPage() {
                 </span>
               </div>
             </div>
+            <p className="nf-target__nutri">
+              Fibra al menos <b>{nutrientGoals(shown.kcal).fiber} g</b> · Azúcar hasta <b>{nutrientGoals(shown.kcal).sugar} g</b> · Sodio hasta{" "}
+              <b>{intText(nutrientGoals(shown.kcal).sodium)} mg</b>
+            </p>
             {preview && !form.manual && (
               <p className="nf-explain">
-                En reposo gastas unas <b>{kcalText(preview.bmr)} kcal</b>; con tu actividad, unas <b>{kcalText(preview.tdee)} kcal</b> al día.
+                {preview.measured ? (
+                  <>
+                    Con tu peso y lo que comes, gastas unas <b>{kcalText(preview.tdee)} kcal</b> al día (la fórmula decía {kcalText(preview.formulaTdee ?? preview.tdee)}).
+                  </>
+                ) : (
+                  <>
+                    En reposo gastas unas <b>{kcalText(preview.bmr)} kcal</b>; con tu actividad, unas <b>{kcalText(preview.tdee)} kcal</b> al día.
+                  </>
+                )}
                 {form.goal !== "MAINTAIN" &&
                   ` Para ${GOAL_VERB[form.goal]} ${rateText(form.ratePerWeek)} por semana se ${form.goal === "LOSE" ? "restan" : "suman"} ${kcalText(form.ratePerWeek * 1100)} kcal.`}
-                {preview.floorApplied && " La meta quedó en el mínimo seguro: no conviene comer menos sin la guía de un profesional."} Las fórmulas
-                pueden fallar un 10 %: con tu peso de las próximas semanas sabremos si hay que ajustarla.
+                {preview.floorApplied && " La meta quedó en el mínimo seguro: no conviene comer menos sin la guía de un profesional."}
+                {!preview.measured &&
+                  (form.adaptive
+                    ? " Las fórmulas pueden fallar un 10 %: con tu peso y lo que comes, la meta se ajusta sola cada semana."
+                    : " Las fórmulas pueden fallar un 10 %.")}
               </p>
             )}
           </>
         ) : (
           <p className="nf-explain">Llena tus datos y aquí aparece tu meta.</p>
         )}
-        <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {!form.manual && (
+          <div className="nf-switchrow">
+            <Switch checked={form.adaptive} onChange={(v) => set("adaptive", v)} aria-labelledby="nf-adaptive-label" />
+            <span>
+              <span id="nf-adaptive-label">Ajustar la meta cada semana</span>
+              <small>
+                Cada lunes se revisa con tu peso de tendencia y, con unas 2 semanas de peso y comida, con lo que gastas de verdad. Lo ves en{" "}
+                <button type="button" className="nf-link" onClick={() => navigate("/app/nutrifer/progreso")}>
+                  Progreso
+                </button>
+                .
+              </small>
+            </span>
+          </div>
+        )}
+        <label className="nf-switchrow">
           <Switch checked={form.manual} onChange={(v) => set("manual", v)} />
           <span>Prefiero poner mis metas a mano</span>
         </label>

@@ -9,6 +9,7 @@ import {
   gramsText,
   kcalText,
   mlText,
+  nutrientGoals,
   oilText,
   previewAmount,
   quantityText,
@@ -155,6 +156,12 @@ test("textos de las filas", () => {
   assert.equal(portionText("2 huevos", 1), "2 huevos");
   assert.equal(portionText("2 huevos", 2), "2 × 2 huevos");
   assert.equal(portionText("Pocillo", 1.5), "1½ × pocillo");
+});
+
+test("metas de nutrientes: iguales a las del servidor", () => {
+  assert.deepEqual(nutrientGoals(2000), { fiber: 28, sugar: 50, sodium: 2000 });
+  assert.deepEqual(nutrientGoals(1500), { fiber: 25, sugar: 38, sodium: 2000 });
+  assert.deepEqual(nutrientGoals(1830), { fiber: 26, sugar: 46, sodium: 2000 });
 });
 
 test("aprende tus porciones: el editor arranca con lo de la última vez", () => {

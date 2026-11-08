@@ -13,6 +13,7 @@ import {
   PhotoDto,
   ProfileDto,
   QuickEntryDto,
+  RangeQueryDto,
   RecipeDto,
   RemoveEntriesDto,
   RepeatEntryDto,
@@ -23,9 +24,14 @@ import {
   UnderstandDto,
   UpdateEntryDto,
   WaterDto,
+  WeightDto,
+  WeightsQueryDto,
 } from './nutrition.dto';
 import { MealPhotosService } from './meal-photos.service';
 import { BarcodeService } from './packaged/barcode.service';
+import { EnergyService } from './progress/energy.service';
+import { ProgressService } from './progress/progress.service';
+import { WeightService } from './progress/weight.service';
 import { ProfileService } from './profile.service';
 import { RecipesService } from './recipes.service';
 import { SavedMealsService } from './saved-meals.service';
@@ -44,7 +50,52 @@ export class NutritionController {
     private text: FoodTextService,
     private photos: MealPhotosService,
     private barcodes: BarcodeService,
+    private weights: WeightService,
+    private energy: EnergyService,
+    private progress: ProgressService,
   ) {}
+
+  /* ---------- Peso, informe, descubrimientos y gasto real ---------- */
+
+  /** Pesadas con su tendencia (days = días hacia atrás; 3.650 = todo). */
+  @Get('weights')
+  weightList(@CurrentUser() user: AuthUserPayload, @Query() query: WeightsQueryDto) {
+    return this.weights.list(user.userId, query.days ?? 90);
+  }
+
+  @Put('weights/:date')
+  weightSet(@CurrentUser() user: AuthUserPayload, @Param('date') date: string, @Body() dto: WeightDto) {
+    return this.weights.set(user.userId, date, dto.kg);
+  }
+
+  @Delete('weights/:date')
+  weightRemove(@CurrentUser() user: AuthUserPayload, @Param('date') date: string) {
+    return this.weights.remove(user.userId, date);
+  }
+
+  /** Llave nueva para el atajo de iOS (Apple Salud); se muestra una sola vez. */
+  @Post('shortcut')
+  shortcutCreate(@CurrentUser() user: AuthUserPayload) {
+    return this.weights.createShortcut(user.userId);
+  }
+
+  @Delete('shortcut')
+  shortcutRemove(@CurrentUser() user: AuthUserPayload) {
+    return this.weights.removeShortcut(user.userId);
+  }
+
+  /** Informe de un periodo: cada día, promedios, días en meta, por comida y lo que más aportó. */
+  @Get('progress')
+  report(@CurrentUser() user: AuthUserPayload, @Query() query: RangeQueryDto) {
+    return this.progress.report(user.userId, query.from, query.to);
+  }
+
+  /** Descubrimientos de las últimas 4 semanas y cómo va la medición del gasto real. */
+  @Get('insights')
+  async insights(@CurrentUser() user: AuthUserPayload) {
+    const [discoveries, energy] = await Promise.all([this.progress.discoveries(user.userId), this.energy.view(user.userId)]);
+    return { discoveries, energy };
+  }
 
   /* ---------- Código de barras y empacados (Open Food Facts) ---------- */
 
@@ -256,9 +307,9 @@ export class NutritionController {
     return this.profiles.save(user.userId, dto);
   }
 
-  /** La meta que saldría con estos datos, sin guardar (para verla mientras se llena el formulario). */
+  /** La meta que saldría con estos datos, sin guardar (con el gasto medido de la semana, si lo hay). */
   @Post('profile/preview')
-  preview(@Body() dto: ProfileDto) {
-    return this.profiles.preview(dto);
+  preview(@CurrentUser() user: AuthUserPayload, @Body() dto: ProfileDto) {
+    return this.profiles.preview(user.userId, dto);
   }
 }

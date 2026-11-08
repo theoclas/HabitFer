@@ -1,4 +1,4 @@
-import { CopyOutlined, LeftOutlined, RetweetOutlined, RightOutlined } from "@ant-design/icons";
+import { CloseOutlined, CopyOutlined, LeftOutlined, RetweetOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Modal, Skeleton, message } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +12,8 @@ import { CopyModal, type CopySource } from "../components/CopyModal";
 import { CalorieRing, MacroBars } from "../components/DaySummary";
 import { EntrySheet } from "../components/EntrySheet";
 import { MealCard } from "../components/MealCard";
+import { MealNutrientsSheet } from "../components/MealNutrientsSheet";
+import { NutrientBars } from "../components/Nutrients";
 import { SaveMealModal, type SaveSource } from "../components/SaveMealModal";
 import { notifyUndo } from "../components/undo";
 import { WaterCard } from "../components/WaterCard";
@@ -56,6 +58,25 @@ function writeHidden(date: string, keys: Set<string>) {
   }
 }
 
+/* El aviso de «tu meta se ajustó» se cierra por semana (en este teléfono). */
+const ADJUST_KEY = "nf_adjust_seen_";
+
+function adjustSeen(weekStart: string): boolean {
+  try {
+    return localStorage.getItem(ADJUST_KEY + weekStart) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markAdjustSeen(weekStart: string) {
+  try {
+    localStorage.setItem(ADJUST_KEY + weekStart, "1");
+  } catch {
+    // Sin almacenamiento: se vuelve a mostrar la próxima vez.
+  }
+}
+
 /** El diario del día: anillo de calorías, macros, agua, las cinco comidas y lo de un toque. */
 export function NutriTodayPage() {
   const navigate = useNavigate();
@@ -70,6 +91,9 @@ export function NutriTodayPage() {
   const [saveSource, setSaveSource] = useState<SaveSource | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(() => readHidden(todayKey()));
+  /** La comida cuyos nutrientes se están viendo. */
+  const [nutrientsOf, setNutrientsOf] = useState<MealSlot | null>(null);
+  const [adjustClosed, setAdjustClosed] = useState<string | null>(null);
   const waterSeq = useRef(0);
   // Diálogos con el tema de NutriFer (Modal.confirm a secas no lo hereda).
   const [modal, modalHolder] = Modal.useModal();
@@ -296,6 +320,37 @@ export function NutriTodayPage() {
                 </div>
               )}
 
+              {day.adjust && isToday && adjustClosed !== day.adjust.weekStart && !adjustSeen(day.adjust.weekStart) && (
+                <div className="nf-callout nf-callout--adjust" role="status">
+                  <p>
+                    <b>
+                      Tu meta se ajustó esta semana: {kcalText(day.adjust.before)} → {kcalText(day.adjust.after)} kcal.
+                    </b>{" "}
+                    {day.adjust.observed != null
+                      ? day.adjust.after > day.adjust.before
+                        ? "Con tu peso y lo que comes, gastas más de lo que decía la fórmula."
+                        : "Con tu peso y lo que comes, gastas menos de lo que decía la fórmula."
+                      : "Se revisó con tu peso de tendencia."}
+                  </p>
+                  <div className="nf-callout__actions">
+                    <Button onClick={() => navigate("/app/nutrifer/progreso")}>Ver por qué</Button>
+                    <button
+                      type="button"
+                      className="nf-icon-btn nf-icon-btn--sm"
+                      aria-label="Cerrar el aviso"
+                      onClick={() => {
+                        markAdjustSeen(day.adjust!.weekStart);
+                        setAdjustClosed(day.adjust!.weekStart);
+                      }}
+                    >
+                      <CloseOutlined />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {day.targets && <NutrientBars totals={day.totals} targets={day.targets} known={day.known} />}
+
               <WaterCard water={day.water} busy={false} onChange={(d) => void changeWater(d)} />
             </>
           )}
@@ -352,6 +407,7 @@ export function NutriTodayPage() {
               onCopy={() => setCopySource({ date, meal: m.slot, label: `${m.name.toLowerCase()} de ${relativeDay(date, today)}` })}
               onSave={() => setSaveSource({ date, meal: m.slot, mealName: m.name, count: m.entries.length })}
               onClear={() => clearMeal(m)}
+              onNutrients={() => setNutrientsOf(m.slot)}
               onPhoto={(p) => {
                 setPhoto(p);
                 setAdding(m.slot);
@@ -400,6 +456,12 @@ export function NutriTodayPage() {
         source={saveSource}
         onClose={() => setSaveSource(null)}
         onSaved={(name) => message.success(`«${name}» quedó guardada: la encuentras al tocar «Agregar»`)}
+      />
+      <MealNutrientsSheet
+        meal={day?.meals.find((m) => m.slot === nutrientsOf) ?? null}
+        dayTotals={day?.totals ?? null}
+        targets={day?.targets ?? null}
+        onClose={() => setNutrientsOf(null)}
       />
     </>
   );

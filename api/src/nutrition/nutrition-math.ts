@@ -51,11 +51,12 @@ export type Targets = {
  * Nunca por debajo del basal ni de 1.500 kcal (hombres) o 1.200 kcal (mujeres).
  * Proteína: 1,8 g por kg al bajar y 1,6 g por kg si no, sobre el peso con IMC de 27 como máximo.
  * Grasa: 28 % de las calorías. Carbohidratos: el resto.
+ * `measuredTdee`: el gasto real medido con el peso y lo comido (meta que se ajusta sola), en vez del de la fórmula.
  */
-export function computeTargets(p: ProfileInput, year = new Date().getFullYear()): Targets {
+export function computeTargets(p: ProfileInput, year = new Date().getFullYear(), measuredTdee?: number): Targets {
   const age = clamp(year - p.birthYear, 14, 100);
   const basal = bmr({ sex: p.sex, weightKg: p.weightKg, heightCm: p.heightCm, age });
-  const tdee = basal * clamp(p.activity, 1.1, 2.2);
+  const tdee = measuredTdee ?? basal * clamp(p.activity, 1.1, 2.2);
   const rate = clamp(p.ratePerWeek, 0, 1);
   const raw = p.goal === 'LOSE' ? tdee - rate * KCAL_PER_KG_WEEK : p.goal === 'GAIN' ? tdee + rate * KCAL_PER_KG_WEEK : tdee;
   const floor = Math.max(basal, p.sex === 'MALE' ? 1500 : 1200);

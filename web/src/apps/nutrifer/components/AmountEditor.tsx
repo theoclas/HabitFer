@@ -4,6 +4,7 @@ import {
   canPrep,
   gramsForGoal,
   gramsText,
+  intText,
   kcalText,
   MAX_OIL,
   OIL_STEP,
@@ -15,6 +16,13 @@ import {
   type GoalMacro,
 } from "../math";
 import type { AmountChoice, FoodDetail, Prep, Remaining } from "../types";
+
+/** El alimento trae ese dato (los platos y recetas suman sus partes con 0 donde falta: ahí 0 es «sin dato»). */
+function knows(food: FoodDetail, key: "fiber" | "sugar" | "sodium"): boolean {
+  const v = food.per100[key];
+  if (v == null) return false;
+  return food.source === "DISH" || food.source === "RECIPE" ? v > 0 : true;
+}
 
 type Props = {
   food: FoodDetail;
@@ -320,6 +328,17 @@ export function AmountEditor({ food, initial, busy, submitLabel, onSubmit, remai
       <p className="nf-hint" style={{ margin: "-8px 0 0" }}>
         {kcalText(totalGrams)} g en total{oil > 0 ? `, más ${gramsText(oil)} g de aceite` : ""}
       </p>
+      <div className="nf-preview-more" aria-label="Fibra, azúcar y sodio de esta cantidad">
+        <span>
+          Fibra <b>{knows(food, "fiber") ? `${gramsText(totals.fiber)} g` : "sin dato"}</b>
+        </span>
+        <span>
+          Azúcar <b>{knows(food, "sugar") ? `${gramsText(totals.sugar)} g` : "sin dato"}</b>
+        </span>
+        <span>
+          Sodio <b>{knows(food, "sodium") ? `${intText(totals.sodium)} mg` : "sin dato"}</b>
+        </span>
+      </div>
 
       <details className="nf-more">
         <summary>Nutrientes por 100 g</summary>

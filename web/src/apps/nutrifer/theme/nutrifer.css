@@ -1410,7 +1410,7 @@
 :root[data-nf-theme="dark"] .nf-seal-mini { background: #D5DED8; }
 
 /* Crear: «Más datos del empaque». */
-.nf-more {
+.nf-morebtn {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1425,10 +1425,10 @@
   text-align: left;
   cursor: pointer;
 }
-.nf-more:hover { border-color: var(--nf-accent); }
-.nf-more small { display: block; margin-top: 3px; font-weight: 500; font-size: 0.78rem; color: var(--nf-muted); }
-.nf-more .anticon { color: var(--nf-muted); transition: transform 0.2s ease; flex: none; }
-.nf-more.is-open .anticon { transform: rotate(180deg); }
+.nf-morebtn:hover { border-color: var(--nf-accent); }
+.nf-morebtn small { display: block; margin-top: 3px; font-weight: 500; font-size: 0.78rem; color: var(--nf-muted); }
+.nf-morebtn .anticon { color: var(--nf-muted); transition: transform 0.2s ease; flex: none; }
+.nf-morebtn.is-open .anticon { transform: rotate(180deg); }
 
 /* En el computador la hoja es más ancha: los sellos un poco más grandes. */
 @media (min-width: 1024px) {
@@ -1443,7 +1443,355 @@
   .nf-list__chev,
   .nf-week__bar i,
   .nf-meal,
-  .nf-more .anticon,
+  .nf-morebtn .anticon,
   .nf-list--tiles > .nf-list__row { transition: none; }
   .nf-scan__laser { animation: none; }
+}
+
+/* =========================================================================
+   Fase 4 · entender lo que comes: nutrientes, peso, informe y descubrimientos
+   ========================================================================= */
+
+/* Las comidas del día en un solo verde, de claro (desayuno) a oscuro (comida); validado contra el fondo de
+   cada tema (contraste del primero de al menos 2:1 y saltos de luz parejos). En oscuro va al revés: el primero, el más tenue. */
+:root[data-nf-theme="light"] {
+  --nf-meal-1: #7CC08F;
+  --nf-meal-2: #58A670;
+  --nf-meal-3: #318C51;
+  --nf-meal-4: #017137;
+  --nf-meal-5: #015428;
+  --nf-dot: #8A978E;
+}
+:root[data-nf-theme="dark"] {
+  --nf-meal-1: #1F6538;
+  --nf-meal-2: #358450;
+  --nf-meal-3: #4CA469;
+  --nf-meal-4: #63C682;
+  --nf-meal-5: #7BE99D;
+  --nf-dot: #7D8C82;
+}
+
+.nf-tabbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.nf-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.nf-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--nf-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.nf-kind {
+  margin-left: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nf-faint);
+}
+
+/* Barras contra la meta: la fibra sube en verde; el azúcar y el sodio son límites (gris hasta pasarse). */
+.nf-bar--thin { height: 6px; }
+.nf-bar--fiber > i { background: var(--nf-accent); }
+.nf-bar--limit > i { background: var(--nf-dot); }
+.nf-bar--over > i { background: var(--nf-lulo); }
+.nf-macro__note { font-size: 0.74rem; color: var(--nf-muted); line-height: 1.35; }
+.nf-macro__note.is-over { color: var(--nf-ink); font-weight: 600; display: inline-flex; gap: 5px; align-items: center; }
+.nf-macro__note.is-over .anticon { color: var(--nf-lulo); }
+.nf-macro.is-over .nf-macro__row b { color: var(--nf-lulo); }
+.nf-macros--2 { grid-template-columns: 1fr; }
+
+.nf-nutricard { padding: 16px 18px; gap: 12px; }
+.nf-card h2.nf-nutricard__title { font-size: 0.95rem; }
+
+.nf-callout--adjust { background: var(--nf-surface); border: 1px solid var(--nf-accent); }
+.nf-callout__actions { display: flex; align-items: center; gap: 8px; }
+
+/* Fibra, azúcar y sodio de la cantidad elegida. */
+.nf-preview-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: -6px 0 0;
+  font-size: 0.8rem;
+  color: var(--nf-muted);
+}
+.nf-preview-more b { color: var(--nf-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Tablas de nutrientes (comida, informe, revisiones). */
+.nf-ntable { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.nf-ntable th,
+.nf-ntable td { padding: 8px 6px; border-bottom: 1px solid var(--nf-line); text-align: right; font-variant-numeric: tabular-nums; }
+.nf-ntable th:first-child { text-align: left; }
+.nf-ntable thead th { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--nf-muted); }
+.nf-ntable tbody th { font-weight: 600; color: var(--nf-ink); }
+.nf-ntable td { color: var(--nf-body); }
+.nf-ntable small.nf-kind { display: block; margin: 2px 0 0; }
+.nf-tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.nf-ntable--wide { min-width: 520px; }
+
+.nf-nlist { list-style: none; margin: 0; padding: 0; display: grid; }
+.nf-nlist li { padding: 10px 0; border-bottom: 1px solid var(--nf-line); display: grid; gap: 4px; }
+.nf-nlist__head { display: flex; justify-content: space-between; gap: 12px; }
+.nf-nlist__head span { color: var(--nf-ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.nf-nlist__head small { display: block; font-weight: 500; color: var(--nf-muted); font-size: 0.78rem; }
+.nf-nlist__head b { white-space: nowrap; color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-nlist__line { margin: 0; font-size: 0.78rem; color: var(--nf-muted); line-height: 1.45; }
+
+/* ---------- Gráficos ---------- */
+.nf-chart { display: grid; gap: 10px; min-width: 0; }
+.nf-chart__bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.nf-chart__bar .nf-link { white-space: nowrap; flex: none; font-size: 0.8rem; }
+.nf-legend-row { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.76rem; color: var(--nf-muted); }
+.nf-legend-row li { display: inline-flex; align-items: center; gap: 6px; }
+.nf-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; display: inline-block; }
+.nf-swatch--line { height: 2px; width: 14px; border-radius: 1px; background: var(--nf-ink); opacity: 0.6; }
+.nf-swatch--trend { height: 2px; width: 16px; border-radius: 1px; background: var(--nf-accent); }
+.nf-swatch--dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nf-dot); }
+.nf-chart__plot { position: relative; min-width: 0; outline: none; border-radius: 12px; }
+.nf-chart__plot:focus-visible { box-shadow: 0 0 0 2px var(--nf-accent); }
+.nf-chart__plot svg { display: block; overflow: visible; }
+.nf-chart__empty {
+  position: absolute;
+  inset: 30% 0 auto;
+  margin: 0;
+  text-align: center;
+  color: var(--nf-muted);
+  font-size: 0.88rem;
+  pointer-events: none;
+}
+.nf-grid { stroke: var(--nf-line); stroke-width: 1; shape-rendering: crispEdges; }
+.nf-baseline { stroke: var(--nf-faint); stroke-width: 1; shape-rendering: crispEdges; }
+.nf-axis { fill: var(--nf-muted); font: 500 11px/1 var(--nf-text); font-variant-numeric: tabular-nums; }
+.nf-axis--x.is-today { fill: var(--nf-ink); font-weight: 800; }
+.nf-target line { stroke: var(--nf-ink); stroke-width: 1.5; opacity: 0.55; }
+.nf-target text { fill: var(--nf-ink); font: 700 11px/1 var(--nf-text); opacity: 0.8; }
+.nf-col-g { transition: opacity 0.15s ease; }
+.nf-col-g.is-dim { opacity: 0.45; }
+.nf-hit { fill: transparent; cursor: pointer; outline: none; }
+.nf-hit:focus-visible { stroke: var(--nf-accent); stroke-width: 2; }
+.nf-tip {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -100%);
+  display: grid;
+  gap: 3px;
+  min-width: 150px;
+  max-width: 220px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--nf-surface);
+  border: 1px solid var(--nf-line);
+  box-shadow: var(--nf-shadow);
+  font-size: 0.78rem;
+  color: var(--nf-muted);
+  pointer-events: none;
+}
+.nf-tip > b { color: var(--nf-ink); font-size: 0.95rem; }
+.nf-tip b { color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-tip__date { color: var(--nf-muted); }
+.nf-tip__row { display: flex; align-items: center; gap: 6px; }
+.nf-tip__row i { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+.nf-tip__row i.nf-tip__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nf-dot); }
+.nf-tip__line { background: var(--nf-accent); }
+.nf-crosshair { stroke: var(--nf-faint); stroke-width: 1; shape-rendering: crispEdges; }
+.nf-wdot { fill: var(--nf-dot); stroke: var(--nf-surface); stroke-width: 2; }
+.nf-wdot.is-active { fill: var(--nf-ink); }
+.nf-trendline { fill: none; stroke: var(--nf-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.nf-trenddot { fill: var(--nf-accent); stroke: var(--nf-surface); stroke-width: 2; }
+.nf-endlabel { fill: var(--nf-ink); font: 700 12px/1 var(--nf-text); font-variant-numeric: tabular-nums; }
+
+/* ---------- Progreso ---------- */
+.nf-progress { display: grid; gap: 16px; grid-template-areas: "intro" "weight" "week" "disc" "energy"; }
+.nf-progress > * { min-width: 0; }
+.nf-progress__intro { grid-area: intro; }
+.nf-progress__intro h1 { margin: 0; font: 800 1.55rem/1.15 var(--nf-display); color: var(--nf-ink); letter-spacing: -0.01em; }
+.nf-progress__intro p { margin: 6px 0 0; color: var(--nf-muted); max-width: 60ch; }
+.nf-progress__weight { grid-area: weight; }
+.nf-progress__week { grid-area: week; }
+.nf-progress__disc { grid-area: disc; }
+.nf-progress__energy { grid-area: energy; }
+
+/* En el teléfono la cifra principal va sola arriba (a lo ancho) y las otras dos debajo. */
+.nf-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nf-stats > .nf-stat--hero { grid-column: 1 / -1; }
+.nf-stats--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 560px) {
+  .nf-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .nf-stats > .nf-stat--hero { grid-column: auto; }
+}
+.nf-stat { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--nf-sunk); min-width: 0; }
+.nf-stat > span { font-size: 0.74rem; color: var(--nf-muted); font-weight: 600; }
+.nf-stat > b { font: 800 1.15rem/1.2 var(--nf-display); color: var(--nf-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nf-stat > small { font-size: 0.72rem; color: var(--nf-muted); }
+.nf-stat--hero > b { font-size: 1.6rem; }
+.nf-stat--hero > b small { font: 600 0.85rem/1 var(--nf-text); color: var(--nf-muted); }
+
+.nf-weight__form { display: grid; gap: 6px; }
+.nf-weight__row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.nf-weight__row .ant-input-number { width: 100%; }
+.nf-weight__row .ant-input-number-input { font-size: 16px; }
+.nf-date--lg { height: 40px; }
+@media (max-width: 400px) {
+  .nf-weight__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .nf-weight__row .nf-date { grid-column: 1; grid-row: 2; justify-self: start; }
+  .nf-weight__row .ant-btn { grid-column: 2; grid-row: 1 / span 2; align-self: stretch; height: auto; }
+}
+.nf-wlist { list-style: none; margin: 0; padding: 0; display: grid; }
+.nf-wlist li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto 18px auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--nf-line);
+  font-size: 0.86rem;
+}
+.nf-wlist__date { color: var(--nf-body); text-transform: capitalize; }
+.nf-wlist li > b { color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-wlist__trend { color: var(--nf-muted); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.nf-wlist .anticon-apple { color: var(--nf-ink); }
+.nf-wlist__tools { display: flex; gap: 4px; }
+@media (max-width: 400px) {
+  .nf-wlist__trend { display: none; }
+  .nf-wlist li { grid-template-columns: minmax(0, 1fr) auto 18px auto; }
+}
+.nf-applelink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--nf-line);
+  border-radius: 14px;
+  background: var(--nf-surface);
+  color: var(--nf-ink);
+  font: 600 0.9rem/1.3 var(--nf-text);
+  text-align: left;
+  cursor: pointer;
+}
+.nf-applelink:hover { border-color: var(--nf-accent); }
+.nf-applelink .anticon { font-size: 18px; flex: none; }
+
+/* Apple Salud */
+.nf-apple { gap: 20px; }
+.nf-apple__intro { margin: 0; color: var(--nf-body); line-height: 1.5; }
+.nf-apple__intro .anticon { color: var(--nf-ink); margin-right: 4px; }
+.nf-apple__step { margin: 0 0 10px; font: 700 1rem/1.2 var(--nf-display); color: var(--nf-ink); }
+.nf-codebox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  background: var(--nf-sunk);
+  border: 1px solid var(--nf-line);
+  margin: 6px 0;
+}
+.nf-codebox code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font: 600 0.84rem/1.4 ui-monospace, Menlo, Consolas, monospace;
+  color: var(--nf-ink);
+}
+.nf-codebox--sm code { font-size: 0.76rem; }
+.nf-steps { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 10px; color: var(--nf-body); line-height: 1.5; font-size: 0.9rem; }
+.nf-steps code { font: 600 0.82rem/1 ui-monospace, Menlo, Consolas, monospace; background: var(--nf-sunk); padding: 1px 5px; border-radius: 5px; }
+.nf-actions--start { position: static; padding: 0; margin: 0; background: none; justify-content: flex-start; flex-wrap: wrap; }
+.nf-actions--start .ant-btn { flex: none; }
+
+/* Informe de la semana */
+.nf-weeknav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nf-weeknav__label { font-weight: 700; color: var(--nf-ink); font-size: 0.9rem; min-width: 7.5em; text-align: center; }
+.nf-wreport__body { display: grid; gap: 18px; transition: opacity 0.15s ease; }
+.nf-wreport__body.is-loading { opacity: 0.5; }
+.nf-wreport__block { display: grid; gap: 10px; }
+.nf-subtitle { margin: 0; font: 700 0.95rem/1.2 var(--nf-display); color: var(--nf-ink); }
+.nf-mealsplit { display: flex; gap: 2px; height: 10px; border-radius: 99px; overflow: hidden; background: transparent; }
+.nf-mealsplit i { display: block; min-width: 3px; }
+.nf-splitlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.nf-splitlist li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 0.86rem;
+  color: var(--nf-body);
+}
+.nf-splitlist b { color: var(--nf-ink); font-variant-numeric: tabular-nums; }
+.nf-splitlist small { color: var(--nf-muted); font-variant-numeric: tabular-nums; min-width: 7.5em; text-align: right; }
+.nf-toplist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.nf-toplist li { display: grid; gap: 4px; }
+.nf-toplist__row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.88rem; }
+.nf-toplist__row span { color: var(--nf-ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.nf-toplist__row b { color: var(--nf-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nf-toplist__meter { height: 6px; border-radius: 99px; background: var(--nf-sunk); overflow: hidden; }
+.nf-toplist__meter i { display: block; height: 100%; border-radius: inherit; background: var(--nf-accent); }
+.nf-toplist small { font-size: 0.74rem; color: var(--nf-muted); }
+
+/* Descubrimientos */
+.nf-disc { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.nf-disc__item { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border-radius: 14px; background: var(--nf-sunk); }
+.nf-disc__item p { margin: 0; color: var(--nf-ink); font-weight: 600; line-height: 1.4; }
+.nf-disc__item small { display: block; margin-top: 3px; color: var(--nf-muted); font-size: 0.78rem; line-height: 1.45; }
+.nf-disc__icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--nf-surface); font-size: 15px; }
+.nf-disc__item--good .nf-disc__icon { color: var(--nf-accent); }
+.nf-disc__item--watch .nf-disc__icon { color: var(--nf-lulo); }
+.nf-disc__item--neutral .nf-disc__icon { color: var(--nf-maiz); }
+
+/* Gasto real */
+.nf-energy__hero { display: grid; gap: 4px; }
+.nf-energy__hero b { font: 800 2rem/1.1 var(--nf-display); color: var(--nf-ink); letter-spacing: -0.01em; }
+.nf-energy__hero b small { font: 600 0.9rem/1 var(--nf-text); color: var(--nf-muted); letter-spacing: 0; }
+.nf-energy__hero span { color: var(--nf-body); font-size: 0.9rem; line-height: 1.5; }
+
+/* Meta */
+.nf-target__nutri { margin: 0; font-size: 0.84rem; color: var(--nf-muted); line-height: 1.5; }
+.nf-target__nutri b { color: var(--nf-ink); }
+.nf-switchrow { display: flex; align-items: flex-start; gap: 10px; }
+.nf-switchrow > .ant-switch { margin-top: 2px; flex: none; }
+.nf-switchrow small { display: block; margin-top: 3px; font-size: 0.78rem; color: var(--nf-muted); line-height: 1.45; }
+
+@media (min-width: 560px) {
+  .nf-stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nf-macros--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+}
+
+/* En el computador: la semana (ancha) a la izquierda; a la derecha el peso, los descubrimientos y el gasto real,
+   uno debajo del otro (la última fila elástica evita huecos entre ellos cuando la semana es más alta). */
+@media (min-width: 1024px) {
+  .nf-progress {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-areas:
+      "intro intro"
+      "week weight"
+      "week disc"
+      "week energy"
+      "week .";
+    gap: 22px 24px;
+    align-items: start;
+  }
+  .nf-progress .nf-card { padding: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nf-col-g,
+  .nf-wreport__body { transition: none; }
 }

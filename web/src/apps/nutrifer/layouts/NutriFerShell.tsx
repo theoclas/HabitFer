@@ -1,4 +1,4 @@
-import { AimOutlined, BulbOutlined, CalendarOutlined, FireOutlined, MoonOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import { AimOutlined, BulbOutlined, CalendarOutlined, FireOutlined, LineChartOutlined, MoonOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ const BASE = "/app/nutrifer";
 const NAV = [
   { key: BASE, label: "Hoy", icon: <CalendarOutlined /> },
   { key: `${BASE}/cocina`, label: "Cocina", icon: <FireOutlined /> },
+  { key: `${BASE}/progreso`, label: "Progreso", icon: <LineChartOutlined /> },
   { key: `${BASE}/meta`, label: "Meta", icon: <AimOutlined /> },
 ];
 

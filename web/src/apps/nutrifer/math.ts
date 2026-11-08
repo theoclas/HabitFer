@@ -147,6 +147,14 @@ export function recipePreview(items: { per100: Per100; grams: number }[], servin
   return { totals, rawGrams, weight, servingGrams: weight / s, perServing };
 }
 
+/**
+ * Metas de los nutrientes, igual que en el servidor: fibra 14 g por cada 1.000 kcal (mínimo 25 g),
+ * azúcares hasta el 10 % de las calorías y sodio hasta 2.000 mg.
+ */
+export function nutrientGoals(kcal: number): { fiber: number; sugar: number; sodium: number } {
+  return { fiber: Math.max(25, Math.round((kcal / 1000) * 14)), sugar: Math.round((kcal * 0.1) / 4), sodium: 2000 };
+}
+
 /* ---------- Textos ---------- */
 
 const nf0 = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, type MealEntry, type MealSlot } from '@prisma/client';
+import { FoodSource, Prisma, type MealEntry, type MealSlot } from '@prisma/client';
 import { addDays, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { checkedDate, computeOr400, entryView, FOOD_FOR_ENTRY, fromTemplate, totalsOf, type FoodRow, type Template } from './entry.shared';
@@ -7,6 +7,8 @@ import { amountText } from './entry.utils';
 import { MEAL_ORDER, mealNames } from './meals';
 import type { BatchEntriesDto, CopyDto, CreateEntryDto, QuickEntryDto, RepeatEntryDto, UpdateEntryDto, WaterDto } from './nutrition.dto';
 import { roundTotals, scale, sumTotals } from './nutrition-math';
+import { EnergyService } from './progress/energy.service';
+import { nutrientGoals } from './progress/goals';
 import { normalize } from './search.utils';
 import { habitualSuggestions, previousMeals } from './suggest.utils';
 
@@ -23,7 +25,10 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 /** El diario: lo que se anotó cada día, por comidas, con sus sumas, la meta, el agua y sugerencias. */
 @Injectable()
 export class DiaryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private energy: EnergyService,
+  ) {}
 
   private async loadFood(userId: string, foodId: string): Promise<FoodRow> {
     const food = await this.prisma.food.findFirst({
@@ -34,9 +39,37 @@ export class DiaryService {
     return food;
   }
 
+  /**
+   * Al anotar, lo que el alimento no trae se guarda como 0; para no engañar con el total, se mira si el alimento
+   * de cada anotación trae el dato (los registros rápidos no traen ninguno).
+   */
+  private async knownNutrients(entries: Pick<MealEntry, 'id' | 'foodId' | 'quick'>[]) {
+    const ids = [...new Set(entries.map((e) => e.foodId).filter((id): id is string => !!id))];
+    const foods = ids.length
+      ? await this.prisma.food.findMany({ where: { id: { in: ids } }, select: { id: true, source: true, fiber: true, sugar: true, sodium: true } })
+      : [];
+    const by = new Map(foods.map((f) => [f.id, f]));
+    // Platos y recetas suman sus partes con 0 donde falta el dato: solo cuentan si el valor no es 0.
+    const knows = (f: (typeof foods)[number] | undefined, key: 'fiber' | 'sugar' | 'sodium') => {
+      const v = f?.[key];
+      if (v == null) return false;
+      return f?.source === FoodSource.DISH || f?.source === FoodSource.RECIPE ? v > 0 : true;
+    };
+    const flags = new Map(
+      entries.map((e) => {
+        const f = !e.quick && e.foodId != null ? by.get(e.foodId) : undefined;
+        return [e.id, { fiber: knows(f, 'fiber'), sugar: knows(f, 'sugar'), sodium: knows(f, 'sodium') }] as const;
+      }),
+    );
+    const count = (key: 'fiber' | 'sugar' | 'sodium') => [...flags.values()].filter((v) => v[key]).length;
+    return { counts: { entries: entries.length, fiber: count('fiber'), sugar: count('sugar'), sodium: count('sodium') }, flags };
+  }
+
   async day(userId: string, dateKey: string) {
     const date = checkedDate(dateKey);
     const weekFrom = addDays(date, -6);
+    // La revisión de la semana (meta que se ajusta sola) va antes de leer la meta.
+    const adjust = await this.energy.ensureWeekly(userId);
     const [entries, past, profile, extra, weekRows, photos] = await Promise.all([
       this.prisma.mealEntry.findMany({ where: { userId, date }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }),
       this.prisma.mealEntry.findMany({
@@ -73,12 +106,14 @@ export class DiaryService {
       entries.map((e) => ({ meal: e.meal, foodId: e.foodId })),
     );
     const previous = previousMeals(history, toDateKey(addDays(date, -REPEAT_WINDOW_DAYS)));
+    const known = await this.knownNutrients(entries);
     const meals = MEAL_ORDER.map((slot) => {
       const list = entries.filter((e) => e.meal === slot);
       return {
         slot,
         name: names[slot],
-        entries: list.map(entryView),
+        /** Cada anotación dice si su alimento trae fibra, azúcar y sodio. */
+        entries: list.map((e) => ({ ...entryView(e), known: known.flags.get(e.id) ?? { fiber: false, sugar: false, sodium: false } })),
         totals: roundTotals(sumTotals(list.map(totalsOf))),
         /** Lo de siempre en esta comida que aún no está anotado (se confirma con un toque). */
         suggestions: (habitual.get(slot) ?? []).map(({ template: t, days }) => ({
@@ -102,8 +137,18 @@ export class DiaryService {
       meals,
       totals: roundTotals(sumTotals(entries.map(totalsOf))),
       targets: profile
-        ? { kcal: profile.kcalTarget, protein: profile.proteinTarget, fat: profile.fatTarget, carbs: profile.carbsTarget }
+        ? {
+            kcal: profile.kcalTarget,
+            protein: profile.proteinTarget,
+            fat: profile.fatTarget,
+            carbs: profile.carbsTarget,
+            ...nutrientGoals(profile.kcalTarget),
+          }
         : null,
+      /** Cuántas anotaciones traen fibra, azúcar y sodio (la tabla del ICBF no trae azúcares). */
+      known: known.counts,
+      /** Si la revisión de esta semana movió la meta. */
+      adjust,
       /** El último día con algo anotado antes de este (para repetir el día entero). */
       previousDay: previous.day,
       week,

@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { SKIP_ORIGIN_KEY } from '../decorators/skip-origin-check.decorator';
 
 function parseAllowedOrigins(): string[] {
   const raw = process.env.CORS_ORIGINS?.trim();
@@ -27,6 +28,10 @@ export class OriginGuard implements CanActivate {
     const method = req.method.toUpperCase();
 
     if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true;
+
+    // Rutas para apps con su propia llave (el atajo de iOS no manda Origin).
+    const skip = this.reflector.getAllAndOverride<boolean>(SKIP_ORIGIN_KEY, [context.getHandler(), context.getClass()]);
+    if (skip) return true;
 
     const origin = req.headers.origin;
     if (!origin) {

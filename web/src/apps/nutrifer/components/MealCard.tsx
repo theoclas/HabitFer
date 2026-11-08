@@ -6,6 +6,7 @@ import {
   DeleteOutlined,
   EllipsisOutlined,
   LoadingOutlined,
+  PieChartOutlined,
   PlusOutlined,
   RetweetOutlined,
   RightOutlined,
@@ -32,6 +33,8 @@ type Props = {
   onCopy: () => void;
   onSave: () => void;
   onClear: () => void;
+  /** Ver los nutrientes de la comida y de cada alimento. */
+  onNutrients: () => void;
   /** Completar o borrar una foto pendiente. */
   onPhoto: (p: PendingPhoto) => void;
   onPhotoDelete: (p: PendingPhoto) => void;
@@ -71,6 +74,7 @@ export function MealCard({
   onCopy,
   onSave,
   onClear,
+  onNutrients,
   onPhoto,
   onPhotoDelete,
 }: Props) {
@@ -83,6 +87,7 @@ export function MealCard({
     ...(m.previous ? [{ key: "repeat", icon: <RetweetOutlined />, label: `${repeatLabel} (${thingsText(m.previous.count)})` }] : []),
     ...(!empty
       ? [
+          { key: "nutrients", icon: <PieChartOutlined />, label: "Ver nutrientes" },
           { key: "copy", icon: <CopyOutlined />, label: "Copiar a otro día…" },
           { key: "save", icon: <SaveOutlined />, label: "Guardar como comida…" },
           { type: "divider" as const },
@@ -95,6 +100,7 @@ export function MealCard({
     else if (key === "copy") onCopy();
     else if (key === "save") onSave();
     else if (key === "clear") onClear();
+    else if (key === "nutrients") onNutrients();
   };
 
   return (

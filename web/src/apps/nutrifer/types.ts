@@ -139,9 +139,20 @@ export type Entry = {
   sugar: number | null;
   sodium: number | null;
   parts: EntryPart[] | null;
+  /** Si el alimento trae cada dato (en el día; los registros rápidos no traen ninguno). */
+  known?: { fiber: boolean; sugar: boolean; sodium: boolean };
 };
 
 export type MacroTargets = { kcal: number; protein: number; fat: number; carbs: number };
+
+/** Metas del día: los macros y, aparte, fibra (mínimo), azúcar y sodio (límites). */
+export type DayTargets = MacroTargets & { fiber: number; sugar: number; sodium: number };
+
+/** Cuántas anotaciones del día traen cada dato (la tabla del ICBF no trae azúcares). */
+export type KnownNutrients = { entries: number; fiber: number; sugar: number; sodium: number };
+
+/** La revisión de esta semana movió la meta. */
+export type WeekAdjust = { weekStart: string; before: number; after: number; observed: number | null; formula: number };
 
 /** Lo de siempre en una comida que aún no está anotado. */
 export type Suggestion = { entryId: string; foodId: string | null; name: string; amount: string; kcal: number; days: number };
@@ -213,7 +224,9 @@ export type DayView = {
   date: string;
   meals: MealView[];
   totals: Totals;
-  targets: MacroTargets | null;
+  targets: DayTargets | null;
+  known: KnownNutrients;
+  adjust: WeekAdjust | null;
   previousDay: PreviousMeal | null;
   water: WaterView;
   /** Los 7 días que terminan en este, con sus calorías. */
@@ -225,7 +238,16 @@ export type WeekDay = { date: string; kcal: number; count: number };
 export type Sex = "MALE" | "FEMALE";
 export type WeightGoal = "LOSE" | "MAINTAIN" | "GAIN";
 
-export type Targets = MacroTargets & { age: number; bmr: number; tdee: number; floorApplied: boolean };
+export type Targets = MacroTargets & {
+  age: number;
+  bmr: number;
+  tdee: number;
+  floorApplied: boolean;
+  /** Gasto con la fórmula (el `tdee` puede ser el medido de esta semana). */
+  formulaTdee?: number;
+  /** La meta sale del gasto medido con el peso y lo comido. */
+  measured?: boolean;
+};
 
 export type ProfileView = {
   sex: Sex;
@@ -236,8 +258,13 @@ export type ProfileView = {
   goal: WeightGoal;
   ratePerWeek: number;
   manual: boolean;
+  /** Meta que se ajusta sola cada semana. */
+  adaptive: boolean;
   targets: MacroTargets;
+  nutrients: { fiber: number; sugar: number; sodium: number };
   suggested: Targets;
+  /** El peso de tendencia de hoy (null sin pesadas recientes). */
+  trendKg: number | null;
   waterGoalMl: number;
   glassMl: number;
 };
@@ -259,6 +286,7 @@ export type ProfileInput = {
   goal: WeightGoal;
   ratePerWeek: number;
   manual?: boolean;
+  adaptive?: boolean;
   kcalTarget?: number;
   proteinTarget?: number;
   fatTarget?: number;
@@ -318,4 +346,97 @@ export type RecipeInput = {
   servings: number;
   cookedGrams?: number | null;
   ingredients: { foodId: string; portionLabel?: string; grams?: number; quantity?: number }[];
+};
+
+/* ---------- Peso, informe, descubrimientos y gasto real ---------- */
+
+export type WeightSource = "MANUAL" | "SHORTCUT";
+
+export type WeightPoint = { date: string; kg: number; trend: number; source: WeightSource };
+
+export type WeightsView = {
+  today: string;
+  points: WeightPoint[];
+  /** La última pesada, su tendencia y cuánto cambió (null sin pesadas). */
+  summary: {
+    date: string;
+    kg: number;
+    trend: number;
+    change7: number | null;
+    change30: number | null;
+    weeklyRate: number | null;
+  } | null;
+  /** El atajo de iOS conectado (null si no hay llave). */
+  shortcut: { hint: string; lastUsedAt: string | null; createdAt: string } | null;
+};
+
+export type ReportDay = {
+  date: string;
+  entries: number;
+  kcal: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fiber: number;
+  sugar: number;
+  sodium: number;
+  meals: Record<MealSlot, number>;
+};
+
+export type Report = {
+  from: string;
+  to: string;
+  today: string;
+  targets: DayTargets | null;
+  mealNames: Record<MealSlot, string>;
+  days: ReportDay[];
+  summary: {
+    logged: number;
+    avg: Totals | null;
+    inTarget: number | null;
+    proteinDays: number | null;
+    sodiumOver: number | null;
+  };
+  meals: { slot: MealSlot; name: string; kcal: number; share: number }[];
+  topFoods: { foodId: string | null; name: string; kcal: number; times: number; share: number }[];
+};
+
+export type Discovery = { id: string; text: string; detail: string; tone: "good" | "watch" | "neutral" };
+
+export type Expenditure = {
+  status: "collecting" | "ready";
+  loggedDays: number;
+  spanDays: number;
+  weighIns: number;
+  missingDays: number;
+  needWeighIns: number;
+  intakeAvg: number | null;
+  trendChange: number | null;
+  observed: number | null;
+  confidence: number;
+  formula: number;
+  tdee: number;
+};
+
+export type EnergyView = {
+  adaptive: boolean;
+  manual: boolean;
+  live: Expenditure;
+  nextReview: string;
+  history: {
+    weekStart: string;
+    tdee: number;
+    formula: number;
+    observed: number | null;
+    weightKg: number;
+    kcalBefore: number;
+    kcalTarget: number;
+    loggedDays: number;
+    spanDays: number;
+  }[];
+};
+
+export type Insights = {
+  discoveries: { from: string; to: string; loggedDays: number; items: Discovery[] };
+  energy: EnergyView | null;
 };

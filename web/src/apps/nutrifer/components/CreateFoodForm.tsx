@@ -139,7 +139,7 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
       <p className="nf-hint" style={{ margin: 0 }}>
         Los encuentras en la tabla nutricional del empaque. Si no sabes los macros, deja solo las calorías.
       </p>
-      <button type="button" className={`nf-more${more ? " is-open" : ""}`} aria-expanded={more} onClick={() => setMore((m) => !m)}>
+      <button type="button" className={`nf-morebtn${more ? " is-open" : ""}`} aria-expanded={more} onClick={() => setMore((m) => !m)}>
         <span>
           Más datos del empaque
           <small>Azúcares, grasa saturada, sodio y edulcorantes: con eso salen los sellos de advertencia</small>

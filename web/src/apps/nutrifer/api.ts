@@ -7,6 +7,9 @@ import type {
   DayView,
   Entry,
   FavoriteFood,
+  Insights,
+  Report,
+  WeightsView,
   FoodDetail,
   FoodResult,
   MealSlot,
@@ -238,5 +241,41 @@ export async function saveProfile(payload: ProfileInput) {
 
 export async function previewProfile(payload: ProfileInput, signal?: AbortSignal) {
   const { data } = await api.post<Targets>("/nutrition/profile/preview", payload, { signal });
+  return data;
+}
+
+/* ---------- Peso, informe, descubrimientos y gasto real ---------- */
+
+export async function fetchWeights(days: number) {
+  const { data } = await api.get<WeightsView>("/nutrition/weights", { params: { days } });
+  return data;
+}
+
+export async function saveWeight(date: string, kg: number) {
+  const { data } = await api.put<{ date: string; kg: number }>(`/nutrition/weights/${date}`, { kg });
+  return data;
+}
+
+export async function deleteWeight(date: string) {
+  await api.delete(`/nutrition/weights/${date}`);
+}
+
+/** Llave nueva para el atajo de iOS (se muestra una sola vez). */
+export async function createShortcutKey() {
+  const { data } = await api.post<{ token: string; hint: string }>("/nutrition/shortcut");
+  return data;
+}
+
+export async function deleteShortcutKey() {
+  await api.delete("/nutrition/shortcut");
+}
+
+export async function fetchReport(from: string, to: string) {
+  const { data } = await api.get<Report>("/nutrition/progress", { params: { from, to } });
+  return data;
+}
+
+export async function fetchInsights() {
+  const { data } = await api.get<Insights>("/nutrition/insights");
   return data;
 }
