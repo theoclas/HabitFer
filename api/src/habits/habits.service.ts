@@ -15,6 +15,8 @@ import {
   toDateKey,
 } from './habits.utils';
 import { randomInt } from 'crypto';
+import { buildDays, earliestKey, toHistoryHabit } from '../stats/history.utils';
+import { computeSpecials } from './specials.utils';
 import {
   getMilestoneLabel,
   getNextMilestone,
@@ -41,8 +43,9 @@ export class HabitsService {
     const habits = await this.prisma.habit.findMany({
       where: { userId, archived: false },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-      include: { completions: { select: { date: true } } },
+      include: { completions: { select: { date: true, note: true } } },
     });
+    const refKey = toDateKey(ref);
 
     return habits
       .filter((h) => isScheduledDay(h.scheduleType, h.scheduleDays, ref))
@@ -51,20 +54,36 @@ export class HabitsService {
         const base = this.toView(h);
         return {
           ...base,
-          scheduledForDate: toDateKey(ref),
-          completedToday: keys.has(toDateKey(ref)),
+          scheduledForDate: refKey,
+          completedToday: keys.has(refKey),
           currentStreak: getCurrentStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, keys, ref),
+          /** Nota del completado de ese dia, si la hay. */
+          note: h.completions.find((c) => toDateKey(c.date) === refKey)?.note ?? null,
         };
       });
   }
 
   async getOne(userId: string, id: string) {
-    const habit = await this.prisma.habit.findFirst({
-      where: { id, userId },
-      include: { completions: { orderBy: { date: 'desc' }, take: 90, select: { date: true } } },
-    });
+    // Todo el historial: con solo los ultimos 90 completados una racha mayor se cortaba en 90.
+    const [habit, notes, totalCompletions] = await Promise.all([
+      this.prisma.habit.findFirst({
+        where: { id, userId },
+        include: { completions: { orderBy: { date: 'desc' }, select: { date: true } } },
+      }),
+      this.prisma.habitCompletion.findMany({
+        where: { habitId: id, userId, note: { not: null } },
+        orderBy: { date: 'desc' },
+        take: 30,
+        select: { date: true, note: true },
+      }),
+      this.prisma.habitCompletion.count({ where: { habitId: id, userId } }),
+    ]);
     if (!habit) throw new NotFoundException('Habito no encontrado');
-    return this.toView(habit, true);
+    return {
+      ...this.toView(habit, true),
+      totalCompletions,
+      recentNotes: notes.filter((n) => n.note?.trim()).map((n) => ({ date: toDateKey(n.date), note: n.note as string })),
+    };
   }
 
   async create(userId: string, dto: CreateHabitDto) {
@@ -130,7 +149,8 @@ export class HabitsService {
     await this.prisma.habitCompletion.upsert({
       where: { habitId_date: { habitId: id, date } },
       create: { habitId: id, userId, date, note: dto.note?.trim() || null },
-      update: { note: dto.note?.trim() || null },
+      // Sin `note` en la peticion se conserva la nota que ya tuviera ese dia.
+      update: { note: dto.note === undefined ? undefined : dto.note.trim() || null },
     });
 
     const unlockedAchievement = await this.tryUnlockAchievement(userId, id, date);
@@ -175,17 +195,21 @@ export class HabitsService {
   /** Vitrina: logros ganados de cada habito activo y el siguiente hito con lo que falta. */
   async achievementsSummary(userId: string) {
     const today = startOfToday();
+    const todayKey = toDateKey(today);
     const habits = await this.prisma.habit.findMany({
       where: { userId, archived: false },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       include: {
-        completions: { select: { date: true } },
+        completions: { select: { date: true, createdAt: true } },
         achievements: { orderBy: { milestoneDays: 'asc' } },
       },
     });
+    const history = habits.map(toHistoryHabit);
+    const days = buildDays(history, earliestKey(history, todayKey), todayKey);
 
     return {
       totalMilestones: getStreakMilestones().length,
+      specials: computeSpecials(history, days, todayKey),
       habits: habits.map((h) => {
         const keys = new Set(h.completions.map((c) => toDateKey(c.date)));
         const currentStreak = getCurrentStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, keys, today);
@@ -256,7 +280,7 @@ export class HabitsService {
       longestStreak: getLongestStreak(habit.scheduleType, habit.scheduleDays, habit.streakEnabled, completionKeys),
       completedToday: keysSet.has(toDateKey(today)),
       scheduledToday: isScheduledDay(habit.scheduleType, habit.scheduleDays, today),
-      recentCompletions: withHistory ? [...completionKeys].sort().reverse() : undefined,
+      recentCompletions: withHistory ? [...completionKeys].sort().reverse().slice(0, 120) : undefined,
     };
   }
 }

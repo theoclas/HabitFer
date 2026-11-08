@@ -1,0 +1,48 @@
+/* =========================================================================
+   HabitFer · Brasa, modo día
+   Mismos tokens que el modo noche (brasa.css) con valores claros.
+   Se activa con <html data-hf-theme="day"> mientras HabitFer está abierto.
+   ========================================================================= */
+
+:root[data-hf-theme="day"] {
+  --hf-bg: #F6F2EE;
+  --hf-surface: #FFFFFF;
+  --hf-raised: #EFE8E2;
+  --hf-elevated: #FFFFFF;
+  --hf-line: rgba(45, 25, 12, 0.09);
+  --hf-line-strong: rgba(45, 25, 12, 0.17);
+  --hf-fg: #1D1612;
+  --hf-muted: #6A5B50;
+  --hf-faint: #9A8B80;
+  --hf-ember: #E8620C;
+  --hf-ember-2: #FF9A3D;
+  --hf-ember-soft: rgba(232, 98, 12, 0.12);
+  --hf-blue: #0E9AB5;
+  --hf-blue-soft: rgba(14, 154, 181, 0.12);
+  --hf-track: rgba(45, 25, 12, 0.09);
+  --hf-glass: rgba(246, 242, 238, 0.88);
+  --hf-tabbar-bg: rgba(255, 255, 255, 0.94);
+  --hf-scrim: rgba(255, 255, 255, 0.6);
+  --hf-scrim-strong: rgba(255, 255, 255, 0.85);
+  --hf-shadow: 0 12px 32px -14px rgba(60, 30, 10, 0.28);
+  --hf-empty: rgba(45, 25, 12, 0.04);
+  color-scheme: light;
+}
+
+:root[data-hf-theme] body { background: var(--hf-bg); }
+
+:root[data-hf-theme="day"] .app-shell--habitfer {
+  --shell-glow: rgba(232, 98, 12, 0.07);
+  --shell-glow-2: rgba(14, 154, 181, 0.05);
+}
+
+:root[data-hf-theme="day"] .hf-card.is-done {
+  box-shadow: 0 6px 20px -12px color-mix(in srgb, var(--c) 80%, transparent);
+}
+
+/* El día perfecto siempre se ve de noche: es un momento, no una pantalla más. */
+.hf-perfect {
+  --hf-fg: #F6EEE7;
+  --hf-muted: #A6978B;
+  color: var(--hf-fg);
+}

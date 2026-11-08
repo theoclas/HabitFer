@@ -54,7 +54,16 @@ export async function logout() {
   }
 }
 
-import type { AchievementsSummary, CompleteHabitResponse, CreateHabitPayload, Habit, HabitToday } from "../types";
+import type {
+  AchievementsSummary,
+  CompleteHabitResponse,
+  CreateHabitPayload,
+  DayMood,
+  Habit,
+  HabitAchievementRow,
+  HabitToday,
+  StatsRange,
+} from "../types";
 
 export async function fetchHabits() {
   const { data } = await api.get<Habit[]>("/habits");
@@ -90,14 +99,40 @@ export async function deleteHabit(id: string) {
   await api.delete("/habits/" + id);
 }
 
-export async function completeHabit(id: string, date: string = todayKey()) {
-  const { data } = await api.post<CompleteHabitResponse>("/habits/" + id + "/complete", { date });
+/** Marca el habito. Con `note` guarda (o cambia) la nota de ese dia; sin ella conserva la que hubiera. */
+export async function completeHabit(id: string, date: string = todayKey(), note?: string) {
+  const body = note === undefined ? { date } : { date, note };
+  const { data } = await api.post<CompleteHabitResponse>("/habits/" + id + "/complete", body);
   return data;
 }
 
 export async function uncompleteHabit(id: string, date: string) {
   const { data } = await api.delete<Habit>("/habits/" + id + "/complete/" + date);
   return data;
+}
+
+export async function fetchHabitAchievements(id: string) {
+  const { data } = await api.get<HabitAchievementRow[]>("/habits/" + id + "/achievements");
+  return data;
+}
+
+export async function fetchStatsRange(params: { from?: string; to?: string; habitId?: string } = {}) {
+  const { data } = await api.get<StatsRange>("/stats/range", { params });
+  return data;
+}
+
+export async function fetchMoods(from: string, to: string) {
+  const { data } = await api.get<DayMood[]>("/moods", { params: { from, to } });
+  return data;
+}
+
+export async function setMood(date: string, mood: number) {
+  const { data } = await api.put<DayMood>("/moods/" + date, { mood });
+  return data;
+}
+
+export async function clearMood(date: string) {
+  await api.delete("/moods/" + date);
 }
 
 import type { CreateProjectPayload, CreateTaskPayload, Project, Task, TaskStatus } from "../types";

@@ -16,11 +16,15 @@ import { AchievementProvider } from "../../../features/achievements/AchievementC
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { RemindersBell } from "../../../features/reminders/RemindersBell";
 import { AppSwitcher } from "../../../platform/AppSwitcher";
+import { DisplayMenu } from "../components/DisplayMenu";
 import { Flame, FLAME_STAGES } from "../components/Flame";
 import { MotivationalBanner } from "../components/MotivationalBanner";
 import { notifyHabitsChanged } from "../effects";
-import { brasaTheme } from "../theme/brasaTheme";
+import { brasaThemeFor } from "../theme/brasaTheme";
+import { useHfTheme } from "../theme/useHfTheme";
 import "../theme/brasa.css";
+import "../theme/brasa-data.css";
+import "../theme/brasa-day.css";
 
 const { Content, Sider, Header } = Layout;
 /** La marca usa la llama naranja: en tamano chico la azul se lee como una gota. */
@@ -59,6 +63,7 @@ export function HabitFerShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { pref, mode, setPref } = useHfTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [creatorOpen, setCreatorOpen] = useState(false);
   const selectedKey = navItems.find((item) => isNavActive(location.pathname, item.key))?.key ?? BASE;
@@ -71,7 +76,7 @@ export function HabitFerShell() {
   const tabs = [navItems[0], navItems[1], null, navItems[2], { ...navItems[3], label: "Stats" }];
 
   return (
-    <ConfigProvider theme={brasaTheme}>
+    <ConfigProvider theme={brasaThemeFor(mode)}>
       <AchievementProvider>
         <div className="app-shell app-shell--habitfer">
           <Layout className="app-shell__inner" style={{ minHeight: "100dvh", background: "transparent" }}>
@@ -123,6 +128,7 @@ export function HabitFerShell() {
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <AppSwitcher />
+                  <DisplayMenu pref={pref} mode={mode} onPref={setPref} />
                   <RemindersBell />
                   <button type="button" className="profile-trigger profile-trigger--habit" onClick={openProfile} aria-label="Perfil">
                     <UserOutlined />

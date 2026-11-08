@@ -1,7 +1,7 @@
-import { EditOutlined } from "@ant-design/icons";
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { EditOutlined, FormOutlined } from "@ant-design/icons";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { StreakChip } from "../../apps/habitfer/components/Flame";
-import { burstSparks, buzz } from "../../apps/habitfer/effects";
+import { burstSparks, buzz, playTick } from "../../apps/habitfer/effects";
 import type { Habit, HabitToday } from "../../types";
 import { habitEmoji, habitScheduleLabel } from "./habitUtils";
 
@@ -16,16 +16,22 @@ type Props = {
   onToggle: (habit: Habit | HabitToday) => void | Promise<void>;
   onOpen?: (habit: Habit | HabitToday) => void;
   onEdit?: (habit: Habit | HabitToday) => void;
+  /** Mantener presionada la tarjeta (o clic derecho) abre la nota del dia. */
+  onNote?: (habit: Habit | HabitToday) => void;
 };
 
 /** Nombre compartido con la cabecera del detalle para la transicion entre pantallas. */
 export const HABIT_HERO_TRANSITION = "hf-habit-hero";
 
-export function HabitCard({ habit, loading, canToggle = true, riskWindow = false, onToggle, onOpen, onEdit }: Props) {
+const LONG_PRESS_MS = 520;
+
+export function HabitCard({ habit, loading, canToggle = true, riskWindow = false, onToggle, onOpen, onEdit, onNote }: Props) {
   const completed = habit.completedToday;
   const atRisk = riskWindow && !completed && habit.streakEnabled && habit.currentStreak >= 3;
+  const note = "note" in habit ? habit.note : null;
   const [justDone, setJustDone] = useState(false);
   const prevCompleted = useRef(completed);
+  const press = useRef<{ timer: number; x: number; y: number; fired: boolean } | null>(null);
 
   // Animacion de "encendido" solo cuando pasa de pendiente a hecho mientras se ve la tarjeta.
   useEffect(() => {
@@ -39,7 +45,33 @@ export function HabitCard({ habit, loading, canToggle = true, riskWindow = false
     return undefined;
   }, [completed]);
 
+  const cancelPress = () => {
+    if (press.current) window.clearTimeout(press.current.timer);
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (!onNote || (e.pointerType === "mouse" && e.button !== 0)) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+    cancelPress();
+    const state = { timer: 0, x: e.clientX, y: e.clientY, fired: false };
+    state.timer = window.setTimeout(() => {
+      state.fired = true;
+      buzz(20);
+      onNote(habit);
+    }, LONG_PRESS_MS);
+    press.current = state;
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const p = press.current;
+    if (p && !p.fired && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 10) cancelPress();
+  };
+
   const open = (el: HTMLElement) => {
+    if (press.current?.fired) {
+      press.current = null;
+      return;
+    }
     if (!onOpen) return;
     el.style.setProperty("view-transition-name", HABIT_HERO_TRANSITION);
     onOpen(habit);
@@ -51,6 +83,7 @@ export function HabitCard({ habit, loading, canToggle = true, riskWindow = false
     if (!completed) {
       burstSparks(e.currentTarget, habit.color);
       buzz();
+      playTick();
     }
     void onToggle(habit);
   };
@@ -69,6 +102,17 @@ export function HabitCard({ habit, loading, canToggle = true, riskWindow = false
       onKeyDown={(e) => {
         if (e.key === "Enter" && e.target === e.currentTarget) open(e.currentTarget);
       }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={cancelPress}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
+      onContextMenu={(e) => {
+        if (!onNote) return;
+        e.preventDefault();
+        cancelPress();
+        onNote(habit);
+      }}
       aria-label={`${habit.title}${completed ? ", hecho" : ""}`}
     >
       <span className="hf-card__emoji" aria-hidden="true">
@@ -80,6 +124,11 @@ export function HabitCard({ habit, loading, canToggle = true, riskWindow = false
           {habit.streakEnabled && habit.currentStreak > 0 && <StreakChip days={habit.currentStreak} />}
           {atRisk && <span className="hf-card__risk">en riesgo</span>}
           <span>{habitScheduleLabel(habit)}</span>
+          {note && (
+            <span className="hf-card__note" title={note}>
+              <FormOutlined /> nota
+            </span>
+          )}
         </span>
       </span>
       <span className="hf-card__actions">

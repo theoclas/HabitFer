@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Flame, PERFECT_STAGE } from "../../apps/habitfer/components/Flame";
-import { prefersReducedMotion } from "../../apps/habitfer/effects";
+import { buzz, playTick, prefersReducedMotion } from "../../apps/habitfer/effects";
 import { pickFriendsPhrase } from "./phrases";
 
 export type PerfectDayInfo = {
@@ -74,11 +74,8 @@ export function PerfectDayOverlay({ info, onClose }: Props) {
     window.addEventListener("keydown", onKey);
     let stop: (() => void) | undefined;
     if (canvasRef.current && !prefersReducedMotion()) stop = runEmbers(canvasRef.current, info.colors);
-    try {
-      navigator.vibrate?.([20, 60, 30]);
-    } catch {
-      /* sin vibracion */
-    }
+    buzz([20, 60, 30]);
+    playTick("perfect");
     return () => {
       window.removeEventListener("keydown", onKey);
       stop?.();

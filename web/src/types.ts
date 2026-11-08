@@ -41,10 +41,23 @@ export type Habit = {
   completedToday: boolean;
   scheduledToday: boolean;
   recentCompletions?: string[];
+  /** Solo en el detalle. */
+  totalCompletions?: number;
+  recentNotes?: { date: string; note: string }[];
 };
 
 export type HabitToday = Habit & {
   scheduledForDate: string;
+  /** Nota del completado de ese dia. */
+  note: string | null;
+};
+
+export type HabitAchievementRow = {
+  id: string;
+  habitId: string;
+  milestoneDays: number;
+  phraseIndex: number;
+  unlockedAt: string;
 };
 
 export type UnlockedAchievement = {
@@ -77,8 +90,21 @@ export type CreateHabitPayload = {
   reminderTime?: string;
 };
 
+export type SpecialAchievement = {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  progress: number;
+  target: number;
+  unlocked: boolean;
+  count: number;
+  note: string | null;
+};
+
 export type AchievementsSummary = {
   totalMilestones: number;
+  specials: SpecialAchievement[];
   habits: {
     habit: { id: string; title: string; color: string; icon: string | null; streakEnabled: boolean };
     currentStreak: number;
@@ -158,6 +184,8 @@ export type StatsOverview = {
     /** Dias seguidos con todos los habitos cumplidos (hoy suma solo si ya esta completo). */
     perfectStreak: number;
     todayPerfect: boolean;
+    perfectDaysTotal: number;
+    level: LevelInfo;
   };
   tasks: {
     open: number;
@@ -204,3 +232,40 @@ export type CreateUserPayload = {
   role?: "USER" | "ADMIN";
 };
 
+
+export type LevelInfo = {
+  xp: number;
+  todayXp: number;
+  level: number;
+  title: string;
+  levelStartXp: number;
+  nextLevelXp: number;
+};
+
+export type DayStat = { date: string; scheduled: number; completed: number; rate: number; perfect: boolean };
+
+export type RankingRow = {
+  id: string;
+  title: string;
+  icon: string | null;
+  color: string;
+  streakEnabled: boolean;
+  scheduled: number;
+  completed: number;
+  rate: number;
+  currentStreak: number;
+};
+
+export type StatsRange = {
+  from: string;
+  to: string;
+  days: DayStat[];
+  byWeekday: { weekday: number; scheduled: number; completed: number; rate: number }[];
+  byHour: number[];
+  totals: { scheduled: number; completed: number; rate: number; perfectDays: number };
+  ranking: RankingRow[];
+  mood: { entries: number; average: number | null; highRate: number | null; lowRate: number | null };
+  moods: DayMood[];
+};
+
+export type DayMood = { date: string; mood: number };

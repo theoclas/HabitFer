@@ -52,7 +52,8 @@ export function AchievementsPage() {
       .catch(() => message.error("No se pudieron cargar los logros"));
   }, []);
 
-  const totalUnlocked = data?.habits.reduce((s, h) => s + h.unlocked.length, 0) ?? 0;
+  const totalUnlocked =
+    (data?.habits.reduce((s, h) => s + h.unlocked.length, 0) ?? 0) + (data?.specials?.filter((s) => s.unlocked).length ?? 0);
 
   const nextUp = useMemo(() => {
     const candidates = (data?.habits ?? []).filter((h) => h.next && h.habit.streakEnabled);
@@ -141,6 +142,43 @@ export function AchievementsPage() {
           <b>Tu primera medalla llega a los 3 días</b>
           Marca un hábito tres días seguidos y aparece aquí.
         </div>
+      )}
+
+      {data.specials?.length > 0 && (
+        <>
+          <div className="hf-section__head">
+            <span>Especiales</span>
+            <span style={{ textTransform: "none", letterSpacing: 0 }}>
+              {data.specials.filter((s) => s.unlocked).length} de {data.specials.length}
+            </span>
+          </div>
+          <div className="hf-specials">
+            {data.specials.map((s) => (
+              <div key={s.id} className={`hf-special${s.unlocked ? " is-on" : ""}`}>
+                <span className={`hf-medal${s.unlocked ? "" : " hf-medal--locked"}`} style={{ "--m": "var(--hf-blue)" } as CSSProperties}>
+                  {s.emoji}
+                  {s.unlocked && s.count > 1 ? <b>×{s.count}</b> : null}
+                </span>
+                <div className="hf-special__text">
+                  <b>{s.name}</b>
+                  <span>{s.description}</span>
+                  {!s.unlocked && (
+                    <>
+                      <div className="hf-bar" aria-hidden="true">
+                        <i style={{ width: `${Math.round((s.progress / Math.max(1, s.target)) * 100)}%` }} />
+                      </div>
+                      <small>
+                        {s.progress} de {s.target}
+                        {s.note ? ` · ${s.note}` : ""}
+                      </small>
+                    </>
+                  )}
+                  {s.unlocked && s.note && <small>{s.note}</small>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       <div className="hf-section__head">

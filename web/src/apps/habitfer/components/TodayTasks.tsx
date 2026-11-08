@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { updateTask } from "../../../api/client";
 import type { Task } from "../../../types";
 import { formatCalendarDate } from "../../../utils/dates";
-import { buzz } from "../effects";
+import { buzz, playTick } from "../effects";
 
 type Props = {
   tasks: Task[];
@@ -25,7 +25,10 @@ export function TodayTasks({ tasks, onChange }: Props) {
     const next = task.status === "DONE" ? "TODO" : "DONE";
     const before = tasks;
     pending.current.add(task.id);
-    if (next === "DONE") buzz();
+    if (next === "DONE") {
+      buzz();
+      playTick();
+    }
     onChange(tasks.map((t) => (t.id === task.id ? { ...t, status: next } : t)));
     try {
       await updateTask(task.id, { status: next });

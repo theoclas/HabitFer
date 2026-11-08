@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
 import { StatsService } from './stats.service';
@@ -11,6 +11,16 @@ export class StatsController {
   @Get('overview')
   overview(@CurrentUser() user: AuthUserPayload) {
     return this.stats.overview(user.userId);
+  }
+
+  @Get('range')
+  range(
+    @CurrentUser() user: AuthUserPayload,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('habitId') habitId?: string,
+  ) {
+    return this.stats.range(user.userId, from, to, habitId || undefined);
   }
 
   @Get('habits/:id')

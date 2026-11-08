@@ -1,4 +1,4 @@
-﻿import { PlusOutlined } from "@ant-design/icons";
+﻿import { PlusOutlined, TrophyOutlined } from "@ant-design/icons";
 import { Button, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,21 +6,25 @@ import { useNavigate } from "react-router-dom";
 import {
   completeHabit,
   fetchHabitsToday,
+  fetchMoods,
   fetchStatsOverview,
   fetchTasksToday,
   uncompleteHabit,
 } from "../api/client";
-import { Flame, PERFECT_STAGE, StreakChip } from "../apps/habitfer/components/Flame";
+import { Flame, PERFECT_STAGE } from "../apps/habitfer/components/Flame";
+import { MoodPicker } from "../apps/habitfer/components/MoodPicker";
+import { NoteSheet } from "../apps/habitfer/components/NoteSheet";
 import { ProgressOrb } from "../apps/habitfer/components/ProgressOrb";
+import { LevelBar } from "../apps/habitfer/components/StatsWidgets";
 import { TodayTasks } from "../apps/habitfer/components/TodayTasks";
 import { HABITS_CHANGED_EVENT } from "../apps/habitfer/effects";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { useAchievements } from "../features/achievements/AchievementContext";
 import { HabitCard } from "../features/habits/HabitCard";
-import { applyOptimisticToggle, habitEmoji } from "../features/habits/habitUtils";
+import { applyOptimisticToggle } from "../features/habits/habitUtils";
 import { WeekCalendarStrip } from "../features/habits/WeekCalendarStrip";
 import { useIsMobile } from "../hooks/useIsMobile";
-import type { Habit, HabitToday, Task, TimeOfDay } from "../types";
+import type { CompleteHabitResponse, Habit, HabitToday, LevelInfo, Task, TimeOfDay } from "../types";
 import { canMarkHabitsForDate } from "../utils/dates";
 
 const MOMENTS: Record<TimeOfDay, { label: string; hint: string }> = {
@@ -43,7 +47,12 @@ function sectionOrder(isToday: boolean, now: Dayjs): TimeOfDay[] {
   return [current, "ANYTIME", ...NATURAL_ORDER.filter((m) => m !== current && m !== "ANYTIME")];
 }
 
-type OverviewBits = { progressByDate: Record<string, number>; perfectStreak: number; todayPerfect: boolean };
+type OverviewBits = {
+  progressByDate: Record<string, number>;
+  perfectStreak: number;
+  todayPerfect: boolean;
+  level: LevelInfo | null;
+};
 
 export function TodayPage() {
   const isMobile = useIsMobile();
@@ -52,15 +61,18 @@ export function TodayPage() {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [habits, setHabits] = useState<HabitToday[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [mood, setMoodValue] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<OverviewBits | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
+  const [noteTarget, setNoteTarget] = useState<HabitToday | null>(null);
   const [slideBack, setSlideBack] = useState(false);
   const pendingRef = useRef(new Set<string>());
   const loadSeqRef = useRef(0);
   const habitsRef = useRef<HabitToday[]>([]);
   const overviewRef = useRef<OverviewBits | null>(null);
+  const lastLevelRef = useRef<number | null>(null);
   habitsRef.current = habits;
   overviewRef.current = overview;
 
@@ -76,19 +88,38 @@ export function TodayPage() {
       const seq = ++loadSeqRef.current;
       if (!opts?.silent) setLoading(true);
       try {
-        const [h, ov, t] = await Promise.all([
+        const isTodayKey = dateKey === dayjs().format("YYYY-MM-DD");
+        const [h, ov, t, moods] = await Promise.all([
           fetchHabitsToday(dateKey),
           fetchStatsOverview().catch(() => null),
-          dateKey === dayjs().format("YYYY-MM-DD") && !opts?.silent ? fetchTasksToday().catch(() => null) : Promise.resolve(undefined),
+          isTodayKey && !opts?.silent ? fetchTasksToday().catch(() => null) : Promise.resolve(undefined),
+          opts?.silent ? Promise.resolve(undefined) : fetchMoods(dateKey, dateKey).catch(() => []),
         ]);
         if (seq !== loadSeqRef.current) return;
         setHabits(h);
         if (ov) {
           const map: Record<string, number> = {};
           for (const d of ov.habits.daily) map[d.date] = d.rate;
-          setOverview({ progressByDate: map, perfectStreak: ov.habits.perfectStreak ?? 0, todayPerfect: !!ov.habits.todayPerfect });
+          const level = ov.habits.level ?? null;
+          // Subio de nivel desde la ultima vez que se vio esta pantalla.
+          if (level && lastLevelRef.current !== null && level.level > lastLevelRef.current) {
+            message.open({
+              type: "success",
+              icon: <TrophyOutlined style={{ color: "var(--hf-ember)" }} />,
+              content: `Subiste al nivel ${level.level} · ${level.title}`,
+              duration: 4,
+            });
+          }
+          if (level) lastLevelRef.current = level.level;
+          setOverview({
+            progressByDate: map,
+            perfectStreak: ov.habits.perfectStreak ?? 0,
+            todayPerfect: !!ov.habits.todayPerfect,
+            level,
+          });
         }
         if (t !== undefined) setTasks(t ?? []);
+        if (moods !== undefined) setMoodValue(moods.find((m) => m.date === dateKey)?.mood ?? null);
       } catch {
         if (!opts?.silent && seq === loadSeqRef.current) message.error("No se pudo cargar habitos");
       } finally {
@@ -129,6 +160,7 @@ export function TodayPage() {
   const total = habits.length;
   const allDone = total > 0 && doneCount === total;
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0;
+  const hasNotes = habits.some((h) => h.note);
 
   const ringProgress = useMemo(
     () => (loading || total === 0 ? overview?.progressByDate ?? {} : { ...(overview?.progressByDate ?? {}), [dateKey]: progressPct }),
@@ -142,11 +174,6 @@ export function TodayPage() {
     if (!allDone && overview.todayPerfect) return Math.max(0, overview.perfectStreak - 1);
     return overview.perfectStreak;
   })();
-
-  const bestStreak = useMemo(
-    () => habits.filter((h) => h.streakEnabled).reduce<HabitToday | null>((best, h) => (!best || h.currentStreak > best.currentStreak ? h : best), null),
-    [habits],
-  );
 
   const maybeCelebratePerfectDay = () => {
     const list = habitsRef.current;
@@ -167,7 +194,9 @@ export function TodayPage() {
     const willComplete = !original.completedToday;
 
     pendingRef.current.add(habit.id);
-    const optimistic = habits.map((h) => (h.id === habit.id ? applyOptimisticToggle(h, willComplete) : h));
+    const optimistic = habits.map((h) =>
+      h.id === habit.id ? { ...applyOptimisticToggle(h, willComplete), note: willComplete ? h.note : null } : h,
+    );
     habitsRef.current = optimistic;
     setHabits(optimistic);
     try {
@@ -187,6 +216,19 @@ export function TodayPage() {
     }
   };
 
+  /** Guardar una nota tambien marca el habito: se refleja aqui y puede cerrar el dia perfecto. */
+  const onNoteSaved = (habitId: string, result: CompleteHabitResponse, note: string | null) => {
+    const wasDone = habitsRef.current.find((h) => h.id === habitId)?.completedToday;
+    const next = habitsRef.current.map((h) =>
+      h.id === habitId ? { ...applyOptimisticToggle(h, true), note } : h,
+    );
+    habitsRef.current = next;
+    setHabits(next);
+    if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
+    if (!wasDone) maybeCelebratePerfectDay();
+    void load({ silent: true });
+  };
+
   const openCreate = () => {
     setEditing(null);
     setEditorOpen(true);
@@ -197,6 +239,10 @@ export function TodayPage() {
   };
   const openDetail = (habit: HabitToday | Habit) => {
     navigate(`/app/habitfer/habits/${habit.id}`, { viewTransition: true, state: { habit } });
+  };
+  const openNote = (habit: HabitToday | Habit) => {
+    const h = habits.find((x) => x.id === habit.id);
+    if (h) setNoteTarget(h);
   };
   const openAchievements = () => navigate("/app/habitfer/logros", { viewTransition: true });
 
@@ -242,17 +288,7 @@ export function TodayPage() {
               <small>{perfectStreak === 1 ? "día" : "días"}</small>
             </span>
           </div>
-          {bestStreak && bestStreak.currentStreak > 0 ? (
-            <div className="hf-orb-stat">
-              <span className="hf-orb-stat__k">Racha más larga activa</span>
-              <span className="hf-orb-stat__v">
-                <span className="hf-orb-emoji" aria-hidden="true">
-                  {habitEmoji(bestStreak.icon)}
-                </span>
-                <StreakChip days={bestStreak.currentStreak} />
-              </span>
-            </div>
-          ) : null}
+          {overview?.level && <LevelBar level={overview.level} compact />}
           <button type="button" className="hf-link" onClick={openAchievements}>
             Ver logros
           </button>
@@ -299,12 +335,17 @@ export function TodayPage() {
                 onToggle={handleToggle}
                 onOpen={openDetail}
                 onEdit={openEdit}
+                onNote={canMark ? openNote : undefined}
               />
             ))}
           </div>
         </section>
       ))}
+      {canMark && !hasNotes && (
+        <p className="hf-hint">{isMobile ? "Mantén presionado un hábito" : "Haz clic derecho en un hábito"} para dejar una nota del día.</p>
+      )}
       {isToday && <TodayTasks tasks={tasks} onChange={setTasks} />}
+      <MoodPicker date={dateKey} value={mood} editable={canMark} onChange={setMoodValue} />
     </div>
   );
 
@@ -331,6 +372,15 @@ export function TodayPage() {
       )}
 
       <HabitEditorDrawer open={editorOpen} habit={editing} onClose={() => setEditorOpen(false)} onSaved={() => void load()} />
+      <NoteSheet
+        open={noteTarget !== null}
+        habit={noteTarget}
+        date={dateKey}
+        initialNote={noteTarget?.note ?? null}
+        completed={!!noteTarget?.completedToday}
+        onClose={() => setNoteTarget(null)}
+        onSaved={(result, note) => noteTarget && onNoteSaved(noteTarget.id, result, note)}
+      />
     </div>
   );
 }

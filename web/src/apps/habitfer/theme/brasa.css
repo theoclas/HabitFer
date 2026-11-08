@@ -21,23 +21,31 @@
   --hf-blue-soft: rgba(79, 209, 232, 0.14);
   --hf-track: rgba(255, 236, 222, 0.1);
   --hf-ink: #1A0C04;
+  --hf-glass: rgba(11, 9, 8, 0.86);
+  --hf-tabbar-bg: rgba(23, 19, 17, 0.92);
+  --hf-scrim: rgba(11, 9, 8, 0.3);
+  --hf-scrim-strong: rgba(11, 9, 8, 0.5);
+  --hf-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.7);
+  --hf-empty: rgba(255, 236, 222, 0.035);
   --hf-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
   --hf-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* ---------- Shell ---------- */
-.app-shell--habitfer {
+/* ---------- Shell ----------
+   Dos clases a proposito: fersua.css (compartido) se carga despues y con una sola
+   clase pisaria estos valores. */
+.app-shell.app-shell--habitfer {
   background: var(--hf-bg);
   color: var(--hf-fg);
   --shell-glow: rgba(255, 122, 26, 0.1);
   --shell-glow-2: rgba(79, 209, 232, 0.045);
 }
 .app-shell--habitfer .app-shell__sider {
-  background: rgba(11, 9, 8, 0.9) !important;
+  background: var(--hf-glass) !important;
   border-right: 1px solid var(--hf-line) !important;
 }
 .app-shell--habitfer .app-shell__header {
-  background: rgba(11, 9, 8, 0.8) !important;
+  background: var(--hf-glass) !important;
   border-bottom: 1px solid var(--hf-line) !important;
 }
 .app-shell--habitfer .app-shell__header-title {
@@ -60,13 +68,15 @@
   letter-spacing: -0.02em;
   color: var(--hf-fg);
 }
-.app-shell__brand.hf-brand { padding: 28px 20px 24px; }
+.app-shell__brand.hf-brand { padding: 28px 20px 24px; font: 800 1.3rem/1 var(--hf-display); color: var(--hf-fg); }
 .app-shell--habitfer .app-nav-btn--habit.app-nav-btn--active {
   background: var(--hf-ember-soft);
   color: var(--hf-ember);
 }
-.app-shell--habitfer .app-nav-btn:hover { background: rgba(255, 236, 222, 0.06); }
-.app-shell--habitfer .profile-trigger { border-color: var(--hf-line); background: rgba(255, 236, 222, 0.04); }
+.app-shell--habitfer .app-nav-btn { color: var(--hf-muted); }
+.app-shell--habitfer .app-nav-btn:hover { background: var(--hf-line); color: var(--hf-fg); }
+.app-shell--habitfer .app-shell__header-title { color: var(--hf-fg); }
+.app-shell--habitfer .profile-trigger { border-color: var(--hf-line); background: var(--hf-line); color: var(--hf-muted); }
 .app-shell--habitfer .profile-trigger--habit:hover { border-color: rgba(255, 122, 26, 0.45); color: var(--hf-ember); }
 
 .hf-nav-new {
@@ -82,6 +92,8 @@
 .app-shell--habitfer .habit-motivation-banner__icon { background: rgba(255, 122, 26, 0.18); color: var(--hf-ember); }
 .app-shell--habitfer .habit-motivation-banner__phrase { color: var(--hf-fg); }
 .app-shell--habitfer .habit-motivation-banner__author { color: var(--hf-muted); }
+.app-shell--habitfer .habit-motivation-banner__close { color: var(--hf-muted); }
+.app-shell--habitfer .habit-motivation-banner__close:hover { background: var(--hf-line); color: var(--hf-fg); }
 
 /* Barra inferior móvil con botón + central */
 .hf-tabbar {
@@ -95,11 +107,11 @@
   align-items: center;
   padding: 8px 6px;
   border-radius: 24px;
-  background: rgba(23, 19, 17, 0.92);
+  background: var(--hf-tabbar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--hf-line-strong);
-  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--hf-shadow);
 }
 .hf-tab {
   border: none;
@@ -344,7 +356,7 @@
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: rgba(11, 9, 8, 0.32);
+  background: var(--hf-scrim);
   color: var(--hf-muted);
   display: grid;
   place-items: center;
@@ -352,7 +364,7 @@
   font-size: 14px;
   transition: color 0.2s, background 0.2s;
 }
-.hf-card__edit:hover { color: var(--hf-fg); background: rgba(11, 9, 8, 0.5); }
+.hf-card__edit:hover { color: var(--hf-fg); background: var(--hf-scrim-strong); }
 .hf-check {
   width: 46px;
   height: 46px;
@@ -362,7 +374,7 @@
   place-items: center;
   cursor: pointer;
   border: 2px solid var(--c);
-  background: rgba(11, 9, 8, 0.25);
+  background: var(--hf-scrim);
   color: var(--hf-fg);
   transition: transform 0.12s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.25s, border-color 0.25s;
 }
@@ -576,7 +588,7 @@ button.hf-medal-btn {
   margin: 0;
   padding: 18px;
   border-radius: 18px;
-  background: rgba(255, 236, 222, 0.04);
+  background: var(--hf-raised);
   text-align: left;
 }
 .hf-quote p { margin: 0 0 8px; font: 600 17px/1.45 var(--hf-display); color: var(--hf-fg); }
@@ -637,7 +649,7 @@ button.hf-medal-btn {
 .hf-detail-hero__lab { font-size: 13px; color: var(--hf-muted); }
 .hf-detail-hero__lab b { display: block; font: 800 16px var(--hf-display); color: var(--hf-fg); }
 .hf-detail-hero__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
-.hf-detail-hero__stats div { background: rgba(11, 9, 8, 0.32); border-radius: 14px; padding: 8px 12px; }
+.hf-detail-hero__stats div { background: var(--hf-scrim); border-radius: 14px; padding: 8px 12px; min-width: 0; }
 .hf-detail-hero__stats b { display: block; font: 800 20px/1.1 var(--hf-display); font-variant-numeric: tabular-nums; }
 .hf-detail-hero__stats span { font-size: 12px; color: var(--hf-muted); }
 

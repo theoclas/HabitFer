@@ -1,12 +1,13 @@
-/** Pequenos efectos fisicos de HabitFer: chispas al marcar y vibracion corta. */
+/** Pequenos efectos fisicos de HabitFer: chispas al marcar, vibracion corta y sonido opcional. */
 
 export function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
 /** Vibracion corta (Android). iOS la ignora sin error. */
-export function buzz(ms = 12) {
+export function buzz(ms: number | number[] = 12) {
   try {
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
     navigator.vibrate?.(ms);
   } catch {
     /* sin vibracion */
@@ -31,6 +32,58 @@ export function burstSparks(from: Element, color: string) {
     s.style.setProperty("--dy", `${(Math.sin(ang) * dist - 10).toFixed(1)}px`);
     document.body.appendChild(s);
     window.setTimeout(() => s.remove(), 750);
+  }
+}
+
+/* ---------- Sonido (apagado por defecto) ---------- */
+
+const SOUND_KEY = "hf_sound";
+
+export function soundEnabled(): boolean {
+  try {
+    return localStorage.getItem(SOUND_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setSoundEnabled(on: boolean) {
+  try {
+    localStorage.setItem(SOUND_KEY, on ? "1" : "0");
+  } catch {
+    /* sin almacenamiento */
+  }
+}
+
+let audio: AudioContext | null = null;
+
+/** Un "tic" corto al marcar; un acorde que sube para el dia perfecto. */
+export function playTick(kind: "done" | "perfect" = "done") {
+  if (!soundEnabled()) return;
+  try {
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    audio = audio ?? new Ctor();
+    if (audio.state === "suspended") void audio.resume();
+    const ctx = audio;
+    const now = ctx.currentTime;
+    const notes = kind === "perfect" ? [523.25, 659.25, 783.99, 1046.5] : [880, 1318.5];
+    const step = kind === "perfect" ? 0.09 : 0.05;
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      const t = now + i * step;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(kind === "perfect" ? 0.16 : 0.12, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + (kind === "perfect" ? 0.5 : 0.2));
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.55);
+    });
+  } catch {
+    /* sin audio */
   }
 }
 

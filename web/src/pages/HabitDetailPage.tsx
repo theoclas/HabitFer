@@ -1,16 +1,22 @@
-import { ArrowLeftOutlined, CheckOutlined, EditOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, CheckOutlined, EditOutlined, FormOutlined } from "@ant-design/icons";
 import { Button, Skeleton, message } from "antd";
-import dayjs from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { completeHabit, fetchHabit, uncompleteHabit } from "../api/client";
+import { completeHabit, fetchHabit, fetchHabitAchievements, fetchStatsRange, uncompleteHabit } from "../api/client";
 import { Flame, flameStage } from "../apps/habitfer/components/Flame";
-import { burstSparks, buzz } from "../apps/habitfer/effects";
+import { MonthCalendar } from "../apps/habitfer/components/MonthCalendar";
+import { NoteSheet } from "../apps/habitfer/components/NoteSheet";
+import { WeekdayBars } from "../apps/habitfer/components/StatsWidgets";
+import { YearHeatmap } from "../apps/habitfer/components/YearHeatmap";
+import { burstSparks, buzz, playTick } from "../apps/habitfer/effects";
+import { fmtInt } from "../apps/habitfer/format";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { useAchievements } from "../features/achievements/AchievementContext";
+import { getNextMilestone } from "../features/achievements/milestones";
 import { HABIT_HERO_TRANSITION } from "../features/habits/HabitCard";
 import { applyOptimisticToggle, habitEmoji, habitScheduleLabel } from "../features/habits/habitUtils";
-import type { Habit } from "../types";
+import type { Habit, HabitAchievementRow, StatsRange } from "../types";
 import { todayKey } from "../utils/dates";
 
 const TIME_LABEL: Record<Habit["timeOfDay"], string> = {
@@ -20,42 +26,12 @@ const TIME_LABEL: Record<Habit["timeOfDay"], string> = {
   EVENING: "Noche",
 };
 
-/** Ultimas 13 semanas en cuadritos (el heatmap anual completo llega en la fase 2). */
-function RecentGrid({ habit }: { habit: Habit }) {
-  const done = useMemo(() => new Set(habit.recentCompletions ?? []), [habit.recentCompletions]);
-  const end = dayjs().startOf("day");
-  const start = end.subtract(12, "week").startOf("week");
-  const weeks = Math.ceil((end.diff(start, "day") + 1) / 7);
-  const cell = 12;
-  const gap = 3;
-  const rects = [];
-  for (let w = 0; w < weeks; w++) {
-    for (let d = 0; d < 7; d++) {
-      const day = start.add(w * 7 + d, "day");
-      if (day.isAfter(end)) continue;
-      const hit = done.has(day.format("YYYY-MM-DD"));
-      rects.push(
-        <rect
-          key={w * 7 + d}
-          x={w * (cell + gap)}
-          y={d * (cell + gap)}
-          width={cell}
-          height={cell}
-          rx={3}
-          fill={hit ? habit.color : "var(--hf-track)"}
-        >
-          <title>{`${day.format("D MMM")}${hit ? " · hecho" : ""}`}</title>
-        </rect>,
-      );
-    }
-  }
-  const width = weeks * (cell + gap) - gap;
-  const height = 7 * (cell + gap) - gap;
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", maxWidth: 520, height: "auto", display: "block" }} role="img" aria-label={`${done.size} veces en los ultimos 90 dias`}>
-      {rects}
-    </svg>
-  );
+function milestoneLabel(d: number) {
+  if (d === 3) return "Primer paso";
+  if (d === 5) return "Constancia inicial";
+  if (d === 10) return "Una semana y más";
+  if (d <= 50) return `${d} días seguidos`;
+  return `${d} días de disciplina`;
 }
 
 export function HabitDetailPage() {
@@ -66,10 +42,16 @@ export function HabitDetailPage() {
   const fromList = (location.state as { habit?: Habit } | null)?.habit;
   const [habit, setHabit] = useState<Habit | null>(fromList && fromList.id === id ? fromList : null);
   const [loading, setLoading] = useState(true);
-  const pendingRef = useRef(false);
+  const [year, setYear] = useState(() => dayjs().year());
+  const [month, setMonth] = useState<Dayjs>(() => dayjs().startOf("month"));
+  const [yearData, setYearData] = useState<StatsRange | null>(null);
+  const [last30, setLast30] = useState<StatsRange | null>(null);
+  const [achievements, setAchievements] = useState<HabitAchievementRow[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [showAllNotes, setShowAllNotes] = useState(false);
+  const pendingRef = useRef(false);
 
-  /** Vuelve a la pantalla de donde vino (Hoy o Habitos); si se abrio directo, a Habitos. */
   const goBack = () => {
     if (location.key !== "default") navigate(-1);
     else navigate("/app/habitfer/habits", { viewTransition: true });
@@ -79,7 +61,14 @@ export function HabitDetailPage() {
     if (!id) return;
     setLoading(true);
     try {
-      setHabit(await fetchHabit(id));
+      const [h, l30, ach] = await Promise.all([
+        fetchHabit(id),
+        fetchStatsRange({ habitId: id }).catch(() => null),
+        fetchHabitAchievements(id).catch(() => [] as HabitAchievementRow[]),
+      ]);
+      setHabit(h);
+      setLast30(l30);
+      setAchievements(ach);
     } catch {
       message.error("Habito no encontrado");
       navigate("/app/habitfer/habits");
@@ -92,6 +81,32 @@ export function HabitDetailPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setYearData(null);
+    fetchStatsRange({ from: `${year}-01-01`, to: `${year}-12-31`, habitId: id })
+      .then((d) => !cancelled && setYearData(d))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, year]);
+
+  const byDate = useMemo(() => new Map((yearData?.days ?? []).map((d) => [d.date, d])), [yearData]);
+  const notes = useMemo(() => new Map((habit?.recentNotes ?? []).map((n) => [n.date, n.note])), [habit?.recentNotes]);
+  const noteDates = useMemo(() => new Set(notes.keys()), [notes]);
+
+  const changeYear = (y: number) => {
+    setYear(y);
+    setMonth(y === dayjs().year() ? dayjs().startOf("month") : dayjs(`${y}-12-01`));
+  };
+  const changeMonth = (delta: number) => {
+    const next = month.add(delta, "month");
+    setMonth(next);
+    if (next.year() !== year) setYear(next.year());
+  };
+
   const handleToggle = async (e: MouseEvent<HTMLElement>) => {
     if (!habit || pendingRef.current) return;
     const original = habit;
@@ -100,18 +115,22 @@ export function HabitDetailPage() {
     if (willComplete) {
       burstSparks(e.currentTarget, original.color);
       buzz();
+      playTick();
     }
-
     pendingRef.current = true;
     setHabit(applyOptimisticToggle(original, willComplete));
     try {
       if (willComplete) {
         const result = await completeHabit(original.id, day);
         setHabit(result.habit);
-        if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
+        if (result.unlockedAchievement) {
+          celebrate(result.unlockedAchievement);
+          setAchievements(await fetchHabitAchievements(original.id).catch(() => achievements));
+        }
       } else {
         setHabit(await uncompleteHabit(original.id, day));
       }
+      fetchStatsRange({ from: `${year}-01-01`, to: `${year}-12-31`, habitId: original.id }).then(setYearData).catch(() => undefined);
     } catch {
       setHabit(original);
       message.error("No se pudo actualizar, lo deje como estaba");
@@ -126,10 +145,13 @@ export function HabitDetailPage() {
 
   const stage = flameStage(habit.currentStreak);
   const momento = TIME_LABEL[habit.timeOfDay ?? "ANYTIME"];
-  const last90 = habit.recentCompletions?.length;
+  const next = habit.streakEnabled ? getNextMilestone(habit.currentStreak) : null;
+  const minYear = dayjs(habit.createdAt).year();
+  const notesList = habit.recentNotes ?? [];
+  const todayNote = notes.get(todayKey()) ?? null;
 
   return (
-    <div style={{ maxWidth: 820 }}>
+    <div style={{ maxWidth: 880 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={goBack}>
           Volver
@@ -139,10 +161,7 @@ export function HabitDetailPage() {
         </Button>
       </div>
 
-      <section
-        className="hf-detail-hero"
-        style={{ "--c": habit.color, viewTransitionName: HABIT_HERO_TRANSITION } as CSSProperties}
-      >
+      <section className="hf-detail-hero" style={{ "--c": habit.color, viewTransitionName: HABIT_HERO_TRANSITION } as CSSProperties}>
         <div className="hf-detail-hero__top">
           <span className="hf-card__emoji" style={{ width: 56, height: 56, fontSize: 30 }} aria-hidden="true">
             {habitEmoji(habit.icon)}
@@ -164,48 +183,169 @@ export function HabitDetailPage() {
             <span className="hf-detail-hero__lab">
               <b>{habit.currentStreak === 1 ? "día de racha" : "días de racha"}</b>
               {stage ? stage.name : "Marca hoy para encenderla"}
+              {next ? ` · próximo logro a los ${next}` : ""}
             </span>
           </div>
         )}
 
-        <div className="hf-detail-hero__stats">
+        <div className="hf-detail-hero__stats hf-detail-hero__stats--3">
           <div>
             <b>{habit.longestStreak}</b>
             <span>mejor racha</span>
           </div>
           <div>
-            <b>{last90 ?? "—"}</b>
-            <span>veces en 90 días</span>
+            <b>{habit.totalCompletions !== undefined ? fmtInt(habit.totalCompletions) : "—"}</b>
+            <span>veces en total</span>
+          </div>
+          <div>
+            <b>{last30 ? `${last30.totals.rate} %` : "—"}</b>
+            <span>últimos 30 días</span>
           </div>
         </div>
 
         {habit.scheduledToday && (
-          <Button
-            type={habit.completedToday ? "default" : "primary"}
-            size="large"
-            block
-            icon={<CheckOutlined />}
-            style={{ marginTop: 16 }}
-            onClick={(e) => void handleToggle(e)}
-          >
-            {habit.completedToday ? "Hecho hoy · tocar para desmarcar" : "Marcar hoy"}
-          </Button>
+          <div className="hf-detail-hero__actions">
+            <Button
+              type={habit.completedToday ? "default" : "primary"}
+              size="large"
+              icon={<CheckOutlined />}
+              onClick={(e) => void handleToggle(e)}
+              style={{ flex: 1 }}
+            >
+              {habit.completedToday ? "Hecho hoy · desmarcar" : "Marcar hoy"}
+            </Button>
+            <Button size="large" icon={<FormOutlined />} onClick={() => setNoteOpen(true)} aria-label="Nota de hoy">
+              {todayNote ? "Editar nota" : "Nota"}
+            </Button>
+          </div>
         )}
       </section>
 
       {habit.description && <p style={{ color: "var(--hf-muted)", margin: "0 4px 18px" }}>{habit.description}</p>}
 
-      <section className="hf-habit-track">
-        <div className="hf-section__head" style={{ margin: "0 0 12px" }}>
-          <span>Últimas 13 semanas</span>
+      {notesList.length > 0 && (
+        <section className="hf-panel">
+          <div className="hf-panel__head">
+            <h2>Notas</h2>
+            <span>{notesList.length === 1 ? "1 nota" : `${notesList.length} notas recientes`}</span>
+          </div>
+          <div className="hf-notes">
+            {(showAllNotes ? notesList : notesList.slice(0, 3)).map((n) => (
+              <figure key={n.date} className="hf-notes__item" style={{ "--c": habit.color } as CSSProperties}>
+                <blockquote>{n.note}</blockquote>
+                <figcaption>{dayjs(n.date).format("dddd D [de] MMMM")}</figcaption>
+              </figure>
+            ))}
+          </div>
+          {notesList.length > 3 && (
+            <button type="button" className="hf-link" onClick={() => setShowAllNotes((v) => !v)} style={{ marginTop: 10 }}>
+              {showAllNotes ? "Ver menos" : `Ver las ${notesList.length}`}
+            </button>
+          )}
+        </section>
+      )}
+
+      <section className="hf-panel">
+        <div className="hf-panel__head">
+          <h2>Tu año con este hábito</h2>
+          {noteDates.size > 0 && <span>punto = nota</span>}
+        </div>
+        <YearHeatmap
+          year={year}
+          days={yearData?.days ?? null}
+          mode="habit"
+          color={habit.color}
+          minYear={minYear}
+          onYearChange={changeYear}
+          noteDates={noteDates}
+        />
+      </section>
+
+      <div className="hf-grid2">
+        <section className="hf-panel">
+          <div className="hf-panel__head">
+            <h2>Mes a mes</h2>
+          </div>
+          <MonthCalendar
+            month={month}
+            byDate={byDate}
+            color={habit.color}
+            notes={notes}
+            canPrev={month.isAfter(dayjs(habit.createdAt).startOf("month"), "month")}
+            onPrev={() => changeMonth(-1)}
+            onNext={() => changeMonth(1)}
+          />
+        </section>
+        <section className="hf-panel">
+          <div className="hf-panel__head">
+            <h2>Por día de la semana</h2>
+            <span>{year}</span>
+          </div>
+          {yearData ? <WeekdayBars rows={yearData.byWeekday} color={habit.color} /> : <div className="hf-skel" style={{ height: 150 }} />}
+        </section>
+      </div>
+
+      <section className="hf-panel">
+        <div className="hf-panel__head">
+          <h2>Logros</h2>
           <button type="button" className="hf-link" onClick={() => navigate("/app/habitfer/logros", { viewTransition: true })}>
-            Ver logros
+            Ver vitrina
           </button>
         </div>
-        <RecentGrid habit={habit} />
+        {achievements.length === 0 && !next ? (
+          <p className="hf-note">Activa la racha de este hábito para ganar medallas.</p>
+        ) : (
+          <div className="hf-habit-track__row">
+            {achievements.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                className="hf-medal-btn"
+                aria-label={`${a.milestoneDays} días, ver frase`}
+                onClick={() =>
+                  celebrate(
+                    {
+                      ...a,
+                      habitTitle: habit.title,
+                      habitColor: habit.color,
+                      habitIcon: habit.icon,
+                      label: milestoneLabel(a.milestoneDays),
+                    },
+                    { replay: true },
+                  )
+                }
+              >
+                <span className="hf-medal" style={{ "--m": flameStage(a.milestoneDays)?.outer } as CSSProperties}>
+                  {habitEmoji(habit.icon)}
+                  <b>{a.milestoneDays}</b>
+                </span>
+              </button>
+            ))}
+            {next && (
+              <span className="hf-medal-cell" title={`Faltan ${next - habit.currentStreak} días`}>
+                <span className="hf-medal hf-medal--locked">
+                  {habitEmoji(habit.icon)}
+                  <b>{next}</b>
+                </span>
+              </span>
+            )}
+          </div>
+        )}
       </section>
 
       <HabitEditorDrawer open={editorOpen} habit={habit} onClose={() => setEditorOpen(false)} onSaved={() => void load()} />
+      <NoteSheet
+        open={noteOpen}
+        habit={habit}
+        date={todayKey()}
+        initialNote={todayNote}
+        completed={habit.completedToday}
+        onClose={() => setNoteOpen(false)}
+        onSaved={(result) => {
+          setHabit(result.habit);
+          if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
+        }}
+      />
     </div>
   );
 }
