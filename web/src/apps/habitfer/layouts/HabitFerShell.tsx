@@ -109,6 +109,11 @@ export function HabitFerShell() {
       setWrapped({ month: /^\d{4}-\d{2}$/.test(month) ? month : undefined });
       navigate(location.pathname, { replace: true });
     }
+    // «Cambiar mis avisos» de los correos: /app/habitfer?avisos=1
+    if (params.get("avisos") === "1") {
+      setNotifOpen(true);
+      navigate(location.pathname, { replace: true });
+    }
   }, [location.search, location.pathname, navigate]);
 
   // Ctrl/Cmd + K abre la búsqueda (paleta de comandos).

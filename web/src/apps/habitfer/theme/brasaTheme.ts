@@ -79,12 +79,23 @@ export const brasaDayTheme: ThemeConfig = {
     boxShadow: "0 8px 28px rgba(60, 30, 10, 0.12)",
     boxShadowSecondary: "0 2px 12px rgba(60, 30, 10, 0.08)",
   },
+  // Todos los componentes que fija el tema oscuro de la plataforma (theme/antdTheme.ts) van aqui:
+  // un ConfigProvider anidado hereda los del padre y sin esto los modales salen oscuros de dia.
   components: {
     Button: {
       primaryColor: "#1A0C04",
       primaryShadow: "0 6px 16px -6px rgba(232, 98, 12, 0.45)",
       fontWeight: 600,
     },
+    Card: { colorBgContainer: "#FFFFFF", paddingLG: 20 },
+    Drawer: { colorBgElevated: "#FFFFFF" },
+    Modal: { contentBg: "#FFFFFF", headerBg: "#FFFFFF" },
+    Input: {
+      colorBgContainer: "#FFFFFF",
+      activeBorderColor: "#E8620C",
+      hoverBorderColor: "rgba(45, 25, 12, 0.28)",
+    },
+    Select: { colorBgContainer: "#FFFFFF" },
     Segmented: { itemSelectedBg: "#FFFFFF", trackBg: "rgba(45, 25, 12, 0.06)" },
     Tag: { defaultBg: "rgba(45, 25, 12, 0.05)", defaultColor: "#4A3C33" },
   },

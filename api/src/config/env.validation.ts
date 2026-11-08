@@ -12,4 +12,13 @@ export const envValidationSchema = Joi.object({
   VAPID_SUBJECT: Joi.string().allow('').optional(),
   /** Coach semanal con Claude (opcional: sin ella el coach queda apagado). */
   ANTHROPIC_API_KEY: Joi.string().allow('').optional(),
+  // Avisos por correo (SMTP de Hostinger, el mismo buzon del booking). Sin SMTP_USER y SMTP_PASS queda apagado.
+  SMTP_HOST: Joi.string().allow('').optional(),
+  SMTP_PORT: Joi.number().optional(),
+  SMTP_SECURE: Joi.boolean().optional(),
+  SMTP_USER: Joi.string().allow('').optional(),
+  SMTP_PASS: Joi.string().allow('').optional(),
+  MAIL_FROM: Joi.string().allow('').optional(),
+  /** Direccion publica de la app, para los enlaces de los correos. */
+  APP_URL: Joi.string().allow('').optional(),
 });

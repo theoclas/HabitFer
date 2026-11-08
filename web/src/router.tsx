@@ -22,6 +22,7 @@ import { AchievementsPage } from "./pages/AchievementsPage";
 import { HabitDetailPage } from "./pages/HabitDetailPage";
 import { HabitsPage } from "./pages/HabitsPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ActionPage } from "./pages/ActionPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { StatsPage } from "./pages/StatsPage";
@@ -38,6 +39,8 @@ export function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      {/* Botón «Hecho» de los correos: funciona sin sesión, con el token del enlace. */}
+      <Route path="/accion" element={<ActionPage />} />
       <Route element={<RequireAuth />}>
         <Route path="/app/picker" element={<AppPickerPage />} />
         <Route path="/app/profile" element={<ProfilePage />} />

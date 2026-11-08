@@ -1,12 +1,35 @@
-import { BellOutlined, SendOutlined } from "@ant-design/icons";
-import { Button, Modal, Switch, TimePicker, message } from "antd";
+import { BellOutlined, MailOutlined, SendOutlined } from "@ant-design/icons";
+import { Button, Modal, Segmented, Switch, TimePicker, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
-import { fetchPushSettings, sendTestPush, updatePushSettings, type PushSettings } from "../../../api/client";
+import {
+  fetchEmailReminders,
+  fetchPushSettings,
+  sendTestEmail,
+  sendTestPush,
+  updateEmailReminders,
+  updatePushSettings,
+  type EmailLevel,
+  type EmailReminderSettings,
+  type PushSettings,
+} from "../../../api/client";
+import { apiErrorMessage } from "../format";
 import { disablePush, enablePush, pushState, type PushState } from "../push";
 import { isIos, isStandalone } from "../pwa";
 
 type Props = { open: boolean; onClose: () => void };
+
+const EMAIL_OPTIONS: { label: string; value: EmailLevel }[] = [
+  { label: "Apagado", value: "OFF" },
+  { label: "Resumen", value: "SUMMARY" },
+  { label: "Todo", value: "ALL" },
+];
+
+const EMAIL_HINT: Record<EmailLevel, string> = {
+  OFF: "No te llegan correos.",
+  SUMMARY: "Te llega el resumen de la noche y el mensaje del coach de cada domingo.",
+  ALL: "Te llega cada recordatorio de tus hábitos y tareas, con un botón para marcarlo hecho, además del resumen y el coach.",
+};
 
 const STATE_TEXT: Record<PushState, string> = {
   on: "Activadas en este dispositivo.",
@@ -17,16 +40,19 @@ const STATE_TEXT: Record<PushState, string> = {
   unsupported: "",
 };
 
-/** Notificaciones push de este dispositivo y resumen de la noche. */
+/** Notificaciones push de este dispositivo, resumen de la noche y avisos por correo. */
 export function NotificationsSheet({ open, onClose }: Props) {
   const [state, setState] = useState<PushState | null>(null);
   const [settings, setSettings] = useState<PushSettings | null>(null);
+  const [email, setEmail] = useState<EmailReminderSettings | null>(null);
   const [busy, setBusy] = useState(false);
   const iosNeedsInstall = isIos() && !isStandalone();
 
   const refresh = useCallback(async () => {
     setState(await pushState(iosNeedsInstall));
-    setSettings(await fetchPushSettings().catch(() => null));
+    const [push, mail] = await Promise.all([fetchPushSettings().catch(() => null), fetchEmailReminders().catch(() => null)]);
+    setSettings(push);
+    setEmail(mail);
   }, [iosNeedsInstall]);
 
   useEffect(() => {
@@ -38,7 +64,7 @@ export function NotificationsSheet({ open, onClose }: Props) {
     try {
       await fn();
     } catch (err) {
-      message.error((err as Error).message || "No se pudo completar");
+      message.error(apiErrorMessage(err, (err as Error).message || "No se pudo completar"));
     } finally {
       setBusy(false);
     }
@@ -70,6 +96,17 @@ export function NotificationsSheet({ open, onClose }: Props) {
   const saveSummary = (value: string | null) =>
     run(async () => {
       setSettings(await updatePushSettings({ summaryTime: value }));
+    });
+
+  const saveEmailLevel = (level: EmailLevel) =>
+    run(async () => {
+      setEmail(await updateEmailReminders(level));
+    });
+
+  const testEmail = () =>
+    run(async () => {
+      const r = await sendTestEmail();
+      message.success(`Enviado a ${r.address}. Si en un minuto no lo ves, revisa la carpeta de spam.`);
     });
 
   const unsupportedText = !window.isSecureContext
@@ -139,6 +176,48 @@ export function NotificationsSheet({ open, onClose }: Props) {
             onChange={(v) => v && void saveSummary(v.format("HH:mm"))}
             style={{ marginTop: 10, width: 140 }}
           />
+        )}
+      </section>
+
+      <section className="hf-notif">
+        <div className="hf-notif__head">
+          <MailOutlined />
+          <b>Por correo</b>
+        </div>
+        <p className="hf-note" style={{ marginTop: 4 }}>
+          {email ? (
+            <>
+              Llegan a <b>{email.address}</b>.
+            </>
+          ) : (
+            "Revisando…"
+          )}
+        </p>
+        <Segmented<EmailLevel>
+          block
+          options={EMAIL_OPTIONS}
+          value={email?.level ?? "OFF"}
+          disabled={!email || busy}
+          onChange={(value) => void saveEmailLevel(value)}
+          style={{ marginTop: 10 }}
+        />
+        {email && (
+          <p className="hf-note" style={{ marginTop: 8 }}>
+            {EMAIL_HINT[email.level]}
+            {email.level !== "OFF" && !settings?.summaryTime && " El resumen solo llega si activas «Resumen de la noche» arriba."}
+          </p>
+        )}
+        {email && !email.enabled && (
+          <p className="hf-note">
+            El servidor todavía no tiene configurado el correo: lo que elijas queda guardado y empieza a llegar cuando se active.
+          </p>
+        )}
+        {email?.enabled && (
+          <div className="hf-notif__actions">
+            <Button icon={<SendOutlined />} loading={busy} onClick={() => void testEmail()}>
+              Enviar correo de prueba
+            </Button>
+          </div>
         )}
       </section>
 

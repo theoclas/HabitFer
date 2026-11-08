@@ -1,0 +1,161 @@
+/* /accion: botón «Hecho» de los correos. Estilo Brasa de noche (con valores de respaldo
+   por si los tokens --hf-* no estuvieran cargados). */
+
+body:has(.hf-action) {
+  background: var(--hf-bg, #0b0908);
+}
+
+.hf-action {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: var(--hf-bg, #0b0908);
+  color: var(--hf-fg, #f6eee7);
+  font-family: var(--hf-body, "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif);
+}
+
+.hf-action__glow {
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  width: 560px;
+  height: 560px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 122, 26, 0.24), rgba(255, 122, 26, 0) 65%);
+  pointer-events: none;
+}
+
+.hf-action__card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px 22px;
+  border: 1px solid var(--hf-line-strong, rgba(255, 236, 222, 0.15));
+  border-radius: 24px;
+  background: var(--hf-surface, #171311);
+  box-shadow: var(--hf-shadow, 0 12px 40px -12px rgba(0, 0, 0, 0.7));
+  text-align: center;
+}
+
+.hf-action__brand {
+  margin-bottom: 18px;
+  color: var(--hf-ember, #ff7a1a);
+  font: 700 13px/1 var(--hf-display, system-ui, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hf-action h1 {
+  margin: 0 0 10px;
+  color: var(--hf-fg, #f6eee7);
+  font: 700 26px/1.2 var(--hf-display, system-ui, sans-serif);
+  overflow-wrap: anywhere;
+}
+
+.hf-action p {
+  margin: 0 0 22px;
+  color: var(--hf-muted, #9c8d82);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.hf-action p.hf-action__kicker {
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.hf-action p.hf-action__error {
+  color: var(--hf-ember-2, #ffb347);
+}
+
+.hf-action__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--hf-ember, #ff7a1a), var(--hf-ember-2, #ffb347));
+  color: var(--hf-ink, #1a0c04);
+  font: 700 17px/1.1 var(--hf-display, system-ui, sans-serif);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.hf-action__btn:hover {
+  filter: brightness(1.05);
+}
+
+.hf-action__btn:active {
+  transform: scale(0.98);
+}
+
+.hf-action__btn:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+.hf-action__btn:focus-visible,
+.hf-action__open:focus-visible {
+  outline: 3px solid rgba(255, 179, 71, 0.6);
+  outline-offset: 3px;
+}
+
+.hf-action__open {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--hf-muted, #9c8d82);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hf-action__open:hover {
+  color: var(--hf-fg, #f6eee7);
+}
+
+.hf-action__mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--hf-ember-soft, rgba(255, 122, 26, 0.14));
+  color: var(--hf-ember, #ff7a1a);
+  font-size: 32px;
+  animation: hf-action-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.hf-action__mark.is-trophy {
+  font-size: 36px;
+}
+
+@keyframes hf-action-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hf-action__mark {
+    animation: none;
+  }
+  .hf-action__btn {
+    transition: none;
+  }
+}

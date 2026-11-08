@@ -17,6 +17,9 @@ api.interceptors.request.use((config) => {
 
 let authRedirectPending = false;
 
+/** Páginas que funcionan sin sesión: ahí un 401 no manda al login (/accion es el botón de los correos). */
+const NO_LOGIN_REDIRECT = ["/login", "/register", "/accion"];
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -26,7 +29,7 @@ api.interceptors.response.use(
     if ((status === 401 || status === 403) && !isAuthRoute && !authRedirectPending) {
       authRedirectPending = true;
       localStorage.removeItem("habitfer_token");
-      if (!window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/register")) {
+      if (!NO_LOGIN_REDIRECT.some((path) => window.location.pathname.startsWith(path))) {
         window.location.href = "/login";
       }
     }
@@ -361,6 +364,48 @@ export async function updatePushSettings(payload: { summaryTime: string | null }
 
 export async function sendTestPush() {
   const { data } = await api.post<{ sent: number; removed: number }>("/push/test");
+  return data;
+}
+
+/** Lo que responde el botón «Hecho» (de la notificación o del correo). */
+export type PushActionResult = {
+  ok: boolean;
+  kind?: "habit" | "task";
+  title?: string;
+  streak?: number;
+  streakUnit?: "days" | "weeks";
+  done?: boolean;
+  message?: string | null;
+  achievement?: { days: number; label: string; headline?: string } | null;
+};
+
+/**
+ * Botón de los correos: marca con el token del enlace. Va sin sesión y sin el interceptor de
+ * `api`: un enlace vencido responde 401 y eso no debe mandar al login.
+ */
+export async function runPushAction(token: string) {
+  const { data } = await axios.post<PushActionResult>(`${API_URL}/push/action`, { token }, { withCredentials: true, timeout: 20000 });
+  return data;
+}
+
+/* ---------- Avisos por correo ---------- */
+
+/** OFF: nada. SUMMARY: resumen de la noche y coach. ALL: además cada recordatorio. */
+export type EmailLevel = "OFF" | "SUMMARY" | "ALL";
+export type EmailReminderSettings = { enabled: boolean; address: string; level: EmailLevel; summaryTime: string | null };
+
+export async function fetchEmailReminders() {
+  const { data } = await api.get<EmailReminderSettings>("/email-reminders");
+  return data;
+}
+
+export async function updateEmailReminders(level: EmailLevel) {
+  const { data } = await api.patch<EmailReminderSettings>("/email-reminders", { level });
+  return data;
+}
+
+export async function sendTestEmail() {
+  const { data } = await api.post<{ ok: boolean; address: string }>("/email-reminders/test");
   return data;
 }
 

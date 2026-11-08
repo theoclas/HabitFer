@@ -11,6 +11,7 @@ import { ExportModule } from './export/export.module';
 import { OriginGuard } from './common/guards/origin.guard';
 import { FernanceModule } from './fernance/fernance.module';
 import { HabitsModule } from './habits/habits.module';
+import { MailModule } from './mail/mail.module';
 import { MoodsModule } from './moods/moods.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProyecFerModule } from './proyecfer/proyecfer.module';
@@ -40,6 +41,7 @@ import { UsersModule } from './users/users.module';
     MoodsModule,
     TasksModule,
     PushModule,
+    MailModule,
     RemindersModule,
     StatsModule,
     ExportModule,

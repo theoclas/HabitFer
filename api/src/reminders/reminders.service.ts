@@ -11,6 +11,7 @@ import {
 } from '../habits/habit-rules';
 import { HABIT_FULL_INCLUDE } from '../habits/habit-view';
 import { toDateKey } from '../habits/habits.utils';
+import { EmailRemindersService } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
 import { loadPauses } from '../stats/history.loader';
@@ -37,6 +38,7 @@ export class RemindersService {
   constructor(
     private prisma: PrismaService,
     private push: PushService,
+    private emails: EmailRemindersService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -149,19 +151,26 @@ export class RemindersService {
         triggerAt: minuteStart,
       });
       if (!created) continue;
+      const token = this.push.actionToken(habit.userId, measurable ? 'habit-add' : 'habit-done', habit.id, todayKey);
+      const addTitle = measurable ? addActionTitle(habit.step, habit.unit) : null;
       await this.push.sendToUser(habit.userId, {
         title: `${habit.icon?.trim() || '🔥'} ${habit.title}`,
         body,
         tag: `habit-${habit.id}`,
         url: '/app/habitfer',
         actions: [
-          { action: 'done', title: measurable ? addActionTitle(habit.step, habit.unit) : 'Hecho' },
+          { action: 'done', title: addTitle ?? 'Hecho' },
           { action: 'open', title: 'Abrir' },
         ],
-        data: {
-          kind: 'habit',
-          token: this.push.actionToken(habit.userId, measurable ? 'habit-add' : 'habit-done', habit.id, todayKey),
-        },
+        data: { kind: 'habit', token },
+      });
+      // Correo (si el usuario lo pidio): mismo token, el boton abre /accion en la web.
+      await this.emails.habit(habit.userId, {
+        icon: habit.icon,
+        title: habit.title,
+        body,
+        token,
+        actionLabel: addTitle ? addTitle.replace(/^\+/, 'Sumar ') : 'Marcar como hecho',
       });
     }
 
@@ -185,6 +194,7 @@ export class RemindersService {
         triggerAt: minuteStart,
       });
       if (!created) continue;
+      const token = this.push.actionToken(task.userId, 'task-done', task.id);
       await this.push.sendToUser(task.userId, {
         title: `☑️ ${task.title}`,
         body,
@@ -194,8 +204,9 @@ export class RemindersService {
           { action: 'done', title: 'Hecha' },
           { action: 'open', title: 'Abrir' },
         ],
-        data: { kind: 'task', token: this.push.actionToken(task.userId, 'task-done', task.id) },
+        data: { kind: 'task', token },
       });
+      await this.emails.task(task.userId, { title: task.title, body, token });
     }
 
     // Resumen nocturno: lo que falta hoy y la racha en riesgo.
@@ -233,7 +244,15 @@ export class RemindersService {
       body: text.body,
       triggerAt: minuteStart,
     });
-    if (created) await this.push.sendToUser(userId, { ...text, tag: `summary-${todayKey}`, url: '/app/habitfer' });
+    if (!created) return;
+    await this.push.sendToUser(userId, { ...text, tag: `summary-${todayKey}`, url: '/app/habitfer' });
+    // El correo trae la lista completa (el push solo cabe en dos lineas).
+    await this.emails.summary(userId, {
+      ...text,
+      items: pending.map((p) =>
+        p.streakEnabled && p.streak > 0 ? `${p.title} · racha de ${p.streak} ${p.streak === 1 ? 'día' : 'días'}` : p.title,
+      ),
+    });
   }
 
   /** Crea el recordatorio si no existe uno igual en este minuto. Devuelve true si lo creo. */

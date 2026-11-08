@@ -6,6 +6,7 @@ import { HabitKind, ScheduleType, UserStatus, type CoachMessage } from '@prisma/
 import { addDays, localDayStart, parseDateKey, startOfToday, toDateKey } from '../common/date.utils';
 import { milestoneHeadline } from '../habits/achievements.utils';
 import { shiftKey } from '../habits/habit-rules';
+import { EmailRemindersService } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
 import { loadHistory } from '../stats/history.loader';
@@ -36,6 +37,7 @@ export class CoachService {
     private prisma: PrismaService,
     private push: PushService,
     config: ConfigService,
+    private emails: EmailRemindersService,
   ) {
     const apiKey = config.get<string>('ANTHROPIC_API_KEY')?.trim();
     this.client = apiKey ? new Anthropic({ apiKey, maxRetries: 2, timeout: 120_000 }) : null;
@@ -71,6 +73,7 @@ export class CoachService {
             tag: `coach-${start}`,
             url: '/app/habitfer?coach=1',
           });
+          await this.emails.coach(u.id, msg.text);
         } catch (err) {
           this.logger.warn(`Coach: no se pudo escribir a ${u.id}: ${(err as Error).message}`);
         }
