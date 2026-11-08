@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ACCESS_COOKIE } from './jwt.strategy';
+import { SESSION_MAX_AGE_MS } from './session';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
@@ -19,7 +20,7 @@ const COOKIE_OPTS = {
   httpOnly: true,
   secure: cookieSecure(),
   sameSite: 'strict' as const,
-  maxAge: 8 * 60 * 60 * 1000,
+  maxAge: SESSION_MAX_AGE_MS,
   path: '/',
 };
 
@@ -44,6 +45,16 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     return this.auth.login(dto).then((result) => {
+      res.cookie(ACCESS_COOKIE, result.token, COOKIE_OPTS);
+      return result;
+    });
+  }
+
+  /** La sesión se renueva sola: la app lo pide al abrirse (como mucho cada 12 horas) y queda un año más. */
+  @Post('renew')
+  @UseGuards(JwtAuthGuard)
+  renew(@CurrentUser() user: AuthUserPayload, @Res({ passthrough: true }) res: Response) {
+    return this.auth.renew(user.userId).then((result) => {
       res.cookie(ACCESS_COOKIE, result.token, COOKIE_OPTS);
       return result;
     });

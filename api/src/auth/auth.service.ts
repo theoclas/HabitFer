@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { SESSION_TTL_SECONDS } from './session';
 
 export type AuthUserResponse = {
   id: string;
@@ -76,10 +77,18 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
+  /** Token nuevo de un año para quien ya tiene sesión: la app lo pide al abrirse. */
+  async renew(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    this.assertActive(user.status);
+    return { token: this.signToken(user) };
+  }
+
   signToken(user: { id: string; email: string; username: string; role: UserRole }) {
     return this.jwt.sign(
       { sub: user.id, email: user.email, username: user.username, role: user.role },
-      { expiresIn: '8h' },
+      { expiresIn: SESSION_TTL_SECONDS },
     );
   }
 

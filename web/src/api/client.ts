@@ -1,5 +1,6 @@
 import axios from "axios";
 import { todayKey } from "../utils/dates";
+import { clearSession, getToken, setToken, tokenNeedsRenewal } from "./session";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4001/api";
 
@@ -10,7 +11,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("habitfer_token");
+  const token = getToken();
   if (token) config.headers.Authorization = "Bearer " + token;
   return config;
 });
@@ -29,9 +30,11 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = String(error.config?.url ?? "");
     const isAuthRoute = url.includes("/auth/login") || url.includes("/auth/register");
-    if ((status === 401 || status === 403) && !isAuthRoute && !authRedirectPending) {
+    // Solo un 401 quiere decir «tu sesión ya no sirve». Un 403 es «eso no se puede» (por ejemplo,
+    // marcar desde la cola sin conexión un hábito de hace tres días) y no debe sacarte de la sesión.
+    if (status === 401 && !isAuthRoute && !authRedirectPending) {
       authRedirectPending = true;
-      localStorage.removeItem("habitfer_token");
+      clearSession();
       if (!NO_LOGIN_REDIRECT.some((path) => window.location.pathname.startsWith(path))) {
         window.location.href = "/login";
       }
@@ -42,21 +45,43 @@ api.interceptors.response.use(
 
 export async function login(login: string, password: string) {
   const { data } = await api.post("/auth/login", { login, password });
-  if (data.token) localStorage.setItem("habitfer_token", data.token);
+  if (data.token) setToken(data.token);
   return data;
 }
 
 export async function register(payload: { email: string; username: string; fullName: string; password: string }) {
   const { data } = await api.post("/auth/register", payload);
-  if (data.token) localStorage.setItem("habitfer_token", data.token);
+  if (data.token) setToken(data.token);
   return data;
+}
+
+/** Una sola renovación a la vez (al abrir, la sesión se revisa desde varios lados). */
+let renewing: Promise<void> | null = null;
+
+/**
+ * La sesión dura un año y se renueva sola al abrir la app (como mucho cada 12 horas). Sin señal o
+ * con error no pasa nada: se intenta la próxima vez.
+ */
+export function renewSessionIfNeeded(): Promise<void> {
+  if (renewing) return renewing;
+  if (!tokenNeedsRenewal(getToken())) return Promise.resolve();
+  renewing = api
+    .post<{ token?: string }>("/auth/renew")
+    .then(({ data }) => {
+      if (data.token) setToken(data.token);
+    })
+    .catch(() => undefined) // la próxima vez
+    .finally(() => {
+      renewing = null;
+    });
+  return renewing;
 }
 
 export async function logout() {
   try {
     await api.post("/auth/logout");
   } finally {
-    localStorage.removeItem("habitfer_token");
+    clearSession();
     // Datos guardados para usar sin conexion: no deben quedar para la siguiente sesion.
     try {
       void window.caches?.delete("hf-api").catch(() => undefined);
