@@ -75,12 +75,15 @@ async function start() {
     s.ev.on('connection.update', async (u) => {
       if (u.qr) {
         set({ state: 'qr', qr: await QRCode.toDataURL(u.qr, { margin: 1, width: 360 }), error: null });
+        // También en la terminal del servidor (docker compose logs -f wa), para vincular sin abrir la app.
+        const art = await QRCode.toString(u.qr, { type: 'terminal', small: true });
+        console.log(`\nEscanea este código con el otro celular: WhatsApp → Dispositivos vinculados → Vincular un dispositivo.\nCambia cada 20 segundos: escanea el último que aparezca.\n${art}`);
       }
       if (u.connection === 'open') {
         retries = 0;
         qrRounds = 0;
         set({ state: 'open', qr: null, me: jidToPhone(s.user?.id), error: null });
-        console.log(`WhatsApp conectado (${status.me})`);
+        console.log(`\n✅ WhatsApp conectado con el número ${status.me}. Ya puedes salir con Ctrl+C.`);
       }
       if (u.connection === 'close') {
         if (sock === s) sock = null;
@@ -97,6 +100,7 @@ async function start() {
           qrRounds++;
           if (qrRounds >= MAX_QR_ROUNDS) {
             set({ state: 'idle', qr: null, error: null });
+            console.log('\nNadie escaneó el código: el servicio queda en pausa. Para otro código: docker compose -f docker-compose.prod.yml restart wa');
             return;
           }
         }
