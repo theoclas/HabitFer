@@ -7,7 +7,7 @@ type Props = {
   id: string;
   title: string;
   habits: Habit[];
-  togglingId: string | null;
+  togglingId?: string | null;
   layout: "list" | "grid";
   defaultCollapsed?: boolean;
   onToggle: (habit: Habit) => void;

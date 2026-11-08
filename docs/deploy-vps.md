@@ -101,6 +101,7 @@ openssl rand -base64 48
 | Variable | Regla |
 |----------|--------|
 | `DATABASE_URL` | Host **`db`** (nombre del servicio Docker), misma contraseña que `MYSQL_PASSWORD` en `.env` |
+| `TZ` | La pone `docker-compose.prod.yml` (default `America/Bogota`). Sin ella la API corre en UTC: los recordatorios salen 5 h antes y "hoy" cambia a las 7 p. m. Para otro huso, define `TZ` en el `.env` de la raíz |
 | `CORS_ORIGINS` | Misma URL pública que usas en el navegador (sin `/api`) |
 | `COOKIE_SECURE=false` | Obligatorio mientras uses **HTTP** (IP:8080). Con HTTPS pon `true` |
 

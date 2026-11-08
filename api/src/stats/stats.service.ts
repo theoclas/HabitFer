@@ -8,7 +8,7 @@ import {
   toDateKey,
 } from '../habits/habits.utils';
 import { PrismaService } from '../prisma/prisma.service';
-import { addDays, dayLabel, lastNDays, startOfToday, toDateKey as statsDateKey } from './stats.utils';
+import { addDays, dayLabel, lastNDays, localDayStart, startOfToday, toDateKey as statsDateKey } from './stats.utils';
 
 @Injectable()
 export class StatsService {
@@ -58,7 +58,7 @@ export class StatsService {
 
     const weekStart = addDays(today, -6);
     const tasksDoneWeek = await this.prisma.task.count({
-      where: { userId, status: TaskStatus.DONE, updatedAt: { gte: weekStart } },
+      where: { userId, status: TaskStatus.DONE, updatedAt: { gte: localDayStart(weekStart) } },
     });
     const tasksOpen = await this.prisma.task.count({
       where: { userId, status: { not: TaskStatus.DONE } },
@@ -68,7 +68,7 @@ export class StatsService {
       weekDays.map(async (day) => {
         const next = addDays(day, 1);
         const count = await this.prisma.task.count({
-          where: { userId, status: TaskStatus.DONE, updatedAt: { gte: day, lt: next } },
+          where: { userId, status: TaskStatus.DONE, updatedAt: { gte: localDayStart(day), lt: localDayStart(next) } },
         });
         return { date: statsDateKey(day), label: dayLabel(day), completed: count };
       }),
@@ -154,7 +154,7 @@ export class StatsService {
       weeks.map(async (w) => ({
         label: w.label,
         completed: await this.prisma.task.count({
-          where: { userId, status: TaskStatus.DONE, updatedAt: { gte: w.start, lt: w.end } },
+          where: { userId, status: TaskStatus.DONE, updatedAt: { gte: localDayStart(w.start), lt: localDayStart(w.end) } },
         }),
       })),
     );

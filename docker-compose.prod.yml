@@ -19,6 +19,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: ./api/.env.prod
+    environment:
+      # "Hoy", las rachas y los recordatorios usan la hora local del contenedor.
+      TZ: ${TZ:-America/Bogota}
     depends_on:
       - db
     networks:

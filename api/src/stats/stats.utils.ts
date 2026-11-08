@@ -2,6 +2,7 @@ export {
   addDays,
   dayLabel,
   lastNDays,
+  localDayStart,
   parseDateKey,
   startOfToday,
   toDateKey,

@@ -23,3 +23,18 @@ export function habitCardBackground(color: string): string {
 export function habitEmoji(icon: string | null | undefined): string {
   return icon?.trim() || "✨";
 }
+
+/**
+ * Cambio optimista al marcar o desmarcar: el check y la racha cambian al instante
+ * y la respuesta del servidor los corrige despues si hiciera falta.
+ */
+export function applyOptimisticToggle<T extends Habit>(habit: T, completed: boolean): T {
+  if (habit.completedToday === completed) return habit;
+  const streak = habit.streakEnabled ? Math.max(0, habit.currentStreak + (completed ? 1 : -1)) : habit.currentStreak;
+  return {
+    ...habit,
+    completedToday: completed,
+    currentStreak: streak,
+    longestStreak: Math.max(habit.longestStreak, streak),
+  };
+}

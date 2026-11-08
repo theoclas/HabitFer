@@ -1,4 +1,5 @@
 import axios from "axios";
+import { todayKey } from "../utils/dates";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4001/api";
 
@@ -84,8 +85,8 @@ export async function deleteHabit(id: string) {
   await api.delete("/habits/" + id);
 }
 
-export async function completeHabit(id: string, date?: string) {
-  const { data } = await api.post<CompleteHabitResponse>("/habits/" + id + "/complete", date ? { date } : {});
+export async function completeHabit(id: string, date: string = todayKey()) {
+  const { data } = await api.post<CompleteHabitResponse>("/habits/" + id + "/complete", { date });
   return data;
 }
 

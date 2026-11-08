@@ -1,24 +1,30 @@
 import { ArrowLeftOutlined, EditOutlined, FireOutlined } from "@ant-design/icons";
 import { Button, Card, Empty, List, Space, Tag, Typography, message } from "antd";
-import dayjs from "dayjs";
-import { formatCalendarDate } from "../utils/dates";
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { formatCalendarDate, todayKey } from "../utils/dates";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { completeHabit, fetchHabit, uncompleteHabit } from "../api/client";
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { HabitCard } from "../features/habits/HabitCard";
 import { useAchievements } from "../features/achievements/AchievementContext";
-import { habitEmoji } from "../features/habits/habitUtils";
+import { applyOptimisticToggle, habitEmoji } from "../features/habits/habitUtils";
 import type { Habit } from "../types";
 
 export function HabitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { celebrate } = useAchievements();
   const [habit, setHabit] = useState<Habit | null>(null);
   const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState(false);
+  const pendingRef = useRef(false);
   const [editorOpen, setEditorOpen] = useState(false);
+
+  /** Vuelve a la pantalla de donde vino (Hoy o Habitos); si se abrio directo, a Habitos. */
+  const goBack = () => {
+    if (location.key !== "default") navigate(-1);
+    else navigate("/app/habitfer/habits");
+  };
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -35,23 +41,27 @@ export function HabitDetailPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const todayKey = dayjs().format("YYYY-MM-DD");
-
   const handleToggle = async () => {
-    if (!habit) return;
-    setToggling(true);
+    if (!habit || pendingRef.current) return;
+    const original = habit;
+    const willComplete = !original.completedToday;
+    const day = todayKey();
+
+    pendingRef.current = true;
+    setHabit(applyOptimisticToggle(original, willComplete));
     try {
-      if (habit.completedToday) {
-        setHabit(await uncompleteHabit(habit.id, todayKey));
-      } else {
-        const result = await completeHabit(habit.id);
+      if (willComplete) {
+        const result = await completeHabit(original.id, day);
         setHabit(result.habit);
         if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
+      } else {
+        setHabit(await uncompleteHabit(original.id, day));
       }
     } catch {
-      message.error("No se pudo actualizar");
+      setHabit(original);
+      message.error("No se pudo actualizar, lo deje como estaba");
     } finally {
-      setToggling(false);
+      pendingRef.current = false;
     }
   };
 
@@ -62,7 +72,7 @@ export function HabitDetailPage() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate("/app/habitfer/habits")}>
+        <Button type="text" icon={<ArrowLeftOutlined />} onClick={goBack}>
           Volver
         </Button>
         <Button type="primary" icon={<EditOutlined />} onClick={() => setEditorOpen(true)} style={{ background: "#2dd4bf", borderColor: "#2dd4bf", color: "#0a0a0f" }}>
@@ -82,7 +92,7 @@ export function HabitDetailPage() {
       </Space>
 
       {habit.scheduledToday && (
-        <HabitCard habit={habit} loading={toggling} onToggle={handleToggle} onEdit={() => setEditorOpen(true)} />
+        <HabitCard habit={habit} onToggle={handleToggle} onEdit={() => setEditorOpen(true)} />
       )}
 
       <Card title="Ultimos 90 dias" style={{ marginTop: 16 }}>

@@ -1,7 +1,8 @@
-﻿import { FilterOutlined, PlusOutlined, SearchOutlined, UnorderedListOutlined } from "@ant-design/icons";
+﻿import { PlusOutlined } from "@ant-design/icons";
 import { Button, Empty, Progress, Spin, Typography, message } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   completeHabit,
   fetchHabitsToday,
@@ -11,6 +12,7 @@ import {
 import { HabitEditorDrawer } from "../components/HabitEditorDrawer";
 import { HabitCard } from "../features/habits/HabitCard";
 import { WeekCalendarStrip } from "../features/habits/WeekCalendarStrip";
+import { applyOptimisticToggle } from "../features/habits/habitUtils";
 import { useAchievements } from "../features/achievements/AchievementContext";
 import { RemindersBell } from "../features/reminders/RemindersBell";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -19,38 +21,47 @@ import { canMarkHabitsForDate } from "../utils/dates";
 
 export function TodayPage() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { celebrate } = useAchievements();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [habits, setHabits] = useState<HabitToday[]>([]);
   const [loading, setLoading] = useState(true);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [progressByDate, setProgressByDate] = useState<Record<string, number>>({});
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
+  /** Habitos con un cambio en vuelo: un segundo toque se ignora hasta que responda el servidor. */
+  const pendingRef = useRef(new Set<string>());
+  /** Solo la ultima carga pedida puede escribir el estado (evita que una respuesta vieja pise otro dia). */
+  const loadSeqRef = useRef(0);
 
   const dateKey = selectedDate.format("YYYY-MM-DD");
   const isToday = selectedDate.isSame(dayjs(), "day");
   const canMark = canMarkHabitsForDate(dateKey);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [h, overview] = await Promise.all([
-        fetchHabitsToday(dateKey),
-        fetchStatsOverview().catch(() => null),
-      ]);
-      setHabits(h);
-      if (overview?.habits.daily) {
-        const map: Record<string, number> = {};
-        for (const d of overview.habits.daily) map[d.date] = d.rate;
-        setProgressByDate(map);
+  const load = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const seq = ++loadSeqRef.current;
+      if (!opts?.silent) setLoading(true);
+      try {
+        const [h, overview] = await Promise.all([
+          fetchHabitsToday(dateKey),
+          fetchStatsOverview().catch(() => null),
+        ]);
+        if (seq !== loadSeqRef.current) return;
+        setHabits(h);
+        if (overview?.habits.daily) {
+          const map: Record<string, number> = {};
+          for (const d of overview.habits.daily) map[d.date] = d.rate;
+          setProgressByDate(map);
+        }
+      } catch {
+        if (!opts?.silent && seq === loadSeqRef.current) message.error("No se pudo cargar habitos");
+      } finally {
+        if (!opts?.silent && seq === loadSeqRef.current) setLoading(false);
       }
-    } catch {
-      message.error("No se pudo cargar habitos");
-    } finally {
-      setLoading(false);
-    }
-  }, [dateKey]);
+    },
+    [dateKey],
+  );
 
   useEffect(() => {
     void load();
@@ -59,24 +70,37 @@ export function TodayPage() {
   const doneCount = useMemo(() => habits.filter((h) => h.completedToday).length, [habits]);
   const progressPct = habits.length ? Math.round((doneCount / habits.length) * 100) : 0;
 
+  /** El anillo del dia elegido sigue al check optimista sin esperar al resumen del servidor. */
+  const ringProgress = useMemo(
+    () => (loading || habits.length === 0 ? progressByDate : { ...progressByDate, [dateKey]: progressPct }),
+    [loading, habits.length, progressByDate, dateKey, progressPct],
+  );
+
   const handleToggle = async (habit: HabitToday | Habit) => {
     if (!canMark) {
       message.warning("Solo puedes marcar habitos de hoy o de ayer");
       return;
     }
-    setTogglingId(habit.id);
+    if (pendingRef.current.has(habit.id)) return;
+    const original = habits.find((h) => h.id === habit.id);
+    if (!original) return;
+    const willComplete = !original.completedToday;
+
+    pendingRef.current.add(habit.id);
+    setHabits((prev) => prev.map((h) => (h.id === habit.id ? applyOptimisticToggle(h, willComplete) : h)));
     try {
-      if (habit.completedToday) {
-        await uncompleteHabit(habit.id, dateKey);
-      } else {
+      if (willComplete) {
         const result = await completeHabit(habit.id, dateKey);
         if (result.unlockedAchievement) celebrate(result.unlockedAchievement);
+      } else {
+        await uncompleteHabit(habit.id, dateKey);
       }
-      await load();
+      pendingRef.current.delete(habit.id);
+      if (pendingRef.current.size === 0) void load({ silent: true });
     } catch {
-      message.error("No se pudo actualizar");
-    } finally {
-      setTogglingId(null);
+      pendingRef.current.delete(habit.id);
+      setHabits((prev) => prev.map((h) => (h.id === habit.id ? original : h)));
+      message.error("No se pudo actualizar, lo deje como estaba");
     }
   };
 
@@ -88,6 +112,10 @@ export function TodayPage() {
   const openEdit = (habit: HabitToday | Habit) => {
     setEditing(habit);
     setEditorOpen(true);
+  };
+
+  const openDetail = (habit: HabitToday | Habit) => {
+    navigate(`/app/habitfer/habits/${habit.id}`);
   };
 
   const habitList = loading ? (
@@ -107,10 +135,9 @@ export function TodayPage() {
           key={habit.id}
           habit={habit}
           layout={isMobile ? "list" : "grid"}
-          loading={togglingId === habit.id}
           canToggle={canMark}
           onToggle={handleToggle}
-          onOpen={openEdit}
+          onOpen={openDetail}
           onEdit={openEdit}
         />
       ))}
@@ -121,16 +148,12 @@ export function TodayPage() {
     <div>
       {isMobile ? (
         <div className="page-header--mobile">
-          <div className="page-header__left">
-            <Button type="text" shape="circle" icon={<UnorderedListOutlined style={{ fontSize: 17, color: "#e2e8f0" }} />} style={{ background: "rgba(255,255,255,0.06)" }} />
-            <Button type="text" shape="circle" icon={<FilterOutlined style={{ fontSize: 17, color: "#e2e8f0" }} />} style={{ background: "rgba(255,255,255,0.06)" }} />
-          </div>
+          <div className="page-header__left" />
           <Typography.Title level={3} className="page-header__title">
             {isToday ? "Hoy" : selectedDate.format("D MMM")}
           </Typography.Title>
           <div className="page-header__actions">
-            <Button type="text" shape="circle" icon={<PlusOutlined style={{ fontSize: 18, color: "#e2e8f0" }} />} onClick={openCreate} style={{ background: "rgba(255,255,255,0.06)" }} />
-            <Button type="text" shape="circle" icon={<SearchOutlined style={{ fontSize: 18, color: "#e2e8f0" }} />} style={{ background: "rgba(255,255,255,0.06)" }} />
+            <Button type="text" shape="circle" aria-label="Nuevo habito" icon={<PlusOutlined style={{ fontSize: 18, color: "#e2e8f0" }} />} onClick={openCreate} style={{ background: "rgba(255,255,255,0.06)" }} />
             <RemindersBell />
           </div>
         </div>
@@ -161,7 +184,7 @@ export function TodayPage() {
             <WeekCalendarStrip
               selected={selectedDate}
               onSelect={setSelectedDate}
-              progressByDate={progressByDate}
+              progressByDate={ringProgress}
               vertical
             />
             <div className="today-progress-card">
@@ -179,7 +202,7 @@ export function TodayPage() {
         <section>
           {isMobile && (
             <>
-              <WeekCalendarStrip selected={selectedDate} onSelect={setSelectedDate} progressByDate={progressByDate} />
+              <WeekCalendarStrip selected={selectedDate} onSelect={setSelectedDate} progressByDate={ringProgress} />
               <Typography.Text type="secondary" style={{ display: "block", marginBottom: 16, fontSize: 13 }}>
                 {doneCount}/{habits.length} completados
               </Typography.Text>

@@ -47,6 +47,14 @@ export function startOfToday(): Date {
   return parseDateKey(localTodayKey());
 }
 
+/**
+ * Real instant where a calendar day (UTC-midnight key) starts in the server's local time zone.
+ * Use it to filter timestamp columns (createdAt, updatedAt) by the user's day.
+ */
+export function localDayStart(day: Date): Date {
+  return new Date(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+}
+
 export function dayLabel(date: Date): string {
   const names = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
   return names[date.getUTCDay()];

@@ -10,6 +10,11 @@ export function formatCalendarDate(value: string, format = "DD MMM YYYY"): strin
   return parseCalendarDate(value).format(format);
 }
 
+/** Fecha de hoy en el telefono (YYYY-MM-DD); se envia siempre al marcar para no depender del reloj del servidor. */
+export function todayKey(): string {
+  return dayjs().format("YYYY-MM-DD");
+}
+
 /** Solo hoy y ayer permiten marcar o desmarcar habitos. */
 export function canMarkHabitsForDate(dateKey: string): boolean {
   const day = parseCalendarDate(dateKey).startOf("day");

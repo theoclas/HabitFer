@@ -47,10 +47,18 @@ export function StatsPage() {
       setHabitDetail(null);
       return;
     }
+    let cancelled = false;
     void fetchHabitStats(selectedHabitId)
-      .then(setHabitDetail)
-      .catch(() => message.error("No se pudo cargar detalle del habito"));
-  }, []);
+      .then((detail) => {
+        if (!cancelled) setHabitDetail(detail);
+      })
+      .catch(() => {
+        if (!cancelled) message.error("No se pudo cargar detalle del habito");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedHabitId]);
 
   if (loading) {
     return (
