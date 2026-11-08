@@ -13,6 +13,9 @@ describe('reminder-text.utils', () => {
 
   it('usa reminderTime cuando el habito es viejo y no tiene lista', () => {
     expect(habitReminderTimes({ reminderEnabled: true, reminderTime: '07:00', reminderTimes: [] })).toEqual(['07:00']);
+    // Asi quedan los habitos que ya existian: MySQL llena la columna JSON nueva con null.
+    expect(habitReminderTimes({ reminderEnabled: true, reminderTime: '07:30', reminderTimes: null })).toEqual(['07:30']);
+    expect(habitReminderTimes({ reminderEnabled: false, reminderTime: null, reminderTimes: null })).toEqual([]);
     expect(habitReminderTimes({ reminderEnabled: true, reminderTime: '07:00', reminderTimes: ['21:00', '07:00'] })).toEqual([
       '07:00',
       '21:00',
