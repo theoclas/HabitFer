@@ -351,13 +351,23 @@ Ya no hace falta copiar `nginx.conf` a mano; está en `web/deploy/nginx.conf`. H
 
 ### CORS / login falla
 
-- `CORS_ORIGINS` debe ser exactamente `http://TU_IP:8080` (sin barra final, sin `/api`).
-- `VITE_API_URL` debe ser `http://TU_IP:8080/api`.
+- `CORS_ORIGINS` lleva cada origen exacto, separados por coma, sin barra final ni `/api`
+  (hoy: `https://habitfer.fersuastudio.com,http://177.7.40.130:8080`).
+- `VITE_API_URL=/api` sirve igual por la IP y por el dominio; con una URL completa solo funciona en esa.
 - Tras cambiar `VITE_API_URL`, rebuild de `web`.
 
 ### Puerto 8080 en uso
 
 Cambia en `.env`: `CADDY_HTTP_PORT=8090` y actualiza las URLs en `.env` y `api/.env.prod`. Rebuild `web`.
+
+### Respaldo de la base
+
+El usuario `root` de MySQL no coincide con `MYSQL_ROOT_PASSWORD` (la base se creó con otra clave),
+así que el respaldo se hace con el usuario de la app. Hazlo antes de cada cambio de esquema:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T db sh -c 'exec mysqldump --no-tablespaces --single-transaction -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' > ~/backups/habitfer-$(date +%Y%m%d-%H%M).sql
+```
 
 ### Ver logs
 
