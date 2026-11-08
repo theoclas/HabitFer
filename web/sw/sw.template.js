@@ -186,7 +186,7 @@ async function markDone(data) {
 
     if (json.kind === "habit" && json.achievement) {
       await self.registration.showNotification("🏆 Logro desbloqueado", {
-        body: `${json.title} · ${json.achievement.days} días · «${json.achievement.label}»`,
+        body: `${json.title} · ${json.achievement.headline || json.achievement.days + " días"} · «${json.achievement.label}»`,
         icon: ICON,
         badge: BADGE,
         tag: "hf-achievement",
@@ -195,8 +195,12 @@ async function markDone(data) {
       return;
     }
 
-    const body = json.kind === "habit" ? (json.streak > 1 ? `Racha de ${json.streak} días 🔥` : "¡Bien hecho!") : "Tarea completada.";
-    await self.registration.showNotification(`✓ ${json.title}`, {
+    const streakText =
+      json.streak > 1 ? (json.streakUnit === "weeks" ? `Racha de ${json.streak} semanas 🔥` : `Racha de ${json.streak} días 🔥`) : "¡Bien hecho!";
+    // En los medibles el boton suma: "3 de 8 vasos" (con ✓ solo si ya llego a la meta).
+    const body = json.kind === "habit" ? json.message || streakText : "Tarea completada.";
+    const title = json.kind === "habit" && json.message && json.done === false ? json.title : `✓ ${json.title}`;
+    await self.registration.showNotification(title, {
       body,
       icon: ICON,
       badge: BADGE,

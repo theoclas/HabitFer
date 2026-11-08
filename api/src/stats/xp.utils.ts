@@ -1,9 +1,10 @@
-import { ScheduleType } from '@prisma/client';
-import { addDays, parseDateKey, toDateKey } from '../common/date.utils';
-import { isScheduledDay } from '../habits/habits.utils';
+import { HabitKind } from '@prisma/client';
+import { runningStreaks, shiftKey, type RuleHabit } from '../habits/habit-rules';
 
 export const XP_PER_COMPLETION = 10;
 export const XP_PERFECT_DAY = 20;
+/** Cada dia limpio completo de un habito para dejar. */
+export const XP_PER_CLEAN_DAY = 5;
 
 /** Bono por racha larga en el momento de cumplir. */
 export function streakBonus(streak: number): number {
@@ -12,41 +13,28 @@ export function streakBonus(streak: number): number {
   return 0;
 }
 
+export type XpHabit = RuleHabit & {
+  /** Dia de creacion: los dias limpio anteriores (inicio retroactivo) no dan XP. */
+  createdKey: string;
+};
+
 /**
- * Racha que tenia el habito en cada completado (en orden de fecha).
- * Dos completados encadenan si no hay ningun dia programado sin cumplir entre ellos.
+ * XP total e XP ganada hoy: 10 por habito cumplido (con bono por racha de dias), 5 por cada dia
+ * limpio completo de un habito para dejar (desde que se creo) y 20 por dia perfecto.
  */
-export function runningStreaks(
-  scheduleType: ScheduleType,
-  scheduleDays: unknown,
-  keys: string[],
-): { key: string; streak: number }[] {
-  const sorted = [...new Set(keys)].sort().filter((k) => isScheduledDay(scheduleType, scheduleDays, parseDateKey(k)));
-  const out: { key: string; streak: number }[] = [];
-  let prev: string | null = null;
-  let current = 0;
-  for (const key of sorted) {
-    if (prev === null) {
-      current = 1;
-    } else {
-      let d = addDays(parseDateKey(key), -1);
-      for (let guard = 0; guard < 8 && !isScheduledDay(scheduleType, scheduleDays, d); guard++) d = addDays(d, -1);
-      current = toDateKey(d) === prev ? current + 1 : 1;
-    }
-    out.push({ key, streak: current });
-    prev = key;
-  }
-  return out;
-}
-
-export type XpHabit = { scheduleType: ScheduleType; scheduleDays: unknown; streakEnabled: boolean; keys: string[] };
-
-/** XP total e XP ganada hoy: 10 por habito cumplido, bono por racha y 20 por dia perfecto. */
 export function computeXp(habits: XpHabit[], perfectKeys: string[], todayKey: string): { xp: number; todayXp: number } {
   let xp = 0;
   let todayXp = 0;
   for (const h of habits) {
-    for (const { key, streak } of runningStreaks(h.scheduleType, h.scheduleDays, h.keys)) {
+    if (h.kind === HabitKind.QUIT) {
+      const from = h.createdKey > h.startKey ? h.createdKey : h.startKey;
+      // Solo dias ya terminados: hoy todavia puede haber recaida.
+      for (let key = from, i = 0; key < todayKey && i < 4000; key = shiftKey(key, 1), i++) {
+        if (!h.doneKeys.has(key)) xp += XP_PER_CLEAN_DAY;
+      }
+      continue;
+    }
+    for (const { key, streak } of runningStreaks(h, todayKey)) {
       const gain = XP_PER_COMPLETION + (h.streakEnabled ? streakBonus(streak) : 0);
       xp += gain;
       if (key === todayKey) todayXp += gain;
@@ -76,4 +64,9 @@ export function levelFromXp(xp: number): { level: number; title: string; levelSt
   let level = 1;
   while (levelStartXp(level + 1) <= xp) level++;
   return { level, title: levelTitle(level), levelStartXp: levelStartXp(level), nextLevelXp: levelStartXp(level + 1) };
+}
+
+/** Congeladores ganados: uno por cada nivel que se sube. */
+export function freezesEarned(level: number): number {
+  return Math.max(0, level - 1);
 }

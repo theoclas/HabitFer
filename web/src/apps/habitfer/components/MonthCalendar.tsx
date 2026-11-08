@@ -1,6 +1,6 @@
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import type { DayStat } from "../../../types";
 import { WEEKDAY_SHORT } from "../format";
 
@@ -12,10 +12,34 @@ type Props = {
   canPrev: boolean;
   onPrev: () => void;
   onNext: () => void;
+  /** Dias congelados y en pausa (no cuentan ni rompen). */
+  frozen?: Set<string>;
+  paused?: Set<string>;
+  /** Dejar algo: el dia "hecho" es un dia limpio y el que falta, una recaida. */
+  quit?: boolean;
+  /** Medibles: cantidad por dia y como mostrarla. */
+  amounts?: Map<string, number>;
+  amountText?: (value: number) => string;
+  /** Accion para el dia elegido (p. ej. congelarlo). */
+  renderAction?: (key: string) => ReactNode;
 };
 
-/** Mes del habito: hecho, sin marcar, no tocaba, y notas. */
-export function MonthCalendar({ month, byDate, color, notes, canPrev, onPrev, onNext }: Props) {
+/** Mes del habito: hecho, sin marcar, no tocaba, congelado, en pausa y notas. */
+export function MonthCalendar({
+  month,
+  byDate,
+  color,
+  notes,
+  canPrev,
+  onPrev,
+  onNext,
+  frozen,
+  paused,
+  quit = false,
+  amounts,
+  amountText,
+  renderAction,
+}: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const todayKey = dayjs().format("YYYY-MM-DD");
   const canNext = month.endOf("month").isBefore(dayjs(), "day");
@@ -40,9 +64,19 @@ export function MonthCalendar({ month, byDate, color, notes, canPrev, onPrev, on
     const d = byDate.get(key);
     const label = dayjs(key).format("dddd D [de] MMMM");
     const note = notes.get(key);
+    const noteText = note ? ` · «${note}»` : "";
     if (key > todayKey) return `${label}: todavía no llega.`;
+    if (quit) {
+      if (!d || d.scheduled === 0) return `${label}: antes de tu primer día limpio.`;
+      return `${label}: ${d.completed ? (key === todayKey ? "limpio hasta ahora" : "limpio") : "recaída"}${noteText}`;
+    }
+    const amount = amounts?.get(key);
+    const amountPart = amount !== undefined && amountText ? ` (${amountText(amount)})` : "";
+    if (d?.completed) return `${label}: hecho${amountPart}${noteText}`;
+    if (frozen?.has(key)) return `${label}: congelado, no rompe la racha.`;
+    if (paused?.has(key)) return `${label}: en pausa.`;
     if (!d || d.scheduled === 0) return `${label}: no tocaba.`;
-    return `${label}: ${d.completed ? "hecho" : "sin marcar"}${note ? ` · «${note}»` : ""}`;
+    return `${label}: ${key === todayKey ? "pendiente" : "sin marcar"}${amountPart}${noteText}`;
   };
 
   return (
@@ -66,12 +100,20 @@ export function MonthCalendar({ month, byDate, color, notes, canPrev, onPrev, on
           if (c.pad) return <span key={c.key} />;
           const d = byDate.get(c.key);
           const future = c.key > todayKey;
-          const cls = [
-            "hf-cal__day",
-            future ? "is-future" : d?.completed ? "is-done" : d && d.scheduled > 0 ? (c.key === todayKey ? "is-pending" : "is-miss") : "is-off",
-            c.key === todayKey ? "is-today" : "",
-            c.key === selected ? "is-selected" : "",
-          ]
+          const state = future
+            ? "is-future"
+            : d?.completed
+              ? "is-done"
+              : frozen?.has(c.key)
+                ? "is-frozen"
+                : paused?.has(c.key)
+                  ? "is-paused"
+                  : d && d.scheduled > 0
+                    ? c.key === todayKey
+                      ? "is-pending"
+                      : "is-miss"
+                    : "is-off";
+          const cls = ["hf-cal__day", state, c.key === todayKey ? "is-today" : "", c.key === selected ? "is-selected" : ""]
             .filter(Boolean)
             .join(" ");
           return (
@@ -83,8 +125,9 @@ export function MonthCalendar({ month, byDate, color, notes, canPrev, onPrev, on
         })}
       </div>
       <p className="hf-note" aria-live="polite">
-        {selected ? info(selected) : `${done} de ${scheduled} días cumplidos este mes`}
+        {selected ? info(selected) : quit ? `${done} de ${scheduled} días limpio este mes` : `${done} de ${scheduled} días cumplidos este mes`}
       </p>
+      {selected && renderAction ? <div className="hf-cal__action">{renderAction(selected)}</div> : null}
     </div>
   );
 }

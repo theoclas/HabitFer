@@ -1,4 +1,4 @@
-import { ScheduleType } from '@prisma/client';
+import { HabitKind, ScheduleType } from '@prisma/client';
 import { buildDays, eachDayKey, type HistoryHabit } from '../stats/history.utils';
 import { computeSpecials } from './specials.utils';
 
@@ -8,11 +8,18 @@ function daily(id: string, createdKey: string, keys: string[], hour: number | nu
     title: id,
     icon: null,
     color: '#FF7A1A',
+    kind: HabitKind.BUILD,
     scheduleType: ScheduleType.DAILY,
     scheduleDays: [1, 2, 3, 4, 5, 6, 7],
+    weeklyTarget: null,
     streakEnabled: true,
+    goal: 1,
+    unit: null,
     createdKey,
+    startKey: createdKey,
     completions: keys.map((key) => ({ key, hour })),
+    doneKeys: new Set(keys),
+    skipKeys: new Set(),
   };
 }
 

@@ -4,11 +4,19 @@
  */
 import { isAxiosError } from "axios";
 import { useEffect, useState } from "react";
-import { completeHabit, uncompleteHabit } from "../../api/client";
+import { completeHabit, setHabitProgress, uncompleteHabit } from "../../api/client";
 import type { CompleteHabitResponse, Habit } from "../../types";
 import { notifyHabitsChanged } from "./effects";
 
-type QueuedOp = { kind: "complete" | "uncomplete"; habitId: string; date: string; note?: string; at: number };
+type QueuedOp = {
+  kind: "complete" | "uncomplete" | "value";
+  habitId: string;
+  date: string;
+  note?: string;
+  /** Cantidad del dia (medibles). */
+  value?: number;
+  at: number;
+};
 
 const KEY = "hf_offline_queue";
 const EVENT = "habitfer:offline-queue";
@@ -37,7 +45,7 @@ export function isOfflineError(err: unknown): boolean {
   return isAxiosError(err) && !err.response;
 }
 
-/** Guarda la ultima intencion para ese habito y ese dia (marcar y desmarcar se anulan entre si). */
+/** Guarda la ultima intencion para ese habito y ese dia (cada cambio reemplaza al anterior). */
 function enqueue(op: Omit<QueuedOp, "at">) {
   const ops = read().filter((o) => !(o.habitId === op.habitId && o.date === op.date));
   ops.push({ ...op, at: Date.now() });
@@ -65,6 +73,19 @@ export async function toggleHabitRemote(habitId: string, date: string, complete:
   }
 }
 
+type ValueResult = { queued: true } | { queued: false; result: CompleteHabitResponse };
+
+/** Fija la cantidad del dia (medibles); sin conexion queda en cola (gana la ultima). */
+export async function setValueRemote(habitId: string, date: string, value: number, note?: string): Promise<ValueResult> {
+  try {
+    return { queued: false, result: await setHabitProgress(habitId, date, value, note) };
+  } catch (err) {
+    if (!isOfflineError(err)) throw err;
+    enqueue({ kind: "value", habitId, date, value, note });
+    return { queued: true };
+  }
+}
+
 let flushing = false;
 
 /** Envia la cola en orden. Para al primer error de red; descarta lo que el servidor rechaza. */
@@ -76,6 +97,7 @@ export async function flushQueue(): Promise<number> {
     for (const op of read()) {
       try {
         if (op.kind === "complete") await completeHabit(op.habitId, op.date, op.note);
+        else if (op.kind === "value") await setHabitProgress(op.habitId, op.date, op.value ?? 0, op.note);
         else await uncompleteHabit(op.habitId, op.date);
         sent++;
       } catch (err) {

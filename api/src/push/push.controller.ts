@@ -76,16 +76,23 @@ export class PushController {
     if (owner?.status !== UserStatus.ACTIVE) throw new UnauthorizedException();
 
     try {
-      if (claims.act === 'habit-done') {
-        const result = await this.habits.complete(claims.sub, claims.tid, { date: claims.d });
+      if (claims.act === 'habit-done' || claims.act === 'habit-add') {
+        const result =
+          claims.act === 'habit-add'
+            ? await this.habits.addStep(claims.sub, claims.tid, claims.d)
+            : await this.habits.complete(claims.sub, claims.tid, { date: claims.d });
+        const h = result.habit;
+        const won = result.unlockedAchievement ?? result.challengeWon;
         return {
           ok: true,
           kind: 'habit',
-          title: result.habit.title,
-          streak: result.habit.currentStreak,
-          achievement: result.unlockedAchievement
-            ? { days: result.unlockedAchievement.milestoneDays, label: result.unlockedAchievement.label }
-            : null,
+          title: h.title,
+          streak: h.currentStreak,
+          streakUnit: h.streakUnit,
+          done: result.done,
+          // En los medibles, cuanto lleva: "3 de 8 vasos".
+          message: h.goal > 1 ? `${result.value} de ${h.goal}${h.unit ? ` ${h.unit}` : ''}${result.done ? ' · meta cumplida' : ''}` : null,
+          achievement: won ? { days: won.milestoneDays, label: won.label, headline: won.headline } : null,
         };
       }
       const task = await this.tasks.updateTask(claims.sub, claims.tid, { status: TaskStatus.DONE });

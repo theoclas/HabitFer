@@ -40,3 +40,23 @@ export function moodEmoji(value: number | null | undefined): string {
   if (!value) return "·";
   return MOODS[Math.min(5, Math.max(1, Math.round(value))) - 1].emoji;
 }
+
+/** Mensaje que manda la API en un error (o el de respaldo). */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  if (typeof msg === "string" && msg.trim()) return msg;
+  if (Array.isArray(msg) && typeof msg[0] === "string") return msg[0];
+  return fallback;
+}
+
+/** "hoy", "mañana", "el lunes 20". */
+export function friendlyDay(key: string, todayKey: string): string {
+  const d = new Date(key + "T12:00:00");
+  const t = new Date(todayKey + "T12:00:00");
+  const diff = Math.round((d.getTime() - t.getTime()) / 86_400_000);
+  if (diff === 0) return "hoy";
+  if (diff === 1) return "mañana";
+  if (diff === -1) return "ayer";
+  const weekday = WEEKDAY_LONG[(d.getDay() + 6) % 7];
+  return `el ${weekday} ${d.getDate()}`;
+}

@@ -1,46 +1,34 @@
-import { ScheduleType } from '@prisma/client';
-import { addDays, toDateKey } from '../common/date.utils';
-import { isScheduledDay } from '../habits/habits.utils';
-
-export type PerfectDayHabit = {
-  scheduleType: ScheduleType;
-  scheduleDays: unknown;
-  /** Dia (YYYY-MM-DD, hora local) en que se creo el habito: antes de eso no cuenta como programado. */
-  createdKey: string;
-  completionKeys: Set<string>;
-};
+import { HabitKind } from '@prisma/client';
+import { countsOn, isDoneOn, shiftKey, type RuleHabit } from '../habits/habit-rules';
 
 /**
- * Dias perfectos seguidos: dias en que se cumplieron todos los habitos programados.
- * Hoy suma solo si ya esta completo; si aun no, no rompe la racha. Los dias sin
- * habitos programados no suman ni rompen.
+ * Dias perfectos seguidos: dias en que se cumplio todo lo que contaba (lo pedido, mas lo flexible
+ * que si se hizo). Hoy suma solo si ya esta completo; si aun no, no rompe la racha. Los dias en
+ * que nada contaba (sin habitos, todo en pausa o congelado) no suman ni rompen.
  */
 export function computePerfectStreak(
-  habits: PerfectDayHabit[],
-  today: Date,
-  maxDays = 400,
+  habits: RuleHabit[],
+  todayKey: string,
+  maxDays = 1500,
 ): { streak: number; todayPerfect: boolean } {
-  if (habits.length === 0) return { streak: 0, todayPerfect: false };
-  const earliest = habits.reduce((min, h) => (h.createdKey < min ? h.createdKey : min), habits[0].createdKey);
-  const todayKey = toDateKey(today);
+  const build = habits.filter((h) => h.kind === HabitKind.BUILD);
+  if (build.length === 0) return { streak: 0, todayPerfect: false };
+  const earliest = build.reduce((min, h) => (h.startKey < min ? h.startKey : min), build[0].startKey);
 
   let streak = 0;
   let todayPerfect = false;
-  for (let i = 0; i < maxDays; i++) {
-    const day = addDays(today, -i);
-    const key = toDateKey(day);
-    if (key < earliest) break;
-
-    const scheduled = habits.filter((h) => h.createdKey <= key && isScheduledDay(h.scheduleType, h.scheduleDays, day));
-    if (scheduled.length === 0) continue;
-
-    const perfect = scheduled.every((h) => h.completionKeys.has(key));
-    if (perfect) {
-      streak++;
-      if (key === todayKey) todayPerfect = true;
-    } else if (key !== todayKey) {
-      break;
+  let key = todayKey;
+  for (let i = 0; i < maxDays && key >= earliest; i++) {
+    const counted = build.filter((h) => countsOn(h, key));
+    if (counted.length > 0) {
+      if (counted.every((h) => isDoneOn(h, key))) {
+        streak++;
+        if (key === todayKey) todayPerfect = true;
+      } else if (key !== todayKey) {
+        break;
+      }
     }
+    key = shiftKey(key, -1);
   }
   return { streak, todayPerfect };
 }

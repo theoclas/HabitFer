@@ -17,8 +17,28 @@ export type AuthResponse = {
 };
 
 
-export type ScheduleType = "DAILY" | "WEEKLY";
+/** DAILY: todos los dias · WEEKLY: dias fijos · WEEKLY_COUNT: X veces por semana. */
+export type ScheduleType = "DAILY" | "WEEKLY" | "WEEKLY_COUNT";
 export type TimeOfDay = "ANYTIME" | "MORNING" | "AFTERNOON" | "EVENING";
+/** BUILD: hacer algo · QUIT: dejar algo (dias limpio y recaidas). */
+export type HabitKind = "BUILD" | "QUIT";
+export type StreakUnit = "days" | "weeks";
+
+export type ChallengeState = {
+  startKey: string;
+  endKey: string;
+  days: number;
+  /** Dia del reto en que va (0 si aun no empieza). */
+  dayIndex: number;
+  done: number;
+  total: number;
+  /** Dias que quedan, contando hoy. */
+  remaining: number;
+  status: "upcoming" | "active" | "won" | "broken";
+  brokenOn: string | null;
+};
+
+export type PauseRange = { id: string; habitId: string | null; startKey: string; endKey: string; note: string | null };
 
 export type Habit = {
   id: string;
@@ -27,10 +47,20 @@ export type Habit = {
   color: string;
   icon: string | null;
   archived: boolean;
+  kind: HabitKind;
   scheduleType: ScheduleType;
   scheduleDays: number[];
+  /** X veces por semana. */
+  weeklyTarget: number | null;
   timeOfDay: TimeOfDay;
   streakEnabled: boolean;
+  /** Meta del dia: 1 = si/no; mas de 1 = medible. */
+  goal: number;
+  unit: string | null;
+  /** Cuanto suma cada toque (medibles). */
+  step: number;
+  /** Dejar algo: primer dia limpio. */
+  startDate: string | null;
   reminderEnabled: boolean;
   reminderTime: string | null;
   /** Todas las horas de aviso (HH:mm). */
@@ -38,19 +68,43 @@ export type Habit = {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  /** Unidad de la racha: dias, o semanas en X veces por semana. En QUIT son dias limpio. */
+  streakUnit: StreakUnit;
   currentStreak: number;
   longestStreak: number;
+  /** Se llego a la meta ese dia. */
   completedToday: boolean;
+  /** Aparece ese dia (se puede marcar). */
   scheduledToday: boolean;
+  /** Ese dia se pedia: cuenta para el dia perfecto. */
+  requiredToday: boolean;
+  /** Cantidad del dia (medibles). */
+  valueToday: number;
+  /** X veces por semana: veces hechas esta semana. */
+  weekDone: number | null;
+  relapsedToday: boolean;
+  frozenToday: boolean;
+  /** Ultimo dia de la pausa que cubre ese dia. */
+  pausedUntil: string | null;
+  challenge: ChallengeState | null;
+  note?: string | null;
   recentCompletions?: string[];
   /** Solo en el detalle. */
   totalCompletions?: number;
   recentNotes?: { date: string; note: string }[];
+  amounts?: { date: string; value: number }[];
+  relapses?: { date: string; note: string | null }[];
+  freezeDates?: string[];
+  pauses?: PauseRange[];
+  challengeWins?: { id: string; days: number; startDate: string; endDate: string; wonAt: string }[];
+  /** Algo que celebrar al cargar (hitos de dias limpio, retos cumplidos). */
+  unlockedAchievement?: UnlockedAchievement;
+  challengeWon?: UnlockedAchievement;
 };
 
 export type HabitToday = Habit & {
   scheduledForDate: string;
-  /** Nota del completado de ese dia. */
+  /** Nota de ese dia. */
   note: string | null;
 };
 
@@ -60,7 +114,12 @@ export type HabitAchievementRow = {
   milestoneDays: number;
   phraseIndex: number;
   unlockedAt: string;
+  label?: string;
+  headline?: string;
+  kind?: AchievementKind;
 };
+
+export type AchievementKind = "days" | "weeks" | "clean" | "challenge";
 
 export type UnlockedAchievement = {
   id: string;
@@ -72,11 +131,17 @@ export type UnlockedAchievement = {
   habitColor: string;
   habitIcon: string | null;
   label: string;
+  /** Titular listo ("3 semanas seguidas", "10 días limpio", "Reto de 30 días cumplido"). */
+  headline?: string;
+  kind?: AchievementKind;
 };
 
 export type CompleteHabitResponse = {
   habit: Habit;
+  value?: number;
+  done?: boolean;
   unlockedAchievement?: UnlockedAchievement;
+  challengeWon?: UnlockedAchievement;
 };
 
 export type CreateHabitPayload = {
@@ -84,10 +149,18 @@ export type CreateHabitPayload = {
   description?: string;
   color?: string;
   icon?: string | null;
+  kind?: HabitKind;
   scheduleType?: ScheduleType;
   scheduleDays?: number[];
+  weeklyTarget?: number;
   timeOfDay?: TimeOfDay;
   streakEnabled?: boolean;
+  goal?: number;
+  unit?: string | null;
+  step?: number;
+  startDate?: string;
+  challengeDays?: number | null;
+  challengeStart?: string;
   reminderEnabled?: boolean;
   reminderTime?: string;
   reminderTimes?: string[];
@@ -105,16 +178,47 @@ export type SpecialAchievement = {
   note: string | null;
 };
 
+export type ChallengeTrophy = UnlockedAchievement & { startDate: string; endDate: string };
+
 export type AchievementsSummary = {
   totalMilestones: number;
   specials: SpecialAchievement[];
+  challenges: ChallengeTrophy[];
   habits: {
-    habit: { id: string; title: string; color: string; icon: string | null; streakEnabled: boolean };
+    habit: {
+      id: string;
+      title: string;
+      color: string;
+      icon: string | null;
+      streakEnabled: boolean;
+      kind: HabitKind;
+      streakUnit: StreakUnit;
+    };
     currentStreak: number;
     longestStreak: number;
-    unlocked: { id: string; milestoneDays: number; phraseIndex: number; unlockedAt: string; label: string }[];
+    unlocked: {
+      id: string;
+      milestoneDays: number;
+      phraseIndex: number;
+      unlockedAt: string;
+      label: string;
+      headline?: string;
+      kind?: AchievementKind;
+    }[];
     next: { milestoneDays: number; remaining: number; label: string } | null;
   }[];
+};
+
+export type FreezeBalance = { earned: number; used: number; available: number; level?: number };
+
+export type HabitPause = {
+  id: string;
+  habitId: string | null;
+  startDate: string;
+  endDate: string;
+  note: string | null;
+  active: boolean;
+  habit?: { title: string; icon: string | null; color: string } | null;
 };
 
 
@@ -178,17 +282,23 @@ export type ReminderItem = {
 };
 
 
+export type OverviewPause = { id: string; startDate: string; endDate: string; note: string | null };
+
 export type StatsOverview = {
   habits: {
     active: number;
     weekCompletionRate: number;
     daily: { date: string; label: string; scheduled: number; completed: number; rate: number }[];
-    topStreaks: { id: string; title: string; color: string; currentStreak: number; longestStreak: number }[];
+    topStreaks: { id: string; title: string; color: string; currentStreak: number; longestStreak: number; streakUnit?: StreakUnit }[];
     /** Dias seguidos con todos los habitos cumplidos (hoy suma solo si ya esta completo). */
     perfectStreak: number;
     todayPerfect: boolean;
     perfectDaysTotal: number;
     level: LevelInfo;
+    freezes?: FreezeBalance;
+    /** Pausa de todos los habitos que cubre hoy. */
+    pause?: OverviewPause | null;
+    nextPause?: OverviewPause | null;
   };
   tasks: {
     open: number;
@@ -235,7 +345,7 @@ export type CreateUserPayload = {
   role?: "USER" | "ADMIN";
 };
 
-
+
 export type LevelInfo = {
   xp: number;
   todayXp: number;
@@ -257,6 +367,7 @@ export type RankingRow = {
   completed: number;
   rate: number;
   currentStreak: number;
+  streakUnit?: StreakUnit;
 };
 
 export type StatsRange = {

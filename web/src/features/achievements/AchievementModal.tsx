@@ -2,7 +2,7 @@ import { Button, Modal } from "antd";
 import type { CSSProperties } from "react";
 import { flameStage } from "../../apps/habitfer/components/Flame";
 import type { UnlockedAchievement } from "../../types";
-import { habitEmoji } from "../habits/habitUtils";
+import { habitEmoji, streakStageDays } from "../habits/habitUtils";
 import { getNextMilestone } from "./milestones";
 import { pickPhraseByIndex } from "./phrases";
 
@@ -16,9 +16,15 @@ type Props = {
 export function AchievementModal({ achievement, replay, onClose }: Props) {
   if (!achievement) return null;
 
+  const kind = achievement.kind ?? "days";
+  const n = achievement.milestoneDays;
   const phrase = pickPhraseByIndex(achievement.phraseIndex);
-  const next = getNextMilestone(achievement.milestoneDays);
-  const stage = flameStage(achievement.milestoneDays);
+  const challenge = kind === "challenge";
+  const next = challenge ? null : getNextMilestone(n);
+  const stage = flameStage(streakStageDays(n, kind === "weeks" ? "weeks" : "days"));
+  const headline = achievement.headline ?? `${n} días de racha`;
+  const nextText = !next ? null : kind === "weeks" ? `${next} semanas` : kind === "clean" ? `${next} días limpio` : `${next} días`;
+  const medalColor = challenge ? "var(--hf-blue)" : (stage?.outer ?? "var(--hf-ember)");
 
   return (
     <Modal
@@ -36,12 +42,12 @@ export function AchievementModal({ achievement, replay, onClose }: Props) {
       closable
     >
       <div className="hf-achievement__body">
-        <span className="hf-medal hf-medal--lg" style={{ "--m": stage?.outer ?? "var(--hf-ember)" } as CSSProperties}>
-          {habitEmoji(achievement.habitIcon)}
-          <b>{achievement.milestoneDays}</b>
+        <span className="hf-medal hf-medal--lg" style={{ "--m": medalColor } as CSSProperties}>
+          {challenge ? "🏁" : habitEmoji(achievement.habitIcon)}
+          <b>{n}</b>
         </span>
-        <span className="hf-achievement__tag">{replay ? "Logro ganado" : "Logro desbloqueado"}</span>
-        <h3 className="hf-achievement__title">{achievement.milestoneDays} días de racha</h3>
+        <span className="hf-achievement__tag">{replay ? "Logro ganado" : challenge ? "Reto cumplido" : "Logro desbloqueado"}</span>
+        <h3 className="hf-achievement__title">{headline}</h3>
         <span className="hf-achievement__habit">
           {achievement.habitTitle} · {achievement.label}
         </span>
@@ -49,7 +55,7 @@ export function AchievementModal({ achievement, replay, onClose }: Props) {
           <p>&ldquo;{phrase.frase}&rdquo;</p>
           <cite>{phrase.autor}</cite>
         </blockquote>
-        {next && !replay && <span className="hf-achievement__next">Próximo logro: {next} días</span>}
+        {nextText && !replay && <span className="hf-achievement__next">Próximo logro: {nextText}</span>}
       </div>
     </Modal>
   );

@@ -4,7 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as webpush from 'web-push';
 import { PrismaService } from '../prisma/prisma.service';
 
-export type PushAction = 'habit-done' | 'task-done';
+/** habit-done: marcar hecho; habit-add: sumar un toque (medibles); task-done: tarea hecha. */
+export type PushAction = 'habit-done' | 'habit-add' | 'task-done';
 
 /** Lo que recibe el service worker del telefono (ver web/sw/sw.template.js). */
 export type PushPayload = {

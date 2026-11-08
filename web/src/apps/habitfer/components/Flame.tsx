@@ -60,12 +60,12 @@ export function Flame({ days = 0, stage, size = 14, glow = false, className, sty
   );
 }
 
-/** Chip de racha: llama + numero. */
-export function StreakChip({ days, suffix }: { days: number; suffix?: string }) {
-  const s = flameStage(days);
-  if (!s) return null;
+/** Chip de racha: llama + numero. `stageDays` decide el color si la racha no es en dias (semanas). */
+export function StreakChip({ days, suffix, stageDays }: { days: number; suffix?: string; stageDays?: number }) {
+  const s = flameStage(stageDays ?? days);
+  if (!s || days <= 0) return null;
   return (
-    <span className="hf-streak" style={{ "--fo": s.outer } as CSSProperties} title={`${days} ${suffix ?? "dias"} · ${s.name}`}>
+    <span className="hf-streak" style={{ "--fo": s.outer } as CSSProperties} title={`${days} ${suffix === "sem" ? "semanas" : suffix ?? "dias"} · ${s.name}`}>
       <Flame stage={s} size={13} />
       <b>{days}</b>
       {suffix ? <span>{suffix}</span> : null}

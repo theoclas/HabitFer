@@ -1,51 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { TaskStatus } from '@prisma/client';
-import {
-  getCurrentStreak,
-  getLongestStreak,
-  isScheduledDay,
-  toDateKey,
-} from '../habits/habits.utils';
+import { HabitKind, TaskStatus } from '@prisma/client';
+import { countsOn, currentStreak, isDoneOn, longestStreak, shiftKey, streakUnit } from '../habits/habit-rules';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  buildDays,
-  byHour,
-  byWeekday,
-  earliestKey,
-  moodSummary,
-  ranking,
-  toHistoryHabit,
-  type HistoryHabit,
-} from './history.utils';
+import { loadHistory } from './history.loader';
+import { buildDays, byHour, byWeekday, moodSummary, ranking } from './history.utils';
 import { computePerfectStreak } from './perfect-days.utils';
-import { addDays, dayLabel, lastNDays, localDayStart, parseDateKey, startOfToday, toDateKey as statsDateKey } from './stats.utils';
-import { computeXp, levelFromXp } from './xp.utils';
+import { computeProgress } from './progress.utils';
+import { addDays, dayLabel, lastNDays, localDayStart, parseDateKey, startOfToday, toDateKey } from './stats.utils';
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 400;
-
-const COMPLETIONS_SELECT = { completions: { select: { date: true, createdAt: true } } } as const;
 
 @Injectable()
 export class StatsService {
   constructor(private prisma: PrismaService) {}
 
-  /** Habitos activos (o uno en concreto, aunque este archivado) con todo su historial. */
-  private async loadHistory(userId: string, habitId?: string): Promise<HistoryHabit[]> {
-    const habits = await this.prisma.habit.findMany({
-      where: habitId ? { userId, id: habitId } : { userId, archived: false },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-      include: COMPLETIONS_SELECT,
-    });
-    return habits.map(toHistoryHabit);
-  }
-
   async overview(userId: string) {
     const today = startOfToday();
-    const todayKey = statsDateKey(today);
-    const history = await this.loadHistory(userId);
+    const todayKey = toDateKey(today);
+    const [{ history, pauses }, freezesUsed] = await Promise.all([
+      loadHistory(this.prisma, userId),
+      this.prisma.streakFreeze.count({ where: { userId } }),
+    ]);
 
-    const completionByDay = buildDays(history, statsDateKey(addDays(today, -6)), todayKey).map((d) => ({
+    const completionByDay = buildDays(history, shiftKey(todayKey, -6), todayKey).map((d) => ({
       date: d.date,
       label: dayLabel(parseDateKey(d.date)),
       scheduled: d.scheduled,
@@ -53,41 +31,26 @@ export class StatsService {
       rate: d.rate,
     }));
 
-    const keySets = history.map((h) => new Set(h.completions.map((c) => c.key)));
     const topStreaks = history
-      .map((h, i) => ({ h, keys: keySets[i] }))
-      .filter(({ h }) => h.streakEnabled)
-      .map(({ h, keys }) => ({
+      .filter((h) => h.kind === HabitKind.BUILD && h.streakEnabled)
+      .map((h) => ({
         id: h.id,
         title: h.title,
         color: h.color,
-        currentStreak: getCurrentStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, keys, today),
-        longestStreak: getLongestStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, [...keys]),
+        currentStreak: currentStreak(h, todayKey),
+        longestStreak: longestStreak(h, todayKey),
+        streakUnit: streakUnit(h),
       }))
       .sort((a, b) => b.currentStreak - a.currentStreak)
       .slice(0, 5);
 
-    const perfect = computePerfectStreak(
-      history.map((h, i) => ({
-        scheduleType: h.scheduleType,
-        scheduleDays: h.scheduleDays,
-        createdKey: h.createdKey,
-        completionKeys: keySets[i],
-      })),
-      today,
-    );
-
-    const allDays = buildDays(history, earliestKey(history, todayKey), todayKey);
-    const xp = computeXp(
-      history.map((h) => ({
-        scheduleType: h.scheduleType,
-        scheduleDays: h.scheduleDays,
-        streakEnabled: h.streakEnabled,
-        keys: h.completions.map((c) => c.key),
-      })),
-      allDays.filter((d) => d.perfect).map((d) => d.date),
-      todayKey,
-    );
+    const perfect = computePerfectStreak(history, todayKey);
+    const progress = computeProgress(history, todayKey);
+    const general = pauses.filter((p) => p.habitId === null && p.endKey >= todayKey);
+    const activePause = general.find((p) => p.startKey <= todayKey) ?? null;
+    const nextPause = general.find((p) => p.startKey > todayKey) ?? null;
+    const pauseOut = (p: (typeof general)[number] | null) =>
+      p ? { id: p.id, startDate: p.startKey, endDate: p.endKey, note: p.note } : null;
 
     const weekStart = addDays(today, -6);
     const [tasksDoneWeek, tasksOpen, tasksByDay] = await Promise.all([
@@ -101,7 +64,7 @@ export class StatsService {
           const count = await this.prisma.task.count({
             where: { userId, status: TaskStatus.DONE, updatedAt: { gte: localDayStart(day), lt: localDayStart(next) } },
           });
-          return { date: statsDateKey(day), label: dayLabel(day), completed: count };
+          return { date: toDateKey(day), label: dayLabel(day), completed: count };
         }),
       ),
     ]);
@@ -117,8 +80,16 @@ export class StatsService {
         topStreaks,
         perfectStreak: perfect.streak,
         todayPerfect: perfect.todayPerfect,
-        perfectDaysTotal: allDays.filter((d) => d.perfect).length,
-        level: { xp: xp.xp, todayXp: xp.todayXp, ...levelFromXp(xp.xp) },
+        perfectDaysTotal: progress.perfectKeys.length,
+        level: progress.level,
+        freezes: {
+          earned: progress.freezesEarned,
+          used: freezesUsed,
+          available: Math.max(0, progress.freezesEarned - freezesUsed),
+        },
+        /** Pausa de todos los habitos que cubre hoy (vacaciones). */
+        pause: pauseOut(activePause),
+        nextPause: pauseOut(nextPause),
       },
       tasks: {
         open: tasksOpen,
@@ -130,22 +101,23 @@ export class StatsService {
 
   /**
    * Historial de un rango (por defecto los ultimos 30 dias): dia a dia, por dia de la semana,
-   * por hora, ranking de habitos y cruce con el animo. Con `habitId` se limita a ese habito.
+   * por hora, ranking de habitos y cruce con el animo. Con `habitId` se limita a ese habito
+   * (si es para dejar algo, cada dia limpio cuenta como cumplido).
    */
   async range(userId: string, from?: string, to?: string, habitId?: string) {
     const today = startOfToday();
-    const todayKey = statsDateKey(today);
+    const todayKey = toDateKey(today);
     let toKey = to && DATE_KEY.test(to) ? to : todayKey;
     if (toKey > todayKey) toKey = todayKey;
-    let fromKey = from && DATE_KEY.test(from) ? from : statsDateKey(addDays(today, -29));
+    let fromKey = from && DATE_KEY.test(from) ? from : shiftKey(todayKey, -29);
     if (fromKey > toKey) fromKey = toKey;
-    const minFrom = statsDateKey(addDays(parseDateKey(toKey), -(MAX_RANGE_DAYS - 1)));
+    const minFrom = shiftKey(toKey, -(MAX_RANGE_DAYS - 1));
     if (fromKey < minFrom) fromKey = minFrom;
 
-    const history = await this.loadHistory(userId, habitId);
+    const { history } = await loadHistory(this.prisma, userId, { habitId });
     if (habitId && history.length === 0) throw new NotFoundException('Habito no encontrado');
 
-    const days = buildDays(history, fromKey, toKey);
+    const days = buildDays(history, fromKey, toKey, { quitAsClean: Boolean(habitId) });
     const moodRows = habitId
       ? []
       : await this.prisma.dayMood.findMany({
@@ -157,13 +129,7 @@ export class StatsService {
 
     const scheduled = days.reduce((s, d) => s + d.scheduled, 0);
     const completed = days.reduce((s, d) => s + d.completed, 0);
-
-    const streakById = new Map(
-      history.map((h) => [
-        h.id,
-        getCurrentStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, new Set(h.completions.map((c) => c.key)), today),
-      ]),
-    );
+    const byId = new Map(history.map((h) => [h.id, h]));
 
     return {
       from: fromKey,
@@ -177,29 +143,28 @@ export class StatsService {
         rate: scheduled ? Math.round((completed / scheduled) * 100) : 0,
         perfectDays: days.filter((d) => d.perfect).length,
       },
-      ranking: habitId ? [] : ranking(history, fromKey, toKey).map((r) => ({ ...r, currentStreak: streakById.get(r.id) ?? 0 })),
+      ranking: habitId
+        ? []
+        : ranking(history, fromKey, toKey).map((r) => {
+            const h = byId.get(r.id)!;
+            return { ...r, currentStreak: currentStreak(h, todayKey), streakUnit: streakUnit(h) };
+          }),
       mood: moodSummary(days, moods),
       moods: [...moods].map(([date, mood]) => ({ date, mood })),
     };
   }
 
   async habitDetail(userId: string, habitId: string) {
-    const habit = await this.prisma.habit.findFirst({
-      where: { id: habitId, userId },
-      include: { completions: { orderBy: { date: 'asc' } } },
-    });
-    if (!habit) throw new NotFoundException('Habito no encontrado');
+    const { history } = await loadHistory(this.prisma, userId, { habitId });
+    const h = history[0];
+    if (!h) throw new NotFoundException('Habito no encontrado');
 
-    const today = startOfToday();
-    const days30 = lastNDays(30, today);
-    const keys = new Set(habit.completions.map((c) => toDateKey(c.date)));
-
+    const todayKey = toDateKey(startOfToday());
     let scheduled = 0;
     let completed = 0;
-    const calendar = days30.map((day) => {
-      const key = statsDateKey(day);
-      const isScheduled = isScheduledDay(habit.scheduleType, habit.scheduleDays, day);
-      const isDone = keys.has(key);
+    const calendar = Array.from({ length: 30 }, (_, i) => shiftKey(todayKey, i - 29)).map((key) => {
+      const isScheduled = countsOn(h, key);
+      const isDone = isDoneOn(h, key);
       if (isScheduled) {
         scheduled++;
         if (isDone) completed++;
@@ -208,17 +173,12 @@ export class StatsService {
     });
 
     return {
-      id: habit.id,
-      title: habit.title,
-      color: habit.color,
-      streakEnabled: habit.streakEnabled,
-      currentStreak: getCurrentStreak(habit.scheduleType, habit.scheduleDays, habit.streakEnabled, keys, today),
-      longestStreak: getLongestStreak(
-        habit.scheduleType,
-        habit.scheduleDays,
-        habit.streakEnabled,
-        habit.completions.map((c) => toDateKey(c.date)),
-      ),
+      id: h.id,
+      title: h.title,
+      color: h.color,
+      streakEnabled: h.streakEnabled,
+      currentStreak: currentStreak(h, todayKey),
+      longestStreak: longestStreak(h, todayKey),
       completionRate30d: scheduled ? Math.round((completed / scheduled) * 100) : 0,
       calendar,
     };

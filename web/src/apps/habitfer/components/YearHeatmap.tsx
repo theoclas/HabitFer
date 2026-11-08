@@ -14,6 +14,8 @@ type Props = {
   onYearChange: (year: number) => void;
   /** Dias con nota (solo modo habito): llevan un punto. */
   noteDates?: Set<string>;
+  /** Dejar algo: cada cuadrito es un dia limpio o una recaida. */
+  quit?: boolean;
 };
 
 const CELL = 12;
@@ -32,7 +34,7 @@ function globalFill(d: DayStat | undefined): string {
 }
 
 /** Un año en cuadritos (semanas de lunes a domingo), con navegacion por año y detalle del dia tocado. */
-export function YearHeatmap({ year, days, mode, color, minYear, onYearChange, noteDates }: Props) {
+export function YearHeatmap({ year, days, mode, color, minYear, onYearChange, noteDates, quit = false }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const today = dayjs().format("YYYY-MM-DD");
@@ -88,7 +90,7 @@ export function YearHeatmap({ year, days, mode, color, minYear, onYearChange, no
     const label = dayjs(key).format("ddd D MMM");
     if (key > today) return `${label} · todavía no llega`;
     if (!d || d.scheduled === 0) return `${label} · nada programado`;
-    if (mode === "habit") return `${label} · ${d.completed ? "hecho" : "sin marcar"}`;
+    if (mode === "habit") return `${label} · ${quit ? (d.completed ? "limpio" : "recaída") : d.completed ? "hecho" : "sin marcar"}`;
     return `${label} · ${d.completed} de ${d.scheduled}${d.perfect ? " · día perfecto" : ` (${d.rate} %)`}`;
   };
 
@@ -109,7 +111,9 @@ export function YearHeatmap({ year, days, mode, color, minYear, onYearChange, no
             ? "Cargando…"
             : mode === "global"
               ? `${fmtInt(summary.completed)} hábitos cumplidos · ${summary.perfect} días perfectos`
-              : `${fmtInt(summary.completed)} veces en ${year}`}
+              : quit
+                ? `${fmtInt(summary.completed)} ${summary.completed === 1 ? "día limpio" : "días limpio"} en ${year}`
+                : `${fmtInt(summary.completed)} veces en ${year}`}
         </span>
       </div>
 

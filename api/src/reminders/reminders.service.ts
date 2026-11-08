@@ -1,10 +1,28 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ReminderSourceType, TaskStatus } from '@prisma/client';
-import { getCurrentStreak, isScheduledDay, toDateKey } from '../habits/habits.utils';
+import { HabitKind, ReminderSourceType, ScheduleType, TaskStatus } from '@prisma/client';
+import {
+  currentStreak,
+  isPlannedOn,
+  isRequiredOn,
+  weekDoneCount,
+  weeklyTargetOf,
+  weekStartKey,
+} from '../habits/habit-rules';
+import { HABIT_FULL_INCLUDE } from '../habits/habit-view';
+import { toDateKey } from '../habits/habits.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
-import { buildSummaryText, habitReminderBody, habitReminderTimes } from './reminder-text.utils';
+import { loadPauses } from '../stats/history.loader';
+import { toHistoryHabit, type PauseRange } from '../stats/history.utils';
+import {
+  addActionTitle,
+  buildSummaryText,
+  habitReminderBody,
+  habitReminderTimes,
+  measurableReminderBody,
+  weeklyReminderBody,
+} from './reminder-text.utils';
 import { endOfMinute, formatHHmm, startOfMinute, startOfToday } from './reminders.utils';
 
 @Injectable()
@@ -82,32 +100,46 @@ export class RemindersService {
     const minuteStart = startOfMinute(now);
     const minuteEnd = endOfMinute(now);
 
-    // Habitos: cualquiera de sus horas cae en este minuto y aun no se cumplieron hoy.
+    // Habitos: una de sus horas cae en este minuto y hoy todavia hace falta.
     const candidates = await this.prisma.habit.findMany({
-      where: { reminderEnabled: true, archived: false, ...(userId ? { userId } : {}) },
+      where: { reminderEnabled: true, archived: false, kind: HabitKind.BUILD, ...(userId ? { userId } : {}) },
       select: {
         id: true,
-        userId: true,
-        title: true,
-        icon: true,
+        kind: true,
         scheduleType: true,
         scheduleDays: true,
-        streakEnabled: true,
         reminderEnabled: true,
         reminderTime: true,
         reminderTimes: true,
       },
     });
-    const due = candidates.filter(
-      (h) => habitReminderTimes(h).includes(hhmm) && isScheduledDay(h.scheduleType, h.scheduleDays, today),
-    );
+    const due = candidates.filter((h) => habitReminderTimes(h).includes(hhmm) && isPlannedOn(h, todayKey));
+    const pausesByUser = new Map<string, PauseRange[]>();
 
-    for (const habit of due) {
-      const completions = await this.prisma.habitCompletion.findMany({ where: { habitId: habit.id }, select: { date: true } });
-      const keys = new Set(completions.map((c) => toDateKey(c.date)));
-      if (keys.has(todayKey)) continue;
-      const streak = habit.streakEnabled ? getCurrentStreak(habit.scheduleType, habit.scheduleDays, true, keys, today) : 0;
-      const body = habitReminderBody(streak);
+    for (const { id } of due) {
+      const habit = await this.prisma.habit.findUnique({ where: { id }, include: HABIT_FULL_INCLUDE });
+      if (!habit) continue;
+      if (!pausesByUser.has(habit.userId)) pausesByUser.set(habit.userId, await loadPauses(this.prisma, habit.userId));
+      const hist = toHistoryHabit(habit, pausesByUser.get(habit.userId)!);
+      // Ya cumplido, o hoy en pausa o congelado: nada que recordar.
+      if (hist.doneKeys.has(todayKey) || hist.skipKeys.has(todayKey)) continue;
+
+      const measurable = habit.goal > 1;
+      let body: string;
+      if (habit.scheduleType === ScheduleType.WEEKLY_COUNT) {
+        const done = weekDoneCount(hist, weekStartKey(todayKey), todayKey);
+        const target = weeklyTargetOf(habit);
+        if (done >= target) continue;
+        body = weeklyReminderBody(done, target);
+      } else if (measurable) {
+        const p = await this.prisma.habitProgress.findUnique({
+          where: { habitId_date: { habitId: habit.id, date: today } },
+        });
+        body = measurableReminderBody(p?.value ?? 0, habit.goal, habit.unit);
+      } else {
+        body = habitReminderBody(habit.streakEnabled ? currentStreak(hist, todayKey) : 0);
+      }
+
       const created = await this.createIfNew({
         userId: habit.userId,
         sourceType: ReminderSourceType.HABIT,
@@ -123,10 +155,13 @@ export class RemindersService {
         tag: `habit-${habit.id}`,
         url: '/app/habitfer',
         actions: [
-          { action: 'done', title: 'Hecho' },
+          { action: 'done', title: measurable ? addActionTitle(habit.step, habit.unit) : 'Hecho' },
           { action: 'open', title: 'Abrir' },
         ],
-        data: { kind: 'habit', token: this.push.actionToken(habit.userId, 'habit-done', habit.id, todayKey) },
+        data: {
+          kind: 'habit',
+          token: this.push.actionToken(habit.userId, measurable ? 'habit-add' : 'habit-done', habit.id, todayKey),
+        },
       });
     }
 
@@ -171,23 +206,22 @@ export class RemindersService {
     for (const u of users) await this.sendSummary(u.id, today, todayKey, minuteStart);
   }
 
+  /** Lo que se pedia hoy y falta (sin pausas ni congelados; los medibles con su avance). */
   private async sendSummary(userId: string, today: Date, todayKey: string, minuteStart: Date) {
-    const habits = await this.prisma.habit.findMany({
-      where: { userId, archived: false },
-      include: { completions: { select: { date: true } } },
-    });
+    const [habits, pauses, progress] = await Promise.all([
+      this.prisma.habit.findMany({ where: { userId, archived: false, kind: HabitKind.BUILD }, include: HABIT_FULL_INCLUDE }),
+      loadPauses(this.prisma, userId),
+      this.prisma.habitProgress.findMany({ where: { userId, date: today }, select: { habitId: true, value: true } }),
+    ]);
+    const valueById = new Map(progress.map((p) => [p.habitId, p.value]));
     const pending = habits
-      .filter((h) => isScheduledDay(h.scheduleType, h.scheduleDays, today))
-      .map((h) => {
-        const keys = new Set(h.completions.map((c) => toDateKey(c.date)));
-        return {
-          done: keys.has(todayKey),
-          title: h.title,
-          streakEnabled: h.streakEnabled,
-          streak: getCurrentStreak(h.scheduleType, h.scheduleDays, h.streakEnabled, keys, today),
-        };
-      })
-      .filter((p) => !p.done);
+      .map((h) => ({ h, hist: toHistoryHabit(h, pauses) }))
+      .filter(({ hist }) => isRequiredOn(hist, todayKey) && !hist.doneKeys.has(todayKey))
+      .map(({ h, hist }) => ({
+        title: h.goal > 1 ? `${h.title} (${valueById.get(h.id) ?? 0}/${h.goal})` : h.title,
+        streakEnabled: h.streakEnabled,
+        streak: currentStreak(hist, todayKey),
+      }));
 
     const text = buildSummaryText(pending);
     if (!text) return;

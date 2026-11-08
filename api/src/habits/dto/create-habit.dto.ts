@@ -1,16 +1,21 @@
-import { ScheduleType, TimeOfDay } from '@prisma/client';
+import { HabitKind, ScheduleType, TimeOfDay } from '@prisma/client';
 import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
+
+export const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateHabitDto {
   @IsString()
@@ -33,6 +38,11 @@ export class CreateHabitDto {
   @MaxLength(32)
   icon?: string;
 
+  /** Hacer algo (BUILD) o dejar algo (QUIT). No cambia despues de creado. */
+  @IsOptional()
+  @IsEnum(HabitKind)
+  kind?: HabitKind;
+
   @IsOptional()
   @IsEnum(ScheduleType)
   scheduleType?: ScheduleType;
@@ -42,6 +52,13 @@ export class CreateHabitDto {
   @ArrayMinSize(1)
   scheduleDays?: number[];
 
+  /** X veces por semana (WEEKLY_COUNT). */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(7)
+  weeklyTarget?: number;
+
   @IsOptional()
   @IsEnum(TimeOfDay)
   timeOfDay?: TimeOfDay;
@@ -49,6 +66,42 @@ export class CreateHabitDto {
   @IsOptional()
   @IsBoolean()
   streakEnabled?: boolean;
+
+  /** Meta del dia: 1 = si/no; mas de 1 = medible. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  goal?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unit?: string | null;
+
+  /** Cuanto suma cada toque en un habito medible. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  step?: number;
+
+  /** Dejar algo: primer dia limpio (hoy o antes). */
+  @IsOptional()
+  @Matches(DATE_KEY_PATTERN)
+  startDate?: string;
+
+  /** Reto de N dias (null = quitar el reto). */
+  @IsOptional()
+  @IsInt()
+  @Min(3)
+  @Max(365)
+  challengeDays?: number | null;
+
+  /** Primer dia del reto (por defecto, hoy). Mandarlo de nuevo reinicia el reto. */
+  @IsOptional()
+  @Matches(DATE_KEY_PATTERN)
+  challengeStart?: string;
 
   @IsOptional()
   @IsBoolean()

@@ -21,6 +21,7 @@ import { Flame, FLAME_STAGES } from "../components/Flame";
 import { MotivationalBanner } from "../components/MotivationalBanner";
 import { NotificationsSheet } from "../components/NotificationsSheet";
 import { OfflineChip } from "../components/OfflineChip";
+import { PauseSheet } from "../components/PauseSheet";
 import { notifyHabitsChanged } from "../effects";
 import { flushQueue, queuedCount } from "../offline";
 import { resyncPush } from "../push";
@@ -29,6 +30,7 @@ import { useHfTheme } from "../theme/useHfTheme";
 import "../theme/brasa.css";
 import "../theme/brasa-data.css";
 import "../theme/brasa-app.css";
+import "../theme/brasa-habits.css";
 import "../theme/brasa-day.css";
 
 const { Content, Sider, Header } = Layout;
@@ -72,6 +74,7 @@ export function HabitFerShell() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
   const selectedKey = navItems.find((item) => isNavActive(location.pathname, item.key))?.key ?? BASE;
   const onToday = selectedKey === BASE && !location.pathname.startsWith(`${BASE}/habits/`);
 
@@ -170,7 +173,7 @@ export function HabitFerShell() {
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <AppSwitcher />
-                  <DisplayMenu pref={pref} mode={mode} onPref={setPref} onNotifications={() => setNotifOpen(true)} />
+                  <DisplayMenu pref={pref} mode={mode} onPref={setPref} onNotifications={() => setNotifOpen(true)} onPause={() => setPauseOpen(true)} />
                   <RemindersBell />
                   <button type="button" className="profile-trigger profile-trigger--habit" onClick={openProfile} aria-label="Perfil">
                     <UserOutlined />
@@ -211,6 +214,7 @@ export function HabitFerShell() {
           </Layout>
           <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
           <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
+          <PauseSheet open={pauseOpen} onClose={() => setPauseOpen(false)} />
           <HabitEditorDrawer
             open={creatorOpen}
             habit={null}

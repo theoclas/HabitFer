@@ -1,63 +1,114 @@
-import { ScheduleType } from '@prisma/client';
-import { addDays, localDateKey, parseDateKey, toDateKey, toIsoWeekday } from '../common/date.utils';
-import { isScheduledDay } from '../habits/habits.utils';
+import { HabitKind, ScheduleType } from '@prisma/client';
+import { localDateKey, parseDateKey, toDateKey, toIsoWeekday } from '../common/date.utils';
+import {
+  countsOn,
+  isDoneOn,
+  keysBetween,
+  shiftKey,
+  weekDoneCount,
+  weeklyTargetOf,
+  weekStartKey,
+  type RuleHabit,
+} from '../habits/habit-rules';
 
-type PrismaHabitWithCompletions = {
+/** Una pausa ya pasada a claves: habitId null = todos los habitos. */
+export type PauseRange = { id: string; habitId: string | null; startKey: string; endKey: string; note: string | null };
+
+/** Un completado: su dia y, si se marco ese mismo dia, la hora local en que se marco. */
+export type HistoryCompletion = { key: string; hour: number | null };
+
+export type HistoryHabit = RuleHabit & {
   id: string;
   title: string;
   icon: string | null;
   color: string;
-  scheduleType: ScheduleType;
-  scheduleDays: unknown;
-  streakEnabled: boolean;
-  createdAt: Date;
-  completions: { date: Date; createdAt: Date }[];
+  goal: number;
+  unit: string | null;
+  /** Dia (YYYY-MM-DD, hora local) en que se creo el habito. */
+  createdKey: string;
+  /** Completados (vacio en los habitos para dejar). */
+  completions: HistoryCompletion[];
 };
 
+type PrismaHabitForHistory = {
+  id: string;
+  title: string;
+  icon: string | null;
+  color: string;
+  kind: HabitKind;
+  scheduleType: ScheduleType;
+  scheduleDays: unknown;
+  weeklyTarget: number | null;
+  streakEnabled: boolean;
+  goal: number;
+  unit: string | null;
+  startDate: Date | null;
+  createdAt: Date;
+  completions: { date: Date; createdAt: Date }[];
+  relapses?: { date: Date }[];
+  freezes?: { date: Date }[];
+};
+
+/** Dias de pausa de un habito: las suyas y las de todos. Cada pausa con tope de 120 dias. */
+export function pauseKeysFor(habitId: string, pauses: PauseRange[]): string[] {
+  const out: string[] = [];
+  for (const p of pauses) {
+    if (p.habitId === null || p.habitId === habitId) out.push(...keysBetween(p.startKey, p.endKey, 120));
+  }
+  return out;
+}
+
+/** La pausa (propia o de todos) que cubre ese dia, si hay. */
+export function pauseOn(habitId: string, pauses: PauseRange[], key: string): PauseRange | null {
+  return pauses.find((p) => (p.habitId === null || p.habitId === habitId) && p.startKey <= key && key <= p.endKey) ?? null;
+}
+
 /**
- * Pasa un habito de Prisma al formato del historial. El inicio efectivo es el dia de creacion
- * o el primer completado si es anterior (se puede marcar "ayer" un habito creado hoy).
+ * Pasa un habito de Prisma al historial con sus reglas. En BUILD el inicio es el dia de creacion
+ * (o el primer completado si es anterior: se puede marcar "ayer" un habito creado hoy).
+ * En QUIT el inicio es el primer dia limpio y los doneKeys son las recaidas.
  */
-export function toHistoryHabit(h: PrismaHabitWithCompletions): HistoryHabit {
-  const completions = h.completions.map((c) => {
-    const key = toDateKey(c.date);
-    return { key, hour: localDateKey(c.createdAt) === key ? c.createdAt.getHours() : null };
-  });
+export function toHistoryHabit(h: PrismaHabitForHistory, pauses: PauseRange[] = []): HistoryHabit {
+  const isQuit = h.kind === HabitKind.QUIT;
+  const completions = isQuit
+    ? []
+    : h.completions.map((c) => {
+        const key = toDateKey(c.date);
+        return { key, hour: localDateKey(c.createdAt) === key ? c.createdAt.getHours() : null };
+      });
   const firstDone = completions.reduce<string | null>((min, c) => (min === null || c.key < min ? c.key : min), null);
   const createdKey = localDateKey(h.createdAt);
+  const startKey = isQuit
+    ? h.startDate
+      ? toDateKey(h.startDate)
+      : createdKey
+    : firstDone && firstDone < createdKey
+      ? firstDone
+      : createdKey;
   return {
     id: h.id,
     title: h.title,
     icon: h.icon,
     color: h.color,
+    kind: h.kind,
     scheduleType: h.scheduleType,
     scheduleDays: h.scheduleDays,
+    weeklyTarget: h.weeklyTarget,
     streakEnabled: h.streakEnabled,
-    createdKey: firstDone && firstDone < createdKey ? firstDone : createdKey,
+    goal: h.goal,
+    unit: h.unit,
+    createdKey,
+    startKey,
     completions,
+    doneKeys: new Set(isQuit ? (h.relapses ?? []).map((r) => toDateKey(r.date)) : completions.map((c) => c.key)),
+    skipKeys: new Set([...(h.freezes ?? []).map((f) => toDateKey(f.date)), ...pauseKeysFor(h.id, pauses)]),
   };
 }
 
-/** Primer dia con algo que mostrar (o hoy si no hay habitos). */
+/** Primer dia con algo que mostrar (o el `fallback` si no hay habitos para hacer). */
 export function earliestKey(habits: HistoryHabit[], fallback: string): string {
-  return habits.reduce((min, h) => (h.createdKey < min ? h.createdKey : min), fallback);
+  return habits.reduce((min, h) => (h.kind === HabitKind.BUILD && h.startKey < min ? h.startKey : min), fallback);
 }
-
-/** Un completado: su dia y, si se marco ese mismo dia, la hora local en que se marco. */
-export type HistoryCompletion = { key: string; hour: number | null };
-
-export type HistoryHabit = {
-  id: string;
-  title: string;
-  icon: string | null;
-  color: string;
-  scheduleType: ScheduleType;
-  scheduleDays: unknown;
-  streakEnabled: boolean;
-  /** Dia (YYYY-MM-DD, hora local) en que se creo: antes de eso no cuenta como programado. */
-  createdKey: string;
-  completions: HistoryCompletion[];
-};
 
 export type DayRow = {
   date: string;
@@ -65,7 +116,7 @@ export type DayRow = {
   completed: number;
   /** 0 a 100. */
   rate: number;
-  /** Todos los habitos programados ese dia se cumplieron. */
+  /** Todo lo que contaba ese dia se cumplio. */
   perfect: boolean;
 };
 
@@ -73,31 +124,29 @@ const MAX_SPAN_DAYS = 1500;
 
 /** Dias entre dos claves, ambos incluidos (con tope para no recorrer rangos absurdos). */
 export function eachDayKey(fromKey: string, toKey: string): string[] {
-  const out: string[] = [];
-  let cursor = parseDateKey(fromKey);
-  for (let i = 0; i < MAX_SPAN_DAYS; i++) {
-    const key = toDateKey(cursor);
-    if (key > toKey) break;
-    out.push(key);
-    cursor = addDays(cursor, 1);
-  }
-  return out;
+  return keysBetween(fromKey, toKey, MAX_SPAN_DAYS);
 }
 
-export function isScheduledOn(h: Pick<HistoryHabit, 'scheduleType' | 'scheduleDays' | 'createdKey'>, key: string): boolean {
-  return h.createdKey <= key && isScheduledDay(h.scheduleType, h.scheduleDays, parseDateKey(key));
-}
-
-export function buildDays(habits: HistoryHabit[], fromKey: string, toKey: string): DayRow[] {
-  const sets = habits.map((h) => new Set(h.completions.map((c) => c.key)));
+/**
+ * Totales por dia. Cuenta lo que se pedia ese dia mas lo flexible que si se hizo (X veces por
+ * semana). Los habitos para dejar no cuentan, salvo `quitAsClean` (el historial de uno solo):
+ * ahi cada dia desde el inicio cuenta, y se cumple si no hubo recaida.
+ */
+export function buildDays(habits: HistoryHabit[], fromKey: string, toKey: string, opts: { quitAsClean?: boolean } = {}): DayRow[] {
   return eachDayKey(fromKey, toKey).map((key) => {
     let scheduled = 0;
     let completed = 0;
-    habits.forEach((h, i) => {
-      if (!isScheduledOn(h, key)) return;
+    for (const h of habits) {
+      if (h.kind === HabitKind.QUIT) {
+        if (!opts.quitAsClean || key < h.startKey) continue;
+        scheduled++;
+        if (!h.doneKeys.has(key)) completed++;
+        continue;
+      }
+      if (!countsOn(h, key)) continue;
       scheduled++;
-      if (sets[i].has(key)) completed++;
-    });
+      if (isDoneOn(h, key)) completed++;
+    }
     return {
       date: key,
       scheduled,
@@ -144,18 +193,48 @@ export type RankingRow = {
   rate: number;
 };
 
-/** Habitos ordenados por cumplimiento en el rango (y por cantidad si empatan). */
+/**
+ * "X veces por semana" se mide por semanas: cada semana completa dentro del rango pide su meta;
+ * la semana en curso, las cortadas por el rango o el inicio y las que tuvieron pausa solo suman
+ * lo hecho (no castigan).
+ */
+function weeklyTotals(h: HistoryHabit, fromKey: string, toKey: string): { scheduled: number; completed: number } {
+  const target = weeklyTargetOf(h);
+  const from = h.startKey > fromKey ? h.startKey : fromKey;
+  let scheduled = 0;
+  let completed = 0;
+  for (let ws = weekStartKey(from); ws <= toKey; ws = shiftKey(ws, 7)) {
+    const we = shiftKey(ws, 6);
+    let done = 0;
+    let paused = false;
+    for (const key of keysBetween(ws > from ? ws : from, we < toKey ? we : toKey, 7)) {
+      if (h.doneKeys.has(key)) done++;
+      if (h.skipKeys.has(key)) paused = true;
+    }
+    const whole = ws >= from && we <= toKey && !paused;
+    const counted = Math.min(done, target);
+    scheduled += whole ? target : counted;
+    completed += counted;
+  }
+  return { scheduled, completed };
+}
+
+/** Habitos para hacer ordenados por cumplimiento en el rango (y por cantidad si empatan). */
 export function ranking(habits: HistoryHabit[], fromKey: string, toKey: string): RankingRow[] {
   const keys = eachDayKey(fromKey, toKey);
   return habits
+    .filter((h) => h.kind === HabitKind.BUILD)
     .map((h) => {
-      const done = new Set(h.completions.map((c) => c.key));
       let scheduled = 0;
       let completed = 0;
-      for (const key of keys) {
-        if (!isScheduledOn(h, key)) continue;
-        scheduled++;
-        if (done.has(key)) completed++;
+      if (h.scheduleType === ScheduleType.WEEKLY_COUNT) {
+        ({ scheduled, completed } = weeklyTotals(h, fromKey, toKey));
+      } else {
+        for (const key of keys) {
+          if (!countsOn(h, key)) continue;
+          scheduled++;
+          if (isDoneOn(h, key)) completed++;
+        }
       }
       return {
         id: h.id,
@@ -169,6 +248,11 @@ export function ranking(habits: HistoryHabit[], fromKey: string, toKey: string):
       };
     })
     .sort((a, b) => b.rate - a.rate || b.completed - a.completed);
+}
+
+/** Veces hechas en la semana de ese dia (para X veces por semana). */
+export function weekProgress(h: HistoryHabit, refKey: string): { done: number; target: number } {
+  return { done: weekDoneCount(h, weekStartKey(refKey), refKey), target: weeklyTargetOf(h) };
 }
 
 export type MoodSummary = {

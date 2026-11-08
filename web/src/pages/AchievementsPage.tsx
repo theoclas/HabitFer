@@ -2,24 +2,25 @@ import { message } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { fetchAchievementsSummary } from "../api/client";
-import { flameStage, StreakChip } from "../apps/habitfer/components/Flame";
+import { flameStage } from "../apps/habitfer/components/Flame";
 import { useAchievements } from "../features/achievements/AchievementContext";
 import { getStreakMilestones } from "../features/achievements/milestones";
-import { habitEmoji } from "../features/habits/habitUtils";
-import type { AchievementsSummary } from "../types";
+import { StreakChipFor } from "../features/habits/HabitCard";
+import { habitEmoji, streakLabel, streakStageDays } from "../features/habits/habitUtils";
+import type { AchievementsSummary, ChallengeTrophy, StreakUnit } from "../types";
 
 type HabitRow = AchievementsSummary["habits"][number];
 type Unlocked = HabitRow["unlocked"][number];
 
-function stageColor(days: number) {
-  return flameStage(days)?.outer ?? "var(--hf-ember)";
+function stageColor(days: number, unit: StreakUnit = "days") {
+  return flameStage(streakStageDays(days, unit))?.outer ?? "var(--hf-ember)";
 }
 
-function Medal({ emoji, days, locked, size }: { emoji: string; days: number; locked?: boolean; size?: "lg" }) {
+function Medal({ emoji, days, unit, locked, size }: { emoji: string; days: number; unit?: StreakUnit; locked?: boolean; size?: "lg" }) {
   return (
     <span
       className={`hf-medal${locked ? " hf-medal--locked" : ""}${size === "lg" ? " hf-medal--lg" : ""}`}
-      style={{ "--m": stageColor(days) } as CSSProperties}
+      style={{ "--m": stageColor(days, unit) } as CSSProperties}
     >
       {emoji}
       <b>{days}</b>
@@ -42,6 +43,14 @@ function progressToNext(current: number, next: number) {
   return Math.max(0, Math.min(1, (current - prev) / (next - prev)));
 }
 
+/** Lo que falta para el siguiente hito, en su unidad. */
+function remainingText(row: HabitRow) {
+  const n = row.next?.remaining ?? 0;
+  if (row.habit.kind === "QUIT") return n === 1 ? "Te falta 1 día limpio" : `Te faltan ${n} días limpio`;
+  if (row.habit.streakUnit === "weeks") return n === 1 ? "Te falta 1 semana" : `Te faltan ${n} semanas`;
+  return n === 1 ? "Te falta 1 día" : `Te faltan ${n} días`;
+}
+
 export function AchievementsPage() {
   const { celebrate } = useAchievements();
   const [data, setData] = useState<AchievementsSummary | null>(null);
@@ -53,7 +62,9 @@ export function AchievementsPage() {
   }, []);
 
   const totalUnlocked =
-    (data?.habits.reduce((s, h) => s + h.unlocked.length, 0) ?? 0) + (data?.specials?.filter((s) => s.unlocked).length ?? 0);
+    (data?.habits.reduce((s, h) => s + h.unlocked.length, 0) ?? 0) +
+    (data?.specials?.filter((s) => s.unlocked).length ?? 0) +
+    (data?.challenges?.length ?? 0);
 
   const nextUp = useMemo(() => {
     const candidates = (data?.habits ?? []).filter((h) => h.next && h.habit.streakEnabled);
@@ -78,9 +89,13 @@ export function AchievementsPage() {
         habitColor: row.habit.color,
         habitIcon: row.habit.icon,
         label: a.label,
+        headline: a.headline,
+        kind: a.kind,
       },
       { replay: true },
     );
+
+  const replayChallenge = (c: ChallengeTrophy) => celebrate(c, { replay: true });
 
   if (!data) {
     return (
@@ -105,13 +120,11 @@ export function AchievementsPage() {
 
       {nextUp?.next && (
         <div className="hf-next" style={{ "--c": nextUp.habit.color } as CSSProperties}>
-          <Medal emoji={habitEmoji(nextUp.habit.icon)} days={nextUp.next.milestoneDays} size="lg" />
+          <Medal emoji={habitEmoji(nextUp.habit.icon)} days={nextUp.next.milestoneDays} unit={nextUp.habit.streakUnit} size="lg" />
           <div style={{ minWidth: 0 }}>
-            <b>
-              {nextUp.next.remaining === 1 ? "Te falta 1 día" : `Te faltan ${nextUp.next.remaining} días`}
-            </b>
+            <b>{remainingText(nextUp)}</b>
             <p>
-              {nextUp.habit.title} · {nextUp.next.milestoneDays} días · «{nextUp.next.label}»
+              {nextUp.habit.title} · «{nextUp.next.label}»
             </p>
             <div className="hf-bar">
               <i style={{ width: `${Math.round(progressToNext(nextUp.currentStreak, nextUp.next.milestoneDays) * 100)}%` }} />
@@ -129,7 +142,7 @@ export function AchievementsPage() {
           <div className="hf-medal-grid">
             {recent.map(({ row, a }) => (
               <button key={a.id} type="button" className="hf-medal-btn hf-medal-cell" onClick={() => replay(row, a)}>
-                <Medal emoji={habitEmoji(row.habit.icon)} days={a.milestoneDays} />
+                <Medal emoji={habitEmoji(row.habit.icon)} days={a.milestoneDays} unit={row.habit.streakUnit} />
                 <span>
                   {row.habit.title} · {relativeDay(a.unlockedAt)}
                 </span>
@@ -142,6 +155,28 @@ export function AchievementsPage() {
           <b>Tu primera medalla llega a los 3 días</b>
           Marca un hábito tres días seguidos y aparece aquí.
         </div>
+      )}
+
+      {data.challenges?.length > 0 && (
+        <>
+          <div className="hf-section__head">
+            <span>Retos cumplidos</span>
+            <span style={{ textTransform: "none", letterSpacing: 0 }}>{data.challenges.length}</span>
+          </div>
+          <div className="hf-medal-grid">
+            {data.challenges.map((c) => (
+              <button key={c.id} type="button" className="hf-medal-btn hf-medal-cell" onClick={() => replayChallenge(c)}>
+                <span className="hf-medal hf-medal--challenge" style={{ "--m": "var(--hf-blue)" } as CSSProperties}>
+                  🏁
+                  <b>{c.milestoneDays}</b>
+                </span>
+                <span>
+                  {c.habitTitle} · {dayjs(c.endDate).format("D MMM")}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {data.specials?.length > 0 && (
@@ -192,21 +227,29 @@ export function AchievementsPage() {
               <span aria-hidden="true">{habitEmoji(row.habit.icon)}</span>
               <span>{row.habit.title}</span>
             </span>
-            {row.habit.streakEnabled ? (
-              row.currentStreak > 0 ? <StreakChip days={row.currentStreak} /> : <span style={{ color: "var(--hf-muted)", fontSize: 12 }}>sin racha activa</span>
+            {row.habit.kind === "QUIT" ? (
+              <span className="hf-clean">
+                <b>{row.currentStreak}</b> {row.currentStreak === 1 ? "día limpio" : "días limpio"}
+              </span>
+            ) : row.habit.streakEnabled ? (
+              row.currentStreak > 0 ? (
+                <StreakChipFor n={row.currentStreak} weeks={row.habit.streakUnit === "weeks"} />
+              ) : (
+                <span style={{ color: "var(--hf-muted)", fontSize: 12 }}>sin racha activa</span>
+              )
             ) : (
               <span style={{ color: "var(--hf-muted)", fontSize: 12 }}>racha apagada</span>
             )}
           </div>
           <div className="hf-habit-track__row">
             {row.unlocked.map((a) => (
-              <button key={a.id} type="button" className="hf-medal-btn" onClick={() => replay(row, a)} aria-label={`${a.milestoneDays} días, ver frase`}>
-                <Medal emoji={habitEmoji(row.habit.icon)} days={a.milestoneDays} />
+              <button key={a.id} type="button" className="hf-medal-btn" onClick={() => replay(row, a)} aria-label={`${a.headline ?? streakLabel(a.milestoneDays)}, ver frase`}>
+                <Medal emoji={habitEmoji(row.habit.icon)} days={a.milestoneDays} unit={row.habit.streakUnit} />
               </button>
             ))}
             {row.next && (
-              <span className="hf-medal-cell" title={`Faltan ${row.next.remaining} días`}>
-                <Medal emoji={habitEmoji(row.habit.icon)} days={row.next.milestoneDays} locked />
+              <span className="hf-medal-cell" title={remainingText(row)}>
+                <Medal emoji={habitEmoji(row.habit.icon)} days={row.next.milestoneDays} unit={row.habit.streakUnit} locked />
               </span>
             )}
             {row.unlocked.length === 0 && !row.next && (

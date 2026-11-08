@@ -10,6 +10,15 @@ datasource db {
 enum ScheduleType {
   DAILY
   WEEKLY
+  /// X veces por semana, sin dias fijos (Habit.weeklyTarget).
+  WEEKLY_COUNT
+}
+
+enum HabitKind {
+  /// Hacer algo (lo normal).
+  BUILD
+  /// Dejar algo: cuenta los dias limpio y registra recaidas.
+  QUIT
 }
 
 /// Momento del dia en que se agrupa el habito en la pantalla Hoy.
@@ -45,42 +54,47 @@ enum TaskPriority {
 }
 
 model User {
-  id           String            @id @default(cuid())
-  email        String            @unique
-  username     String            @unique @db.VarChar(64)
-  passwordHash String
-  fullName     String            @db.VarChar(120)
-  role         UserRole          @default(USER)
-  status       UserStatus        @default(ACTIVE)
-  approvedAt   DateTime?
-  approvedById String?
-  approvedBy   User?             @relation("UserApprovals", fields: [approvedById], references: [id], onDelete: SetNull)
-  approvedUsers User[]           @relation("UserApprovals")
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  habits       Habit[]
-  completions  HabitCompletion[]
-  habitAchievements HabitAchievement[]
-  projects     Project[]
-  tasks        Task[]
-  reminders    ReminderLog[]
-  ownedWorkspaces       Workspace[]         @relation("WorkspaceOwner")
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  username              String                 @unique @db.VarChar(64)
+  passwordHash          String
+  fullName              String                 @db.VarChar(120)
+  role                  UserRole               @default(USER)
+  status                UserStatus             @default(ACTIVE)
+  approvedAt            DateTime?
+  approvedById          String?
+  approvedBy            User?                  @relation("UserApprovals", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers         User[]                 @relation("UserApprovals")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  habits                Habit[]
+  completions           HabitCompletion[]
+  habitAchievements     HabitAchievement[]
+  projects              Project[]
+  tasks                 Task[]
+  reminders             ReminderLog[]
+  ownedWorkspaces       Workspace[]            @relation("WorkspaceOwner")
   workspaceMemberships  WorkspaceMember[]
-  collabTasksCreated    CollabTask[]        @relation("CollabTaskCreator")
-  collabTasksAssigned   CollabTask[]        @relation("CollabTaskAssignee")
+  collabTasksCreated    CollabTask[]           @relation("CollabTaskCreator")
+  collabTasksAssigned   CollabTask[]           @relation("CollabTaskAssignee")
   collabTaskCompletions CollabTaskCompletion[]
   comments              Comment[]
   activityLogs          ActivityLog[]
   collabProjectMembers  CollabProjectMember[]
   collabNotifications   CollabNotification[]
-  workGuidesCreated     WorkGuide[]           @relation("WorkGuideCreator")
+  workGuidesCreated     WorkGuide[]            @relation("WorkGuideCreator")
   financeAccounts       FinanceAccount[]
   incomes               Income[]
   credits               Credit[]
   dayMoods              DayMood[]
   pushSubscriptions     PushSubscription[]
+  habitProgress         HabitProgress[]
+  habitRelapses         HabitRelapse[]
+  streakFreezes         StreakFreeze[]
+  habitPauses           HabitPause[]
+  challengeResults      ChallengeResult[]
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
-  habitSummaryTime      String?             @db.VarChar(5)
+  habitSummaryTime      String?                @db.VarChar(5)
 }
 
 /// Suscripcion Web Push de un dispositivo (telefono o computador).
@@ -134,28 +148,48 @@ model ReminderLog {
 }
 
 model Habit {
-  id              String            @id @default(cuid())
-  userId          String
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title           String            @db.VarChar(120)
-  description     String?           @db.VarChar(500)
-  color           String            @default("#22d3ee") @db.VarChar(7)
-  icon            String?           @db.VarChar(32)
-  archived        Boolean           @default(false)
-  scheduleType    ScheduleType      @default(DAILY)
-  scheduleDays    Json              @default("[1,2,3,4,5,6,7]")
-  timeOfDay       TimeOfDay         @default(ANYTIME)
-  streakEnabled   Boolean           @default(true)
-  reminderEnabled Boolean           @default(false)
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String             @db.VarChar(120)
+  description      String?            @db.VarChar(500)
+  color            String             @default("#22d3ee") @db.VarChar(7)
+  icon             String?            @db.VarChar(32)
+  archived         Boolean            @default(false)
+  scheduleType     ScheduleType       @default(DAILY)
+  scheduleDays     Json               @default("[1,2,3,4,5,6,7]")
+  /// WEEKLY_COUNT: cuantas veces por semana (1 a 7).
+  weeklyTarget     Int?
+  timeOfDay        TimeOfDay          @default(ANYTIME)
+  /// BUILD = hacer algo; QUIT = dejar algo (dias limpio y recaidas).
+  kind             HabitKind          @default(BUILD)
+  /// Meta del dia: 1 = si/no; mayor que 1 = habito medible (8 vasos, 30 minutos).
+  goal             Int                @default(1)
+  /// Unidad de la meta (vasos, minutos, paginas).
+  unit             String?            @db.VarChar(20)
+  /// Cuanto suma cada toque en un habito medible.
+  step             Int                @default(1)
+  /// QUIT: primer dia limpio (puede ser anterior a la creacion).
+  startDate        DateTime?          @db.Date
+  /// Reto: cuantos dias dura y su primer dia (null = sin reto).
+  challengeDays    Int?
+  challengeStart   DateTime?          @db.Date
+  streakEnabled    Boolean            @default(true)
+  reminderEnabled  Boolean            @default(false)
   /// Primera hora de aviso (se mantiene por compatibilidad); la lista completa va en reminderTimes.
-  reminderTime    String?           @db.VarChar(5)
+  reminderTime     String?            @db.VarChar(5)
   /// Todas las horas de aviso (HH:mm), hasta 4.
-  reminderTimes   Json              @default("[]")
-  sortOrder       Int               @default(0)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  completions     HabitCompletion[]
-  achievements    HabitAchievement[]
+  reminderTimes    Json               @default("[]")
+  sortOrder        Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  completions      HabitCompletion[]
+  achievements     HabitAchievement[]
+  progress         HabitProgress[]
+  relapses         HabitRelapse[]
+  freezes          StreakFreeze[]
+  pauses           HabitPause[]
+  challengeResults ChallengeResult[]
 
   @@index([userId, archived])
 }
@@ -186,6 +220,86 @@ model HabitCompletion {
 
   @@unique([habitId, date])
   @@index([userId, date])
+}
+
+/// Cantidad del dia en un habito medible. El HabitCompletion existe solo si se llego a la meta.
+model HabitProgress {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  value     Int
+  /// Nota del dia mientras no se llega a la meta (al llegar pasa al completado).
+  note      String?  @db.VarChar(300)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+}
+
+/// Recaida de un habito para dejar (QUIT): ese dia no fue limpio.
+model HabitRelapse {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  note      String?  @db.VarChar(300)
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+}
+
+/// Congelador gastado: ese dia no cuenta ni rompe la racha del habito.
+model StreakFreeze {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+  @@index([userId])
+}
+
+/// Pausa (vacaciones, enfermedad): esos dias no cuentan ni rompen rachas. habitId null = todos.
+model HabitPause {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId   String?
+  habit     Habit?   @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  note      String?  @db.VarChar(120)
+  createdAt DateTime @default(now())
+
+  @@index([userId, endDate])
+  @@index([habitId])
+}
+
+/// Reto cumplido: queda como medalla aunque el habito siga o se borre el reto.
+model ChallengeResult {
+  id          String   @id @default(cuid())
+  habitId     String
+  habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days        Int
+  startDate   DateTime @db.Date
+  endDate     DateTime @db.Date
+  phraseIndex Int
+  wonAt       DateTime @default(now())
+
+  @@unique([habitId, startDate])
+  @@index([userId])
 }
 
 model Project {
@@ -357,31 +471,31 @@ enum CollabTaskKind {
 }
 
 model CollabTask {
-  id          String        @id @default(cuid())
-  workspaceId String
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  projectId   String
-  project     CollabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title       String        @db.VarChar(200)
-  description String?       @db.VarChar(2000)
-  kind        CollabTaskKind @default(ONE_OFF)
-  status      TaskStatus    @default(TODO)
-  priority    TaskPriority  @default(MEDIUM)
-  assigneeId  String?
-  assignee    User?         @relation("CollabTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  createdById String
-  createdBy   User          @relation("CollabTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  dueDate     DateTime?     @db.Date
-  dueTime     String?       @db.VarChar(5)
-  activeFrom  DateTime?     @db.Date
+  id            String                 @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       CollabProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String                 @db.VarChar(200)
+  description   String?                @db.VarChar(2000)
+  kind          CollabTaskKind         @default(ONE_OFF)
+  status        TaskStatus             @default(TODO)
+  priority      TaskPriority           @default(MEDIUM)
+  assigneeId    String?
+  assignee      User?                  @relation("CollabTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById   String
+  createdBy     User                   @relation("CollabTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  dueDate       DateTime?              @db.Date
+  dueTime       String?                @db.VarChar(5)
+  activeFrom    DateTime?              @db.Date
   sourceDailyId String?
-  sourceDaily   CollabTask?  @relation("DailyInstances", fields: [sourceDailyId], references: [id], onDelete: Cascade)
-  instances     CollabTask[] @relation("DailyInstances")
-  scheduledDate DateTime?   @db.Date
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  completions CollabTaskCompletion[]
+  sourceDaily   CollabTask?            @relation("DailyInstances", fields: [sourceDailyId], references: [id], onDelete: Cascade)
+  instances     CollabTask[]           @relation("DailyInstances")
+  scheduledDate DateTime?              @db.Date
+  sortOrder     Int                    @default(0)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  completions   CollabTaskCompletion[]
 
   @@unique([sourceDailyId, scheduledDate])
   @@index([workspaceId, status])
@@ -512,18 +626,18 @@ model Comment {
 }
 
 model ActivityLog {
-  id          String          @id @default(cuid())
+  id          String         @id @default(cuid())
   workspaceId String
-  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   projectId   String?
-  project     CollabProject?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     CollabProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   actorId     String
-  actor       User            @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actor       User           @relation(fields: [actorId], references: [id], onDelete: Cascade)
   action      ActivityAction
-  targetType  String?         @db.VarChar(40)
-  targetId    String?         @db.VarChar(64)
-  metadata    Json            @default("{}")
-  createdAt   DateTime        @default(now())
+  targetType  String?        @db.VarChar(40)
+  targetId    String?        @db.VarChar(64)
+  metadata    Json           @default("{}")
+  createdAt   DateTime       @default(now())
 
   @@index([workspaceId, createdAt])
   @@index([projectId, createdAt])

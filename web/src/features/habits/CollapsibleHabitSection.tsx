@@ -13,6 +13,8 @@ type Props = {
   onToggle: (habit: Habit) => void;
   onOpen?: (habit: Habit) => void;
   onEdit?: (habit: Habit) => void;
+  /** Dejar algo: registrar una recaida. */
+  onRelapse?: (habit: Habit) => void;
 };
 
 function readCollapsed(id: string, fallback: boolean): boolean {
@@ -35,6 +37,7 @@ export function CollapsibleHabitSection({
   onToggle,
   onOpen,
   onEdit,
+  onRelapse,
 }: Props) {
   const [collapsed, setCollapsed] = useState(() => readCollapsed(id, defaultCollapsed));
 
@@ -85,6 +88,7 @@ export function CollapsibleHabitSection({
               onToggle={onToggle}
               onOpen={onOpen ? () => onOpen(habit) : undefined}
               onEdit={onEdit ? () => onEdit(habit) : undefined}
+              onRelapse={onRelapse ? () => onRelapse(habit) : undefined}
             />
           ))}
         </div>

@@ -24,6 +24,37 @@ export function habitReminderBody(streak: number): string {
   return 'Es hora de tu hábito.';
 }
 
+/**
+ * Unidad para una cantidad: con 1 se quita la "s" final de plurales simples
+ * (vasos → vaso, páginas → página, minutos → minuto); el resto queda igual.
+ */
+export function unitFor(n: number, unit: string | null): string {
+  if (!unit) return '';
+  if (n === 1 && /[aiou]s$/i.test(unit)) return unit.slice(0, -1);
+  return unit;
+}
+
+/** Aviso de un habito medible: cuanto lleva y cuanto falta. */
+export function measurableReminderBody(value: number, goal: number, unit: string | null): string {
+  const u = unit ? ` ${unitFor(goal, unit)}` : '';
+  if (value <= 0) return `Hoy van 0 de ${goal}${u}. Empieza con el primero.`;
+  const left = goal - value;
+  return `Llevas ${value} de ${goal}${u}: ${left === 1 ? 'te falta 1' : `te faltan ${left}`}.`;
+}
+
+/** Aviso de un habito de X veces por semana. */
+export function weeklyReminderBody(done: number, target: number): string {
+  if (done <= 0) return `Esta semana van 0 de ${target}. Hoy es buen día para empezar.`;
+  const left = target - done;
+  return `Vas ${done} de ${target} esta semana: ${left === 1 ? 'te falta 1' : `te faltan ${left}`}.`;
+}
+
+/** Texto del boton de la notificacion en un medible: "+1 vaso", "+5 minutos". */
+export function addActionTitle(step: number, unit: string | null): string {
+  const u = unitFor(step, unit);
+  return u ? `+${step} ${u}` : `+${step}`;
+}
+
 export type PendingHabit = { title: string; streak: number; streakEnabled: boolean };
 
 function joinTitles(titles: string[]): string {

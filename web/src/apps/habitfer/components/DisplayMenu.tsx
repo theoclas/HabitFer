@@ -1,4 +1,4 @@
-import { BellOutlined, CheckOutlined, DownloadOutlined, MoonOutlined, SoundOutlined, SunOutlined } from "@ant-design/icons";
+import { BellOutlined, CheckOutlined, DownloadOutlined, MoonOutlined, PauseCircleOutlined, SoundOutlined, SunOutlined } from "@ant-design/icons";
 import { Dropdown, Modal, type MenuProps } from "antd";
 import { useState } from "react";
 import { playTick, setSoundEnabled, soundEnabled } from "../effects";
@@ -10,6 +10,8 @@ type Props = {
   mode: HfThemeMode;
   onPref: (p: HfThemePref) => void;
   onNotifications: () => void;
+  /** Pausar todos los habitos (vacaciones). */
+  onPause: () => void;
 };
 
 const OPTIONS: { key: HfThemePref; label: string }[] = [
@@ -19,7 +21,7 @@ const OPTIONS: { key: HfThemePref; label: string }[] = [
 ];
 
 /** Ajustes de la app: tema, sonido, notificaciones e instalacion. */
-export function DisplayMenu({ pref, mode, onPref, onNotifications }: Props) {
+export function DisplayMenu({ pref, mode, onPref, onNotifications, onPause }: Props) {
   const [sound, setSound] = useState(soundEnabled);
   const { canPrompt, iosManual, promptInstall } = useInstallState();
 
@@ -35,6 +37,7 @@ export function DisplayMenu({ pref, mode, onPref, onNotifications }: Props) {
     },
     { type: "divider" },
     { key: "notifications", icon: <BellOutlined />, label: "Notificaciones…" },
+    { key: "pause", icon: <PauseCircleOutlined />, label: "Pausar todo (vacaciones)…" },
     {
       key: "sound",
       icon: <SoundOutlined />,
@@ -55,6 +58,10 @@ export function DisplayMenu({ pref, mode, onPref, onNotifications }: Props) {
     }
     if (key === "notifications") {
       onNotifications();
+      return;
+    }
+    if (key === "pause") {
+      onPause();
       return;
     }
     if (key === "install") {

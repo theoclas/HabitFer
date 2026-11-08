@@ -65,8 +65,10 @@ import type {
   CompleteHabitResponse,
   CreateHabitPayload,
   DayMood,
+  FreezeBalance,
   Habit,
   HabitAchievementRow,
+  HabitPause,
   HabitToday,
   StatsRange,
 } from "../types";
@@ -119,6 +121,71 @@ export async function uncompleteHabit(id: string, date: string) {
 
 export async function fetchHabitAchievements(id: string) {
   const { data } = await api.get<HabitAchievementRow[]>("/habits/" + id + "/achievements");
+  return data;
+}
+
+export async function fetchArchivedHabits() {
+  const { data } = await api.get<Habit[]>("/habits/archived");
+  return data;
+}
+
+/** Nuevo orden de los habitos (ids de arriba a abajo). */
+export async function reorderHabits(ids: string[]) {
+  await api.post("/habits/reorder", { ids });
+}
+
+/** Varios habitos a la vez (plantillas). */
+export async function createHabitsBulk(habits: CreateHabitPayload[]) {
+  const { data } = await api.post<Habit[]>("/habits/bulk", { habits });
+  return data;
+}
+
+/** Cantidad de un dia en un habito medible (0 borra el avance). */
+export async function setHabitProgress(id: string, date: string, value: number, note?: string) {
+  const body = note === undefined ? { value } : { value, note };
+  const { data } = await api.put<CompleteHabitResponse>("/habits/" + id + "/progress/" + date, body);
+  return data;
+}
+
+export async function relapseHabit(id: string, payload: { date?: string; note?: string } = {}) {
+  const { data } = await api.post<{ habit: Habit }>("/habits/" + id + "/relapse", payload);
+  return data.habit;
+}
+
+export async function removeRelapse(id: string, date: string) {
+  const { data } = await api.delete<{ habit: Habit }>("/habits/" + id + "/relapse/" + date);
+  return data.habit;
+}
+
+export async function fetchFreezes() {
+  const { data } = await api.get<FreezeBalance>("/habits/freezes");
+  return data;
+}
+
+export async function freezeHabitDay(id: string, date: string) {
+  const { data } = await api.post<{ habit: Habit; freezes: FreezeBalance }>("/habits/" + id + "/freeze/" + date);
+  return data;
+}
+
+export async function unfreezeHabitDay(id: string, date: string) {
+  const { data } = await api.delete<{ habit: Habit; freezes: FreezeBalance }>("/habits/" + id + "/freeze/" + date);
+  return data;
+}
+
+export async function fetchPauses() {
+  const { data } = await api.get<HabitPause[]>("/habits/pauses");
+  return data;
+}
+
+/** Sin habitId, pausa todos los habitos (vacaciones). */
+export async function createPause(payload: { habitId?: string; startDate: string; endDate: string; note?: string }) {
+  const { data } = await api.post<HabitPause>("/habits/pauses", payload);
+  return data;
+}
+
+/** Termina una pausa: si no habia empezado se borra; si ya corria, termina ayer. */
+export async function endPause(id: string) {
+  const { data } = await api.delete<{ ok: boolean; removed: boolean }>("/habits/pauses/" + id);
   return data;
 }
 

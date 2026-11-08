@@ -213,7 +213,15 @@ export function RankingList({ rows, onOpen }: { rows: RankingRow[]; onOpen: (id:
               {r.completed} de {r.scheduled}
             </span>
           </span>
-          {r.streakEnabled && r.currentStreak > 0 ? <StreakChip days={r.currentStreak} /> : <span />}
+          {r.streakEnabled && r.currentStreak > 0 ? (
+            r.streakUnit === "weeks" ? (
+              <StreakChip days={r.currentStreak} stageDays={r.currentStreak * 7} suffix="sem" />
+            ) : (
+              <StreakChip days={r.currentStreak} />
+            )
+          ) : (
+            <span />
+          )}
         </button>
       ))}
     </div>
