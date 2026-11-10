@@ -174,6 +174,14 @@ docker compose -f docker-compose.prod.yml run --rm --no-deps --entrypoint sh api
 
 Si el diff trae `DROP`, no encender: `prisma db push` corre sin `--accept-data-loss` y la API no arrancaría.
 
+**FerFinance fase 1** (nov 2026): el esquema también solo agrega. Tablas nuevas `FinanceCategory`, `FinanceTransaction`
+(movimientos: ingresos, gastos, transferencias y ajustes), `FinanceKeyword` (palabras enseñadas) y `FinanceShortcut`
+(«lo de siempre»); columnas nuevas en `FinanceAccount` (`kind`, `institution`, `last4`, `openingBalance`, `reconciledAt`,
+`reconciledBalance`, `reconciledMoment`) y en `Income` (`migratedAt`). Al arrancar, la API pasa una sola vez los ingresos de
+`Income` a `FinanceTransaction` (con el mismo id y, si la descripción lo dice, su categoría) y los marca con `migratedAt`; la
+tabla vieja queda como respaldo. El log dice `[FerFinance] Ingresos pasados a movimientos: N (M con categoría).` Las categorías
+colombianas se siembran solas por persona la primera vez que se piden.
+
 ---
 
 ## 5. Primer usuario (administrador)

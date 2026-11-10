@@ -1,17 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { fetchFinanceAccounts } from "../api";
-import type { FinanceAccount } from "../types";
+import { fetchCategories, fetchFinanceAccounts, type ScopeParams } from "../api";
+import type { EntryType, FinanceAccount, FinanceAccountType, FinanceCategory, MovementItem } from "../types";
 
 export type PeriodMode = "month" | "range";
 
+/** Qué abrir en la hoja de «Anotar»: un movimiento para editar o uno nuevo con algo ya escogido. */
+export type QuickAddRequest = {
+  edit?: MovementItem | null;
+  type?: EntryType;
+  accountId?: string;
+  toAccountId?: string;
+};
+
 type FinanceContextValue = {
-  /** Cuenta elegida en el filtro; null = todas. */
+  /** Cuenta elegida en el filtro; null = un libro o todo. */
   accountId: string | null;
-  setAccountId: (id: string | null) => void;
+  /** Libro elegido en el filtro; null = una cuenta o todo. */
+  book: FinanceAccountType | null;
+  setScope: (scope: { accountId?: string | null; book?: FinanceAccountType | null }) => void;
+  /** Para la API: { accountId } o { book } o nada. */
+  scopeParams: ScopeParams;
   /** Cuentas activas (sin las de la papelera), compartidas por todas las pantallas. */
   accounts: FinanceAccount[];
   accountsLoaded: boolean;
   reloadAccounts: () => Promise<void>;
+  /** Categorías activas, compartidas. */
+  categories: FinanceCategory[];
+  categoriesLoaded: boolean;
+  reloadCategories: () => Promise<void>;
   periodMode: PeriodMode;
   year: number;
   month: number;
@@ -19,6 +35,13 @@ type FinanceContextValue = {
   shiftMonth: (delta: number) => void;
   setPeriodMode: (mode: PeriodMode) => void;
   setCustomRange: (from: string, to: string) => void;
+  /** La hoja de «Anotar», abierta desde cualquier pantalla. */
+  quickAdd: QuickAddRequest | null;
+  openQuickAdd: (request?: QuickAddRequest) => void;
+  closeQuickAdd: () => void;
+  /** Sube cada vez que algo cambia la plata: las pantallas recargan. */
+  dataVersion: number;
+  bumpData: () => void;
 };
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
@@ -45,12 +68,17 @@ export function rangeLabel(from: string, to: string): string {
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const now = new Date();
-  const [accountId, setAccountIdState] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [book, setBook] = useState<FinanceAccountType | null>(null);
   const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
   const [accountsLoaded, setAccountsLoaded] = useState(false);
+  const [categories, setCategories] = useState<FinanceCategory[]>([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [periodMode, setPeriodModeState] = useState<PeriodMode>("month");
   const [period, setPeriod] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 });
   const [customRange, setCustomRangeState] = useState<{ from: string; to: string } | null>(null);
+  const [quickAdd, setQuickAdd] = useState<QuickAddRequest | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   const { year, month } = period;
 
@@ -64,14 +92,35 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const reloadCategories = useCallback(async () => {
+    try {
+      setCategories(await fetchCategories());
+    } catch {
+      /* se reintenta al abrir la hoja */
+    } finally {
+      setCategoriesLoaded(true);
+    }
+  }, []);
+
   useEffect(() => {
     void reloadAccounts();
-  }, [reloadAccounts]);
+    void reloadCategories();
+  }, [reloadAccounts, reloadCategories]);
 
-  // Si la cuenta del filtro se archiva, el filtro vuelve a «todas».
+  // Si la cuenta del filtro se archiva, el filtro vuelve a «todo».
   useEffect(() => {
-    if (accountId && accountsLoaded && !accounts.some((a) => a.id === accountId)) setAccountIdState(null);
+    if (accountId && accountsLoaded && !accounts.some((a) => a.id === accountId)) setAccountId(null);
   }, [accountId, accounts, accountsLoaded]);
+
+  const setScope = useCallback((scope: { accountId?: string | null; book?: FinanceAccountType | null }) => {
+    setAccountId(scope.accountId ?? null);
+    setBook(scope.accountId ? null : (scope.book ?? null));
+  }, []);
+
+  const scopeParams = useMemo<ScopeParams>(
+    () => (accountId ? { accountId } : book ? { book } : {}),
+    [accountId, book],
+  );
 
   const bounds = useMemo(() => {
     if (periodMode === "range" && customRange) return customRange;
@@ -106,13 +155,27 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setCustomRangeState({ from, to });
   }, []);
 
+  const openQuickAdd = useCallback((request: QuickAddRequest = {}) => setQuickAdd(request), []);
+  const closeQuickAdd = useCallback(() => setQuickAdd(null), []);
+  const bumpData = useCallback(() => {
+    setDataVersion((v) => v + 1);
+    void reloadAccounts();
+    // Las más usadas van primero al escoger: el uso cambia con cada movimiento.
+    void reloadCategories();
+  }, [reloadAccounts, reloadCategories]);
+
   const value = useMemo(
     () => ({
       accountId,
-      setAccountId: setAccountIdState,
+      book,
+      setScope,
+      scopeParams,
       accounts,
       accountsLoaded,
       reloadAccounts,
+      categories,
+      categoriesLoaded,
+      reloadCategories,
       periodMode,
       year,
       month,
@@ -120,8 +183,36 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       shiftMonth,
       setPeriodMode,
       setCustomRange,
+      quickAdd,
+      openQuickAdd,
+      closeQuickAdd,
+      dataVersion,
+      bumpData,
     }),
-    [accountId, accounts, accountsLoaded, reloadAccounts, periodMode, year, month, bounds, shiftMonth, setPeriodMode, setCustomRange],
+    [
+      accountId,
+      book,
+      setScope,
+      scopeParams,
+      accounts,
+      accountsLoaded,
+      reloadAccounts,
+      categories,
+      categoriesLoaded,
+      reloadCategories,
+      periodMode,
+      year,
+      month,
+      bounds,
+      shiftMonth,
+      setPeriodMode,
+      setCustomRange,
+      quickAdd,
+      openQuickAdd,
+      closeQuickAdd,
+      dataVersion,
+      bumpData,
+    ],
   );
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

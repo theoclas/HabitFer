@@ -8,7 +8,7 @@ export function PeriodPicker() {
   const { periodMode, year, month, bounds, shiftMonth, setPeriodMode, setCustomRange } = useFinanceContext();
 
   return (
-    <div className="ff-period">
+    <div className={`ff-period${periodMode === "month" ? " ff-period--month" : ""}`}>
       <Segmented
         size="small"
         aria-label="Periodo"

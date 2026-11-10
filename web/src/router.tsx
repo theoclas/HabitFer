@@ -2,7 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { FernanceShell } from "./apps/fernance/layouts/FernanceShell";
 import { DashboardPage } from "./apps/fernance/pages/DashboardPage";
 import { AccountsPage } from "./apps/fernance/pages/AccountsPage";
-import { IncomesPage } from "./apps/fernance/pages/IncomesPage";
+import { CategoriesPage } from "./apps/fernance/pages/CategoriesPage";
+import { MovementsPage } from "./apps/fernance/pages/MovementsPage";
 import { CreditsPage } from "./apps/fernance/pages/CreditsPage";
 import { CreditDetailPage } from "./apps/fernance/pages/CreditDetailPage";
 import { HabitFerShell } from "./apps/habitfer/layouts/HabitFerShell";
@@ -76,7 +77,10 @@ export function AppRouter() {
         <Route path="/app/fernance" element={<FernanceShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="accounts" element={<AccountsPage />} />
-          <Route path="incomes" element={<IncomesPage />} />
+          <Route path="categories" element={<CategoriesPage />} />
+          <Route path="movements" element={<MovementsPage />} />
+          {/* Los ingresos ahora son movimientos (los enlaces viejos siguen sirviendo). */}
+          <Route path="incomes" element={<Navigate to="/app/fernance/movements?tipo=INCOME" replace />} />
           <Route path="credits" element={<CreditsPage />} />
           <Route path="credits/:id" element={<CreditDetailPage />} />
         </Route>

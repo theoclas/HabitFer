@@ -30,13 +30,20 @@ export function BackupCard({ onImported }: { onImported: () => void }) {
       const body = parsed && typeof parsed === "object" && (parsed as { app?: string }).app === "HabitFer" ? (parsed as { finance?: unknown }).finance : parsed;
       if (!body) throw new Error("Ese respaldo de HabitFer no trae nada de FerFinance.");
       const r = await importFinanceBackup(body);
-      const total = r.accounts + r.incomes + r.credits + r.installments;
-      message.success(
-        total === 0
-          ? "No faltaba nada: todo ya estaba."
-          : `Se sumó: ${r.accounts} cuentas, ${r.incomes} ingresos, ${r.credits} créditos y ${r.installments} cuotas.`,
-        6,
-      );
+      const parts = (
+        [
+          [r.accounts, "cuentas"],
+          [r.categories, "categorías"],
+          [r.transactions + r.incomes, "movimientos"],
+          [r.keywords, "palabras"],
+          [r.shortcuts, "de «lo de siempre»"],
+          [r.credits, "créditos"],
+          [r.installments, "cuotas"],
+        ] as const
+      )
+        .filter(([n]) => n > 0)
+        .map(([n, label]) => `${n} ${label}`);
+      message.success(parts.length === 0 ? "No faltaba nada: todo ya estaba." : `Se sumó: ${parts.join(", ")}.`, 6);
       onImported();
     } catch (err) {
       message.error(
@@ -56,7 +63,10 @@ export function BackupCard({ onImported }: { onImported: () => void }) {
       <h2 id="ff-backup-title" className="ff-section-title">
         Respaldo
       </h2>
-      <p className="ff-hint">Tus cuentas (también las de la papelera), ingresos y créditos con sus cuotas. El respaldo completo de HabitFer también lo trae.</p>
+      <p className="ff-hint">
+        Tus cuentas (también las de la papelera), movimientos, categorías, palabras enseñadas, «lo de siempre» y créditos con sus
+        cuotas. El respaldo completo de HabitFer también lo trae.
+      </p>
       <div className="ff-backup">
         <Button icon={<DownloadOutlined />} loading={busy === "json"} onClick={() => void download("json")}>
           Respaldo (JSON)

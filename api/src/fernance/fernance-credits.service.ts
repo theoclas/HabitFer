@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreditStatus, InstallmentStatus, type Prisma } from '@prisma/client';
+import {
+  CreditStatus,
+  InstallmentStatus,
+  type FinanceAccountType,
+  type Prisma,
+} from '@prisma/client';
 import { localTodayKey, parseDateKey, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -17,10 +22,10 @@ import {
   daysBetween,
   decimalToNumber,
   generateInstallmentDrafts,
+  paidKeyOf,
   planDrafts,
   roundMoney,
   roundPesos,
-  toLocalDateKey,
 } from './fernance.utils';
 import { FernanceAccountsService } from './fernance-accounts.service';
 
@@ -45,15 +50,7 @@ const CREDIT_INCLUDE = {
 
 type CreditRow = Prisma.CreditGetPayload<{ include: typeof CREDIT_INCLUDE }>;
 
-/** Día del pago: el que eligió la persona; en pagos viejos, el día en que se marcó. */
-export function paidKeyOf(
-  i: Pick<InstallmentRow, 'status' | 'paidDate' | 'paidAt' | 'dueDate'>,
-): string | null {
-  if (i.status !== InstallmentStatus.PAID) return null;
-  if (i.paidDate) return toDateKey(i.paidDate);
-  if (i.paidAt) return toLocalDateKey(i.paidAt);
-  return toDateKey(i.dueDate);
-}
+export { paidKeyOf };
 
 export function serializeInstallment(row: InstallmentRow) {
   return {
@@ -151,12 +148,19 @@ export class FernanceCreditsService {
     private accounts: FernanceAccountsService,
   ) {}
 
-  async list(userId: string, accountId?: string, status?: CreditStatus) {
+  async list(
+    userId: string,
+    accountId?: string,
+    status?: CreditStatus,
+    book?: FinanceAccountType,
+  ) {
     if (accountId) await this.accounts.assertAccount(userId, accountId);
     const rows = await this.prisma.credit.findMany({
       where: {
         userId,
-        ...(accountId ? { accountId } : { account: { archivedAt: null } }),
+        ...(accountId
+          ? { accountId }
+          : { account: { archivedAt: null, ...(book ? { type: book } : {}) } }),
         ...(status ? { status } : {}),
       },
       orderBy: { createdAt: 'desc' },

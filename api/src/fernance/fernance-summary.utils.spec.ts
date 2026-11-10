@@ -1,13 +1,18 @@
+import type { MovementLookups, MovementTx } from './fernance-movements.utils';
 import {
   buildSummary,
   type SummaryCredit,
   type SummaryInstallment,
 } from './fernance-summary.utils';
 
-const names = new Map([
-  ['per', 'Personal'],
-  ['neg', 'Negocio'],
-]);
+const lookups: MovementLookups = {
+  accounts: new Map([
+    ['per', { name: 'Personal', color: null }],
+    ['neg', { name: 'Negocio', color: null }],
+    ['nequi', { name: 'Nequi', color: null }],
+  ]),
+  categories: new Map([['comida', { name: 'Comida afuera', icon: '🍽️' }]]),
+};
 
 const inst = (
   id: string,
@@ -38,12 +43,38 @@ const credit = (
   ...extra,
 });
 
+const tx = (
+  id: string,
+  type: MovementTx['type'],
+  dateKey: string,
+  amount: number,
+  accountId: string,
+  extra: Partial<MovementTx> = {},
+): MovementTx => ({
+  id,
+  type,
+  dateKey,
+  amount,
+  accountId,
+  toAccountId: null,
+  categoryId: null,
+  merchant: null,
+  note: null,
+  source: 'MANUAL',
+  needsReview: false,
+  createdAt: `${dateKey}T12:00:00.000Z`,
+  ...extra,
+});
+
 const NOV = { from: '2026-11-01', to: '2026-11-30' };
+const ALL = new Set(['per', 'neg', 'nequi']);
 const base = {
   todayKey: '2026-11-09',
+  scope: ALL,
   accountId: null,
-  accountNames: names,
-  incomes: [],
+  book: null,
+  lookups,
+  transactions: [] as MovementTx[],
 };
 
 describe('buildSummary', () => {
@@ -108,9 +139,17 @@ describe('buildSummary', () => {
         accountName: 'Negocio',
       }),
     ]);
+    expect(s.recent).toEqual([
+      expect.objectContaining({
+        type: 'INSTALLMENT',
+        title: 'Cuota: Televisor',
+        effect: -310_000,
+      }),
+    ]);
 
     const soloPersonal = buildSummary({
       ...base,
+      scope: new Set(['per']),
       accountId: 'per',
       range: NOV,
       credits: [credit('tv', [paid])],
@@ -118,6 +157,7 @@ describe('buildSummary', () => {
     expect(soloPersonal.totals.paidInstallments).toBe(0);
     const soloNegocio = buildSummary({
       ...base,
+      scope: new Set(['neg']),
       accountId: 'neg',
       range: NOV,
       credits: [credit('tv', [paid])],
@@ -148,7 +188,12 @@ describe('buildSummary', () => {
     });
     expect(s.totals).toEqual({
       income: 0,
+      expense: 0,
       paidInstallments: 100_000,
+      transfersIn: 0,
+      transfersOut: 0,
+      adjustments: 0,
+      net: -100_000,
       available: -100_000,
       committed: 0,
       overdue: 0,
@@ -157,32 +202,14 @@ describe('buildSummary', () => {
     expect(s.projection).toEqual([]);
   });
 
-  it('ingresos del periodo, disponible y filtro por cuenta', () => {
-    const incomes = [
-      {
-        id: 'i1',
-        dateKey: '2026-11-01',
-        amount: 4_200_000,
-        label: 'Salario',
-        accountId: 'per',
-        accountName: 'Personal',
-      },
-      {
-        id: 'i2',
-        dateKey: '2026-11-05',
-        amount: 850_000,
-        label: 'Venta',
-        accountId: 'neg',
-        accountName: 'Negocio',
-      },
-      {
-        id: 'i3',
-        dateKey: '2026-10-28',
-        amount: 999,
-        label: 'Fuera',
-        accountId: 'per',
-        accountName: 'Personal',
-      },
+  it('ingresos, gastos y cuotas del periodo, y el filtro por cuenta', () => {
+    const transactions = [
+      tx('i1', 'INCOME', '2026-11-01', 4_200_000, 'per', { note: 'Salario' }),
+      tx('i2', 'INCOME', '2026-11-05', 850_000, 'neg', { note: 'Venta' }),
+      tx('i3', 'INCOME', '2026-10-28', 999, 'per', { note: 'Fuera' }),
+      tx('g1', 'EXPENSE', '2026-11-06', 18_000, 'per', {
+        categoryId: 'comida',
+      }),
     ];
     const credits = [
       credit('moto', [
@@ -192,23 +219,95 @@ describe('buildSummary', () => {
         }),
       ]),
     ];
-    const s = buildSummary({ ...base, range: NOV, incomes, credits });
-    expect(s.totals.income).toBe(5_050_000);
-    expect(s.totals.available).toBe(4_450_000);
+    const s = buildSummary({ ...base, range: NOV, transactions, credits });
+    expect(s.totals).toEqual(
+      expect.objectContaining({
+        income: 5_050_000,
+        expense: 18_000,
+        paidInstallments: 600_000,
+        net: 4_432_000,
+        available: 4_432_000,
+      }),
+    );
+    // La lista vieja solo trae ingresos y cuotas.
+    expect(s.movements.map((m) => m.type)).toEqual([
+      'income',
+      'income',
+      'installment_paid',
+    ]);
+    // La nueva trae todo, lo más reciente primero, con el título que corresponde.
+    expect(s.recent.map((m) => [m.id, m.title])).toEqual([
+      ['g1', 'Comida afuera'],
+      ['i2', 'Venta'],
+      ['p', 'Cuota: Moto'],
+      ['i1', 'Salario'],
+    ]);
+    expect(s.movementCount).toBe(4);
+
     const negocio = buildSummary({
       ...base,
+      scope: new Set(['neg']),
       accountId: 'neg',
       range: NOV,
-      incomes,
+      transactions,
       credits,
     });
     expect(negocio.totals).toEqual(
       expect.objectContaining({
         income: 850_000,
+        expense: 0,
         paidInstallments: 0,
         available: 850_000,
       }),
     );
+  });
+
+  it('una transferencia solo cuenta si sale de lo que se mira', () => {
+    const transactions = [
+      tx('t1', 'TRANSFER', '2026-11-04', 200_000, 'per', {
+        toAccountId: 'nequi',
+      }),
+      tx('t2', 'TRANSFER', '2026-11-04', 50_000, 'per', { toAccountId: 'neg' }),
+    ];
+    const todo = buildSummary({
+      ...base,
+      range: NOV,
+      transactions,
+      credits: [],
+    });
+    expect(todo.totals).toEqual(
+      expect.objectContaining({ net: 0, transfersIn: 0, transfersOut: 0 }),
+    );
+
+    // El libro Personal (Personal y Nequi): lo que pasó al negocio salió; lo que pasó a Nequi no.
+    const personal = buildSummary({
+      ...base,
+      scope: new Set(['per', 'nequi']),
+      book: 'PERSONAL',
+      range: NOV,
+      transactions,
+      credits: [],
+    });
+    expect(personal.totals).toEqual(
+      expect.objectContaining({
+        net: -50_000,
+        transfersOut: 50_000,
+        transfersIn: 0,
+      }),
+    );
+
+    const nequi = buildSummary({
+      ...base,
+      scope: new Set(['nequi']),
+      accountId: 'nequi',
+      range: NOV,
+      transactions,
+      credits: [],
+    });
+    expect(nequi.totals).toEqual(
+      expect.objectContaining({ net: 200_000, transfersIn: 200_000 }),
+    );
+    expect(nequi.recent.map((m) => m.id)).toEqual(['t1']);
   });
 
   it('proyecta por mes lo que viene después del periodo', () => {

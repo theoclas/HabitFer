@@ -1,13 +1,13 @@
 import { daysBetween, isDateInRange } from './fernance.utils';
-
-export type SummaryIncome = {
-  id: string;
-  dateKey: string;
-  amount: number;
-  label: string;
-  accountId: string;
-  accountName: string;
-};
+import {
+  installmentToItem,
+  movementTotals,
+  sortMovements,
+  txToItem,
+  type MovementItem,
+  type MovementLookups,
+  type MovementTx,
+} from './fernance-movements.utils';
 
 export type SummaryInstallment = {
   id: string;
@@ -30,6 +30,7 @@ export type SummaryCredit = {
   installments: SummaryInstallment[];
 };
 
+/** Movimientos de la lista vieja del resumen (se conserva para las apps que aún no se actualizan). */
 export type Movement = {
   id: string;
   type:
@@ -77,62 +78,89 @@ export type ProjectionMonth = {
 export type SummaryInput = {
   range: { from: string; to: string };
   todayKey: string;
-  /** Filtro por cuenta; null = todas. */
+  /** Las cuentas que se miran: una, las de un libro o todas las activas. */
+  scope: Set<string>;
+  /** La cuenta del filtro (null si se mira un libro o todo). */
   accountId: string | null;
-  incomes: SummaryIncome[];
+  /** El libro del filtro (null si se mira una cuenta o todo). */
+  book: string | null;
+  /** Los movimientos del periodo (ya filtrados por fecha). */
+  transactions: MovementTx[];
   credits: SummaryCredit[];
-  accountNames: Map<string, string>;
+  lookups: MovementLookups;
 };
 
 const UPCOMING_LIMIT = 6;
+const RECENT_LIMIT = 8;
 const add = (a: number, b: number) => Math.round((a + b) * 100) / 100;
 
 /**
  * Resumen de un periodo. Reglas:
- * - Lo pagado cuenta el día real del pago, por el valor que se pagó y en la cuenta de donde salió.
+ * - Ingresos, gastos y ajustes cuentan en su cuenta; una transferencia solo cuenta si cruza el borde de lo que se
+ *   mira (de un libro a otro, por ejemplo).
+ * - Lo pagado de los créditos cuenta el día real del pago, por el valor que se pagó y en la cuenta de donde salió.
  * - Lo pendiente del periodo es «comprometido». Si el periodo incluye hoy, las vencidas de antes también.
  * - Las vencidas (pendientes con fecha anterior a hoy) salen siempre en su propia lista, sin importar el periodo.
  * - Los créditos cancelados no comprometen nada: sus cuotas pendientes no cuentan.
  */
 export function buildSummary(input: SummaryInput) {
-  const { range, todayKey, accountId, accountNames } = input;
+  const { range, todayKey, scope, lookups } = input;
   const includesToday = isDateInRange(todayKey, range.from, range.to);
-  const nameOf = (id: string) => accountNames.get(id) ?? 'Cuenta';
+  const nameOf = (id: string) => lookups.accounts.get(id)?.name ?? 'Cuenta';
 
-  let income = 0;
-  let paid = 0;
   let committed = 0;
   let overdueTotal = 0;
-  const movements: Movement[] = [];
+  const legacy: Movement[] = [];
+  const items: MovementItem[] = [];
   const overdue: DueItem[] = [];
   const upcoming: DueItem[] = [];
   const projection = new Map<string, ProjectionMonth>();
 
-  for (const inc of input.incomes) {
-    if (accountId && inc.accountId !== accountId) continue;
-    if (!isDateInRange(inc.dateKey, range.from, range.to)) continue;
-    income = add(income, inc.amount);
-    movements.push({
-      id: inc.id,
-      type: 'income',
-      date: inc.dateKey,
-      amount: inc.amount,
-      label: inc.label,
-      accountId: inc.accountId,
-      accountName: inc.accountName,
-    });
+  for (const tx of input.transactions) {
+    if (!isDateInRange(tx.dateKey, range.from, range.to)) continue;
+    if (
+      !scope.has(tx.accountId) &&
+      !(tx.toAccountId && scope.has(tx.toAccountId))
+    )
+      continue;
+    const item = txToItem(tx, lookups, scope);
+    items.push(item);
+    if (tx.type === 'INCOME') {
+      legacy.push({
+        id: tx.id,
+        type: 'income',
+        date: tx.dateKey,
+        amount: tx.amount,
+        label: item.title,
+        accountId: tx.accountId,
+        accountName: item.accountName,
+      });
+    }
   }
 
   for (const credit of input.credits) {
     for (const inst of credit.installments) {
       if (inst.status === 'PAID') {
         const payAccount = inst.paidAccountId ?? credit.accountId;
-        if (accountId && payAccount !== accountId) continue;
+        if (!scope.has(payAccount)) continue;
         const key = inst.paidKey ?? inst.dueKey;
         if (!isDateInRange(key, range.from, range.to)) continue;
         const amount = inst.paidAmount ?? inst.amount;
-        paid = add(paid, amount);
-        movements.push({
+        items.push(
+          installmentToItem(
+            {
+              id: inst.id,
+              creditId: credit.id,
+              creditName: credit.name,
+              dateKey: key,
+              amount,
+              accountId: payAccount,
+            },
+            lookups,
+            scope,
+          ),
+        );
+        legacy.push({
           id: inst.id,
           type: 'installment_paid',
           date: key,
@@ -148,7 +176,7 @@ export function buildSummary(input: SummaryInput) {
         continue;
       }
       if (inst.status !== 'PENDING' || credit.status === 'CANCELLED') continue;
-      if (accountId && credit.accountId !== accountId) continue;
+      if (!scope.has(credit.accountId)) continue;
 
       const item: DueItem = {
         id: inst.id,
@@ -172,7 +200,7 @@ export function buildSummary(input: SummaryInput) {
       const carriedOver = late && includesToday && inst.dueKey < range.from;
       if (inRange || carriedOver) {
         committed = add(committed, inst.amount);
-        movements.push({
+        legacy.push({
           id: inst.id,
           type: late ? 'installment_overdue' : 'installment_pending',
           date: inst.dueKey,
@@ -209,25 +237,39 @@ export function buildSummary(input: SummaryInput) {
     }
   }
 
-  movements.sort(
+  legacy.sort(
     (a, b) => a.date.localeCompare(b.date) || a.type.localeCompare(b.type),
   );
   overdue.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   upcoming.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const sorted = sortMovements(items);
+  const flows = movementTotals(sorted);
 
   return {
     from: range.from,
     to: range.to,
-    accountId,
+    accountId: input.accountId,
+    book: input.book,
     today: todayKey,
     totals: {
-      income,
-      paidInstallments: paid,
-      available: add(income, -paid),
+      income: flows.income,
+      expense: flows.expense,
+      paidInstallments: flows.installments,
+      transfersIn: flows.transfersIn,
+      transfersOut: flows.transfersOut,
+      adjustments: flows.adjustments,
+      /** Lo que quedó del periodo: entró menos salió. */
+      net: flows.net,
+      /** Igual a `net` (nombre de antes). */
+      available: flows.net,
       committed,
       overdue: overdueTotal,
     },
-    movements,
+    /** Lo último del periodo (todos los tipos). */
+    recent: sorted.slice(0, RECENT_LIMIT),
+    movementCount: sorted.length,
+    /** Lista de antes: ingresos y cuotas. */
+    movements: legacy,
     overdue,
     upcoming: upcoming.slice(0, UPCOMING_LIMIT),
     projection: [...projection.values()].sort((a, b) =>

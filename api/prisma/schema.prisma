@@ -86,6 +86,10 @@ model User {
   financeAccounts       FinanceAccount[]
   incomes               Income[]
   credits               Credit[]
+  financeCategories     FinanceCategory[]
+  financeTransactions   FinanceTransaction[]
+  financeKeywords       FinanceKeyword[]
+  financeShortcuts      FinanceShortcut[]
   dayMoods              DayMood[]
   pushSubscriptions     PushSubscription[]
   habitProgress         HabitProgress[]
@@ -794,26 +798,84 @@ enum InstallmentStatus {
   SKIPPED
 }
 
+/// Qué es la cuenta de verdad. Las cuentas de antes de la fase 1 quedan como «General» (OTHER).
+enum FinanceAccountKind {
+  SAVINGS
+  CHECKING
+  CASH
+  WALLET
+  CREDIT_CARD
+  INVESTMENT
+  OTHER
+}
+
+enum FinanceCategoryKind {
+  EXPENSE
+  INCOME
+}
+
+enum FinanceTxType {
+  INCOME
+  EXPENSE
+  TRANSFER
+  ADJUSTMENT
+}
+
+/// De dónde salió un movimiento. Los de la fase 2 (WhatsApp, SMS, correo, Apple Pay, extracto) ya tienen su valor.
+enum FinanceTxSource {
+  MANUAL
+  TEXT
+  SHORTCUT
+  RECONCILE
+  LEGACY
+  IMPORT
+  WHATSAPP
+  SMS
+  EMAIL
+  APPLE_PAY
+  STATEMENT
+}
+
 model FinanceAccount {
-  id                  String              @id @default(cuid())
+  id                  String               @id @default(cuid())
   userId              String
-  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name                String              @db.VarChar(120)
-  type                FinanceAccountType  @default(PERSONAL)
-  currency            String              @default("COP") @db.VarChar(3)
-  color               String?             @db.VarChar(7)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String               @db.VarChar(120)
+  /// El libro: Personal, Negocio u Otro (dos libros separados).
+  type                FinanceAccountType   @default(PERSONAL)
+  currency            String               @default("COP") @db.VarChar(3)
+  color               String?              @db.VarChar(7)
+  /// Qué es de verdad: ahorros, corriente, efectivo, billetera (Nequi, Daviplata), tarjeta de crédito o inversión.
+  kind                FinanceAccountKind   @default(OTHER)
+  /// Banco o entidad (Bancolombia, Nequi…).
+  institution         String?              @db.VarChar(60)
+  /// Últimos cuatro dígitos, para reconocerla.
+  last4               String?              @db.VarChar(4)
+  /// Lo que tenía antes de todo lo anotado aquí (en una tarjeta de crédito, negativo = lo que debía).
+  openingBalance      Decimal              @default(0) @db.Decimal(14, 2)
+  /// Último cuadre con el banco: hasta ese día todo cuadra («revisado hasta aquí»), con el saldo que dijo el banco.
+  reconciledAt        DateTime?            @db.Date
+  reconciledBalance   Decimal?             @db.Decimal(14, 2)
+  /// Momento exacto del cuadre: lo que se anote después para ese mismo día no lo daña.
+  reconciledMoment    DateTime?
   incomes             Income[]
   credits             Credit[]
   /// Cuotas que se pagaron desde esta cuenta (cuando no fue la del crédito).
-  installmentPayments CreditInstallment[] @relation("InstallmentPaidFrom")
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  installmentPayments CreditInstallment[]  @relation("InstallmentPaidFrom")
+  transactions        FinanceTransaction[] @relation("FinanceTxAccount")
+  transfersIn         FinanceTransaction[] @relation("FinanceTxToAccount")
+  keywords            FinanceKeyword[]
+  shortcuts           FinanceShortcut[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   /// Archivada = en la papelera: no sale en listas ni en el resumen y se puede restaurar. null = activa.
   archivedAt          DateTime?
 
   @@index([userId])
 }
 
+/// Ingresos de antes de la fase 1. Desde la fase 1 viven en FinanceTransaction (tipo INCOME, con el mismo id); esta
+/// tabla queda como respaldo y ya no se escribe.
 model Income {
   id          String         @id @default(cuid())
   userId      String
@@ -824,8 +886,110 @@ model Income {
   date        DateTime       @db.Date
   description String?        @db.VarChar(200)
   createdAt   DateTime       @default(now())
+  /// Cuándo pasó a los movimientos (FinanceTransaction). null = falta pasarlo.
+  migratedAt  DateTime?
 
   @@index([userId, accountId, date])
+}
+
+/// Categorías de gastos e ingresos, con subcategorías e íconos. FerFinance trae las colombianas (con `systemKey`).
+model FinanceCategory {
+  id           String               @id @default(cuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         FinanceCategoryKind  @default(EXPENSE)
+  parentId     String?
+  parent       FinanceCategory?     @relation("FinanceCategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     FinanceCategory[]    @relation("FinanceCategoryTree")
+  name         String               @db.VarChar(60)
+  /// Un emoji.
+  icon         String?              @db.VarChar(16)
+  color        String?              @db.VarChar(7)
+  /// Clave de las que trae FerFinance (no se duplican y el texto las reconoce). null = una tuya.
+  systemKey    String?              @db.VarChar(40)
+  sortOrder    Int                  @default(0)
+  /// Archivada = ya no sale para elegir, pero los movimientos viejos la conservan.
+  archivedAt   DateTime?
+  transactions FinanceTransaction[]
+  keywords     FinanceKeyword[]
+  shortcuts    FinanceShortcut[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@unique([userId, systemKey])
+  @@index([userId, kind])
+  @@index([parentId])
+}
+
+/// Un movimiento: ingreso, gasto, transferencia entre tus cuentas o ajuste (el cuadre con el banco).
+model FinanceTransaction {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        FinanceTxType
+  /// De donde sale (gasto, transferencia) o a donde entra (ingreso). En un ajuste, la cuenta ajustada.
+  accountId   String
+  account     FinanceAccount   @relation("FinanceTxAccount", fields: [accountId], references: [id], onDelete: Cascade)
+  /// Solo en transferencias: a donde llega la plata.
+  toAccountId String?
+  toAccount   FinanceAccount?  @relation("FinanceTxToAccount", fields: [toAccountId], references: [id], onDelete: Cascade)
+  /// Siempre positivo, salvo en los ajustes (negativo = el saldo baja).
+  amount      Decimal          @db.Decimal(14, 2)
+  date        DateTime         @db.Date
+  categoryId  String?
+  category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  merchant    String?          @db.VarChar(120)
+  note        String?          @db.VarChar(300)
+  source      FinanceTxSource  @default(MANUAL)
+  /// Lo que se escribió o el aviso tal como llegó («almuerzo 18 lucas nequi»).
+  rawText     String?          @db.VarChar(500)
+  /// Por revisar (lo que llegue solo, en la fase 2). Lo anotado a mano nace revisado.
+  needsReview Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId, date])
+  @@index([accountId, date])
+  @@index([toAccountId, date])
+  @@index([categoryId])
+}
+
+/// Palabras que le enseñaste a FerFinance: «almuerzo» es Comida, «bancol» es tu cuenta de Bancolombia.
+model FinanceKeyword {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// En minúsculas y sin tildes.
+  keyword    String           @db.VarChar(60)
+  categoryId String?
+  category   FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  accountId  String?
+  account    FinanceAccount?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([userId, keyword])
+}
+
+/// «Lo de siempre»: el tinto, el almuerzo o el bus, anotados con un toque.
+model FinanceShortcut {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String           @db.VarChar(40)
+  icon       String?          @db.VarChar(16)
+  type       FinanceTxType    @default(EXPENSE)
+  amount     Decimal          @db.Decimal(14, 2)
+  accountId  String
+  account    FinanceAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  merchant   String?          @db.VarChar(120)
+  sortOrder  Int              @default(0)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([userId])
 }
 
 model Credit {

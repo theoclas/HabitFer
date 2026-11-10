@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { localTodayKey } from '../common/date.utils';
+import { localTodayKey, toDateKey } from '../common/date.utils';
 
 /** Lo más grande que cabe en DECIMAL(14,2): un billón de pesos menos uno. */
 export const MAX_AMOUNT = 999_999_999_999;
@@ -209,6 +209,19 @@ export function parseRange(
 
 export function isDateInRange(key: string, from: string, to: string): boolean {
   return key >= from && key <= to;
+}
+
+/** Día del pago de una cuota: el que eligió la persona; en pagos viejos, el día en que se marcó. */
+export function paidKeyOf(i: {
+  status: string;
+  paidDate: Date | null;
+  paidAt: Date | null;
+  dueDate: Date;
+}): string | null {
+  if (i.status !== 'PAID') return null;
+  if (i.paidDate) return toDateKey(i.paidDate);
+  if (i.paidAt) return toLocalDateKey(i.paidAt);
+  return toDateKey(i.dueDate);
 }
 
 /** Día (AAAA-MM-DD) de un instante, en la hora local del servidor (America/Bogota en producción). */

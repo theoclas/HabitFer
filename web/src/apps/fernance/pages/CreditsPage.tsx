@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { todayKey } from "../../../utils/dates";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchCredits } from "../api";
-import { AccountSelector } from "../components/AccountSelector";
+import { ScopeSelector } from "../components/ScopeSelector";
 import { CreditStatusChip, EmptyState, longDate } from "../components/bits";
 import { CreditFormModal } from "../components/CreditFormModal";
 import { Money } from "../components/Money";
@@ -59,7 +59,7 @@ function CreditCard({ credit, today, onOpen }: { credit: Credit; today: string; 
 
 export function CreditsPage() {
   const navigate = useNavigate();
-  const { accountId, accounts } = useFinanceContext();
+  const { scopeParams, accounts, dataVersion } = useFinanceContext();
   const [credits, setCredits] = useState<Credit[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("active");
@@ -69,16 +69,19 @@ export function CreditsPage() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setCredits(await fetchCredits({ accountId: accountId ?? undefined }));
+      setCredits(await fetchCredits(scopeParams));
     } catch (err) {
       setError(apiErrorMessage(err, "No se pudieron cargar los créditos."));
     }
-  }, [accountId]);
+  }, [scopeParams]);
 
   useEffect(() => {
     setCredits(null);
+  }, [scopeParams]);
+
+  useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const active = (credits ?? []).filter((c) => c.status === "ACTIVE");
   const done = (credits ?? []).filter((c) => c.status !== "ACTIVE");
@@ -109,7 +112,7 @@ export function CreditsPage() {
         </Button>
       </div>
       <div className="ff-toolbar">
-        <AccountSelector />
+        <ScopeSelector />
         <Segmented
           aria-label="Qué créditos ver"
           value={tab}

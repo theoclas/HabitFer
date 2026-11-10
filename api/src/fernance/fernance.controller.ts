@@ -23,8 +23,14 @@ import {
 import {
   CreateFinanceAccountDto,
   ListAccountsQuery,
+  ReconcileAccountDto,
   UpdateFinanceAccountDto,
 } from './dto/account.dto';
+import {
+  CreateCategoryDto,
+  ListCategoriesQuery,
+  UpdateCategoryDto,
+} from './dto/category.dto';
 import {
   CreateCreditDto,
   ListCreditsQuery,
@@ -39,10 +45,25 @@ import {
   ListIncomesQuery,
   UpdateIncomeDto,
 } from './dto/income.dto';
+import {
+  CreateKeywordDto,
+  CreateShortcutDto,
+  ParseTextDto,
+  UpdateShortcutDto,
+} from './dto/quick.dto';
+import {
+  BulkTransactionsDto,
+  CreateTransactionDto,
+  ListMovementsQuery,
+  UpdateTransactionDto,
+} from './dto/transaction.dto';
 import { FernanceAccountsService } from './fernance-accounts.service';
+import { FernanceCategoriesService } from './fernance-categories.service';
 import { FernanceCreditsService } from './fernance-credits.service';
 import { FernanceIncomesService } from './fernance-incomes.service';
+import { FernanceQuickService } from './fernance-quick.service';
 import { FernanceSummaryService } from './fernance-summary.service';
+import { FernanceTransactionsService } from './fernance-transactions.service';
 import { FinanceExportService } from './finance-export.service';
 
 @Controller('fernance/accounts')
@@ -91,7 +112,17 @@ export class FernanceAccountsController {
     return this.accounts.restore(user.userId, id);
   }
 
-  /** Borra para siempre una cuenta archivada, con sus ingresos y créditos. */
+  /** Cuadrar con el banco: crea el ajuste que falte y marca «revisado hasta aquí». */
+  @Post(':id/reconcile')
+  reconcile(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+    @Body() dto: ReconcileAccountDto,
+  ) {
+    return this.accounts.reconcile(user.userId, id, dto);
+  }
+
+  /** Borra para siempre una cuenta archivada, con sus movimientos y créditos. */
   @Delete(':id/permanent')
   purge(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
     return this.accounts.purge(user.userId, id);
@@ -140,7 +171,12 @@ export class FernanceCreditsController {
 
   @Get()
   list(@CurrentUser() user: AuthUserPayload, @Query() query: ListCreditsQuery) {
-    return this.credits.list(user.userId, query.accountId, query.status);
+    return this.credits.list(
+      user.userId,
+      query.accountId,
+      query.status,
+      query.book,
+    );
   }
 
   @Get(':id')
@@ -225,7 +261,163 @@ export class FernanceSummaryController {
       query.accountId,
       query.from,
       query.to,
+      query.book,
     );
+  }
+}
+
+@Controller('fernance/transactions')
+@UseGuards(JwtAuthGuard)
+export class FernanceTransactionsController {
+  constructor(private transactions: FernanceTransactionsService) {}
+
+  @Post()
+  create(
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: CreateTransactionDto,
+  ) {
+    return this.transactions.create(user.userId, dto);
+  }
+
+  /** Cambiar la categoría, la cuenta o la fecha de varios (o borrarlos). */
+  @Post('bulk')
+  bulk(@CurrentUser() user: AuthUserPayload, @Body() dto: BulkTransactionsDto) {
+    return this.transactions.bulk(user.userId, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateTransactionDto,
+  ) {
+    return this.transactions.update(user.userId, id, dto);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.transactions.remove(user.userId, id);
+  }
+}
+
+@Controller('fernance/movements')
+@UseGuards(JwtAuthGuard)
+export class FernanceMovementsController {
+  constructor(private transactions: FernanceTransactionsService) {}
+
+  /** Movimientos y cuotas pagadas, con búsqueda, filtros y los totales de lo filtrado. */
+  @Get()
+  list(
+    @CurrentUser() user: AuthUserPayload,
+    @Query() query: ListMovementsQuery,
+  ) {
+    return this.transactions.movements(user.userId, query);
+  }
+}
+
+@Controller('fernance/categories')
+@UseGuards(JwtAuthGuard)
+export class FernanceCategoriesController {
+  constructor(private categories: FernanceCategoriesService) {}
+
+  @Get()
+  list(
+    @CurrentUser() user: AuthUserPayload,
+    @Query() query: ListCategoriesQuery,
+  ) {
+    return this.categories.list(user.userId, query.archivadas === '1');
+  }
+
+  @Post()
+  create(@CurrentUser() user: AuthUserPayload, @Body() dto: CreateCategoryDto) {
+    return this.categories.create(user.userId, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.categories.update(user.userId, id, dto);
+  }
+
+  /** Archivar: deja de salir para elegir; los movimientos la conservan. */
+  @Delete(':id')
+  archive(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.categories.archive(user.userId, id);
+  }
+
+  @Post(':id/restore')
+  restore(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.categories.restore(user.userId, id);
+  }
+}
+
+@Controller('fernance')
+@UseGuards(JwtAuthGuard)
+export class FernanceQuickController {
+  constructor(private quick: FernanceQuickService) {}
+
+  /** «Escribe como hablas»: entiende la frase sin anotar nada. Se llama mientras se escribe. */
+  @Post('parse')
+  @Throttle({ default: { limit: 300, ttl: 60000 } })
+  parse(@CurrentUser() user: AuthUserPayload, @Body() dto: ParseTextDto) {
+    return this.quick.parse(user.userId, dto.text);
+  }
+
+  /** «Lo de siempre»: lo guardado y lo que se repite. */
+  @Get('quick')
+  quickEntries(@CurrentUser() user: AuthUserPayload) {
+    return this.quick.quick(user.userId);
+  }
+
+  @Get('keywords')
+  keywords(@CurrentUser() user: AuthUserPayload) {
+    return this.quick.keywords(user.userId);
+  }
+
+  @Post('keywords')
+  addKeyword(
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: CreateKeywordDto,
+  ) {
+    return this.quick.addKeyword(user.userId, dto);
+  }
+
+  @Delete('keywords/:id')
+  removeKeyword(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.quick.removeKeyword(user.userId, id);
+  }
+
+  @Get('shortcuts')
+  shortcuts(@CurrentUser() user: AuthUserPayload) {
+    return this.quick.shortcuts(user.userId);
+  }
+
+  @Post('shortcuts')
+  addShortcut(
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: CreateShortcutDto,
+  ) {
+    return this.quick.addShortcut(user.userId, dto);
+  }
+
+  @Patch('shortcuts/:id')
+  updateShortcut(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateShortcutDto,
+  ) {
+    return this.quick.updateShortcut(user.userId, id, dto);
+  }
+
+  @Delete('shortcuts/:id')
+  removeShortcut(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.quick.removeShortcut(user.userId, id);
   }
 }
 

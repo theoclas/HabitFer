@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { FinanceTxSource, FinanceTxType, type Prisma } from '@prisma/client';
 import { parseDateKey, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateIncomeDto, UpdateIncomeDto } from './dto/income.dto';
@@ -16,7 +16,7 @@ function serializeIncome(row: {
   accountId: string;
   amount: { toString(): string };
   date: Date;
-  description: string | null;
+  note: string | null;
   createdAt: Date;
   account?: { id: string; name: string; color: string | null };
 }) {
@@ -26,12 +26,16 @@ function serializeIncome(row: {
     accountId: row.accountId,
     amount: decimalToNumber(row.amount),
     date: toDateKey(row.date),
-    description: row.description,
+    description: row.note,
     createdAt: row.createdAt.toISOString(),
     account: row.account,
   };
 }
 
+/**
+ * Ingresos con la forma de antes (para la app que todavía no se actualiza). Desde la fase 1 los ingresos son
+ * movimientos (FinanceTransaction de tipo INCOME); aquí solo se leen y escriben con el formato viejo.
+ */
 @Injectable()
 export class FernanceIncomesService {
   constructor(
@@ -40,7 +44,10 @@ export class FernanceIncomesService {
   ) {}
 
   async list(userId: string, accountId?: string, from?: string, to?: string) {
-    const where: Prisma.IncomeWhereInput = { userId };
+    const where: Prisma.FinanceTransactionWhereInput = {
+      userId,
+      type: FinanceTxType.INCOME,
+    };
     if (accountId) {
       await this.accounts.assertAccount(userId, accountId);
       where.accountId = accountId;
@@ -54,7 +61,7 @@ export class FernanceIncomesService {
         ...(to ? { lte: parseDateKey(to) } : {}),
       };
     }
-    const rows = await this.prisma.income.findMany({
+    const rows = await this.prisma.financeTransaction.findMany({
       where,
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       include: { account: ACCOUNT_SELECT },
@@ -64,33 +71,40 @@ export class FernanceIncomesService {
 
   async create(userId: string, dto: CreateIncomeDto) {
     await this.accounts.assertActiveAccount(userId, dto.accountId);
-    const row = await this.prisma.income.create({
+    const row = await this.prisma.financeTransaction.create({
       data: {
         userId,
+        type: FinanceTxType.INCOME,
         accountId: dto.accountId,
         amount: roundPesos(dto.amount),
         date: parseDateKey(dto.date),
-        description: dto.description?.trim() || null,
+        note: dto.description?.trim() || null,
+        source: FinanceTxSource.MANUAL,
       },
       include: { account: ACCOUNT_SELECT },
     });
     return serializeIncome(row);
   }
 
-  async update(userId: string, id: string, dto: UpdateIncomeDto) {
-    const existing = await this.prisma.income.findFirst({
-      where: { id, userId },
+  private async assertIncome(userId: string, id: string) {
+    const existing = await this.prisma.financeTransaction.findFirst({
+      where: { id, userId, type: FinanceTxType.INCOME },
     });
     if (!existing) throw new NotFoundException('No encontré ese ingreso.');
+    return existing;
+  }
+
+  async update(userId: string, id: string, dto: UpdateIncomeDto) {
+    const existing = await this.assertIncome(userId, id);
     if (dto.accountId && dto.accountId !== existing.accountId)
       await this.accounts.assertActiveAccount(userId, dto.accountId);
-    const row = await this.prisma.income.update({
+    const row = await this.prisma.financeTransaction.update({
       where: { id },
       data: {
         accountId: dto.accountId,
         amount: dto.amount !== undefined ? roundPesos(dto.amount) : undefined,
         date: dto.date ? parseDateKey(dto.date) : undefined,
-        description:
+        note:
           dto.description !== undefined
             ? dto.description.trim() || null
             : undefined,
@@ -101,11 +115,8 @@ export class FernanceIncomesService {
   }
 
   async remove(userId: string, id: string) {
-    const existing = await this.prisma.income.findFirst({
-      where: { id, userId },
-    });
-    if (!existing) throw new NotFoundException('No encontré ese ingreso.');
-    await this.prisma.income.delete({ where: { id } });
+    await this.assertIncome(userId, id);
+    await this.prisma.financeTransaction.delete({ where: { id } });
     return { ok: true };
   }
 }

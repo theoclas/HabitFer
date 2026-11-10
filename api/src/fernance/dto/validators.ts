@@ -16,6 +16,31 @@ export function IsDateKey(options?: ValidationOptions): PropertyDecorator {
   );
 }
 
+/** Un saldo en pesos: puede ser cero o negativo (una tarjeta de crédito debe plata). */
+export function IsBalance(
+  label = 'El saldo',
+  options?: ValidationOptions,
+): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'isBalance',
+      validator: {
+        validate: (value: unknown) =>
+          typeof value === 'number' &&
+          Number.isFinite(value) &&
+          Math.abs(value) <= MAX_AMOUNT,
+        defaultMessage: (args) => {
+          const v: unknown = args?.value;
+          if (typeof v !== 'number' || !Number.isFinite(v))
+            return `${label} debe ser un número.`;
+          return `${label} es demasiado grande.`;
+        },
+      },
+    },
+    options,
+  );
+}
+
 /** Un valor en pesos: número entre 1 y lo que cabe en la base de datos. */
 export function IsMoney(
   label = 'El monto',

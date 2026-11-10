@@ -1,4 +1,4 @@
-import { CreditStatus } from '@prisma/client';
+import { CreditStatus, FinanceAccountType } from '@prisma/client';
 import {
   IsEnum,
   IsInt,
@@ -113,10 +113,19 @@ export class PayInstallmentDto {
   accountId?: string;
 }
 
+const BOOK_MSG = {
+  message: 'El libro no es válido (Personal, Negocio u Otro).',
+};
+
 export class ListCreditsQuery {
   @IsOptional()
   @IsString()
   accountId?: string;
+
+  /** Solo los créditos de las cuentas de un libro. */
+  @IsOptional()
+  @IsEnum(FinanceAccountType, BOOK_MSG)
+  book?: FinanceAccountType;
 
   @IsOptional()
   @IsEnum(CreditStatus, STATUS_MSG)
@@ -127,6 +136,10 @@ export class SummaryQuery {
   @IsOptional()
   @IsString()
   accountId?: string;
+
+  @IsOptional()
+  @IsEnum(FinanceAccountType, BOOK_MSG)
+  book?: FinanceAccountType;
 
   @IsOptional()
   @IsDateKey({ message: 'La fecha «desde» no es válida (usa AAAA-MM-DD).' })
