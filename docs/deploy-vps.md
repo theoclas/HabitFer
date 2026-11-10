@@ -164,6 +164,15 @@ Luego accede a FerFinance en `/app/fernance` o rutinas diarias en ProyecFer (`/a
 `CreditInstallment.paidDate/paidAmount/paidAccountId`). Al arrancar, la API revisa una sola vez los créditos viejos y corrige las
 cuotas pendientes que el cálculo anterior dejó corridas (si la primera caía el 29, 30 o 31); el log dice
 `[FerFinance] Fechas de cuotas revisadas: N créditos, M cuotas corregidas.`
+En producción desde el 10 nov 2026 (commit 412d149). Antes de encender se respaldó la base en
+`~/backups/habitfer-antes-ferfinance-f0-<fecha>.sql` y se revisó en seco el cambio de esquema con la imagen nueva:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm --no-deps --entrypoint sh api \
+  -c 'npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script'
+```
+
+Si el diff trae `DROP`, no encender: `prisma db push` corre sin `--accept-data-loss` y la API no arrancaría.
 
 ---
 
