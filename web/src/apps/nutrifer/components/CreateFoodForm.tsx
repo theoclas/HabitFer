@@ -26,6 +26,8 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
   const [per, setPer] = useState<"portion" | "100g">("portion");
   const [portionLabel, setPortionLabel] = useState("");
   const [portionGrams, setPortionGrams] = useState<Num>(null);
+  // Lo que trae el paquete entero: con eso se anota el paquete de un toque (y no «100 g»).
+  const [packageGrams, setPackageGrams] = useState<Num>(null);
   const [kcal, setKcal] = useState<Num>(null);
   const [protein, setProtein] = useState<Num>(null);
   const [carbs, setCarbs] = useState<Num>(null);
@@ -40,6 +42,9 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
   const [busy, setBusy] = useState(false);
 
   const valid = name.trim().length >= 2 && kcal != null && (per === "100g" || portionLabel.trim().length > 0);
+  // El paquete solo se puede relacionar con los valores si van por 100 g o si se sabe cuánto pesa la porción.
+  const packageUsable = per === "100g" || portionGrams != null;
+  const sendPackage = !chain && packageUsable && packageGrams != null && packageGrams > 0;
 
   const save = async () => {
     if (!valid || kcal == null) return;
@@ -52,6 +57,7 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
         carbs: carbs ?? 0,
         fat: fat ?? 0,
         ...(per === "portion" ? { portionLabel: portionLabel.trim(), portionGrams: portionGrams ?? undefined } : {}),
+        ...(sendPackage && packageGrams != null ? { packageGrams } : {}),
         ...(barcode ? { barcode } : {}),
         ...(chain && !more ? { brand: chain } : {}),
         ...(more
@@ -152,6 +158,36 @@ export function CreateFoodForm({ initialName, barcode, brand: initialBrand, note
       <p className="nf-hint" style={{ margin: 0 }}>
         Los encuentras en la tabla nutricional del empaque. Si no sabes los macros, deja solo las calorías.
       </p>
+      {!chain && (
+        <div className="nf-field">
+          <label className="nf-label" htmlFor="nf-package-grams">
+            ¿Cuánto trae el paquete?
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <InputNumber
+              id="nf-package-grams"
+              min={1}
+              max={5000}
+              value={packageGrams}
+              disabled={!packageUsable}
+              inputMode="decimal"
+              placeholder="El «peso neto» del empaque"
+              onChange={(v) => setPackageGrams(typeof v === "number" ? v : null)}
+              style={{ width: "100%" }}
+            />
+            <span className="nf-hint" style={{ whiteSpace: "nowrap" }}>
+              g o ml
+            </span>
+          </div>
+          <span className="nf-hint">
+            {packageUsable
+              ? per === "100g"
+                ? "Así, al anotarlo, sale el paquete entero y no 100 g."
+                : "Queda como otra medida para anotar el paquete entero."
+              : "Para usarlo, escribe arriba cuánto pesa la porción."}
+          </span>
+        </div>
+      )}
       <button type="button" className={`nf-morebtn${more ? " is-open" : ""}`} aria-expanded={more} onClick={() => setMore((m) => !m)}>
         <span>
           Más datos del empaque

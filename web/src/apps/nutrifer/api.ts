@@ -61,6 +61,8 @@ export type NewFood = {
   name: string;
   portionLabel?: string;
   portionGrams?: number;
+  /** Lo que trae el paquete entero (g o ml). */
+  packageGrams?: number;
   kcal: number;
   protein: number;
   fat: number;

@@ -495,6 +495,13 @@ export class CreateFoodDto {
   @Max(5000)
   portionGrams?: number;
 
+  /** Lo que trae el paquete o la botella entera (g o ml): queda como la medida «Paquete». */
+  @IsOptional()
+  @IsNumber()
+  @Min(1, { message: 'El paquete debe traer al menos 1 g.' })
+  @Max(5000, { message: 'Revisa lo que trae el paquete: es demasiado.' })
+  packageGrams?: number;
+
   @IsNumber()
   @Min(0)
   @Max(5000, { message: 'Revisa las calorías: son demasiadas.' })

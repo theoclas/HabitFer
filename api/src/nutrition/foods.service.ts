@@ -4,6 +4,7 @@ import { addDays, startOfToday } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { CHAINS } from './data/chains';
 import { amountText } from './entry.utils';
+import { ownPortions } from './food-portions';
 import type { CreateFoodDto } from './nutrition.dto';
 import { computeSeals, type Seal } from './packaged/seals';
 import { normalize, rank, withoutWords, wordsOf, type SearchItem } from './search.utils';
@@ -379,7 +380,6 @@ export class FoodsService implements OnModuleInit {
   async create(userId: string, dto: CreateFoodDto): Promise<FoodResult> {
     const grams = dto.portionGrams ?? 100;
     const f = 100 / grams;
-    const label = dto.portionLabel?.trim() || (dto.portionGrams ? 'Porción' : '100 g');
     const name = dto.name.trim();
     const brand = dto.brand?.trim() || null;
     const packaged = dto.transFat != null || dto.sweetener !== undefined;
@@ -402,7 +402,7 @@ export class FoodsService implements OnModuleInit {
         ...(packaged
           ? { nutrients: { transFat: dto.transFat == null ? null : dto.transFat * f, sweetener: dto.sweetener === true } as Prisma.InputJsonValue }
           : {}),
-        portions: { create: [{ label, grams, isDefault: true }] },
+        portions: { create: ownPortions(dto).map((p, i) => ({ ...p, sortOrder: i })) },
       },
       select: SUMMARY_SELECT,
     });
