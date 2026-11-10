@@ -1,5 +1,6 @@
 import { Typography } from "antd";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { ACTIVE_APP_IDS, APPS } from "../platform/apps";
 
 type Props = {
   title: string;
@@ -25,21 +26,15 @@ export function AuthLayout({ title, subtitle, children, wide }: Props) {
             Fersua
           </Typography.Title>
           <Typography.Paragraph className="auth-hero__tagline">
-            Tu ecosistema personal: habitos, proyectos colaborativos y finanzas en un solo lugar.
+            Tu ecosistema personal: hábitos, finanzas y nutrición en un solo lugar.
           </Typography.Paragraph>
           <ul className="auth-hero__apps">
-            <li>
-              <span className="auth-hero__dot auth-hero__dot--habit" />
-              HabitFer
-            </li>
-            <li>
-              <span className="auth-hero__dot auth-hero__dot--proyec" />
-              ProyecFer
-            </li>
-            <li>
-              <span className="auth-hero__dot auth-hero__dot--fern" />
-              FerFinance
-            </li>
+            {ACTIVE_APP_IDS.map((id) => (
+              <li key={id}>
+                <span className="auth-hero__dot" style={{ "--dot": APPS[id].color } as CSSProperties} />
+                {APPS[id].name}
+              </li>
+            ))}
           </ul>
         </div>
       </aside>

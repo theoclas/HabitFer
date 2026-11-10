@@ -323,16 +323,15 @@
   font-size: 0.95rem;
 }
 
+/* El color de cada app llega en --dot (AuthLayout lo toma de platform/apps.ts). */
 .auth-hero__dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--dot);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dot) 60%, transparent);
 }
-
-.auth-hero__dot--habit { background: #2dd4bf; box-shadow: 0 0 12px rgba(45, 212, 191, 0.6); }
-.auth-hero__dot--proyec { background: #818cf8; box-shadow: 0 0 12px rgba(129, 140, 248, 0.6); }
-.auth-hero__dot--fern { background: #F5C542; box-shadow: 0 0 12px rgba(245, 197, 66, 0.6); }
 
 .auth-panel {
   display: grid;
@@ -1244,6 +1243,21 @@
   animation: fl-pulse 1.8s ease-in-out infinite;
 }
 
+/* Con un número impar de apps, la primera ocupa toda la fila y se acuesta: el ícono a la izquierda. */
+.fl-tile--wide {
+  grid-column: 1 / -1;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: 14px;
+  row-gap: 3px;
+  min-height: 92px;
+}
+.fl-tile--wide .fl-tile__icon { grid-row: 1 / span 2; align-self: center; margin-bottom: 0; }
+/* El nombre deja libre la esquina del atajo o de «Estás aquí»; la descripción va debajo y usa todo el ancho. */
+.fl-tile--wide .fl-tile__name { align-self: end; padding-right: 96px; }
+.fl-tile--wide .fl-tile__desc { align-self: start; }
+
 /* Despegue: la elegida crece y brilla, las demás se apagan y el lanzador se va. */
 .fl-launch.is-launching .fl-tile:not(.is-launching) { opacity: 0.32; transform: scale(0.95); }
 .fl-tile.is-launching {
@@ -1261,6 +1275,7 @@
 .fl-launch--sheet.is-launching .fl-launch__backdrop { animation: fl-fade-out 0.22s ease-in forwards; }
 
 .fl-launch--sheet .fl-tile { min-height: 140px; padding: 13px; }
+.fl-launch--sheet .fl-tile--wide { min-height: 88px; }
 .fl-launch--sheet .fl-tile__desc { font-size: 0.76rem; }
 .fl-launch--sheet .fl-tile__key { display: none; }
 

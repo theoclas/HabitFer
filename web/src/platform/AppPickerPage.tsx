@@ -2,7 +2,7 @@ import { RightOutlined } from "@ant-design/icons";
 import { Card, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { AppGlyph } from "./AppGlyph";
-import { APPS, type AppId, setLastApp } from "./apps";
+import { ACTIVE_APP_IDS, APPS, type AppId, setLastApp } from "./apps";
 
 export function AppPickerPage() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export function AppPickerPage() {
           Elige donde quieres empezar. Puedes cambiar en cualquier momento desde arriba a la derecha.
         </Typography.Paragraph>
         <div style={{ display: "grid", gap: 14 }}>
-          {(Object.values(APPS) as (typeof APPS)[AppId][]).map((app) => (
+          {ACTIVE_APP_IDS.map((id) => APPS[id]).map((app) => (
             <Card
               key={app.id}
               hoverable

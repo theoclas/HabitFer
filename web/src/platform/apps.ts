@@ -8,6 +8,11 @@ export type AppConfig = {
   description: string;
   color: string;
   basePath: string;
+  /**
+   * Retirada: no sale en el lanzador, en el selector ni en la pantalla de entrada, y su dirección lleva a
+   * HabitFer. Su código y sus datos se quedan; para volver a prenderla basta con quitar la marca.
+   */
+  retired?: boolean;
 };
 
 export const APPS: Record<AppId, AppConfig> = {
@@ -24,6 +29,8 @@ export const APPS: Record<AppId, AppConfig> = {
     description: "Proyectos colaborativos, páginas y equipos",
     color: "#6366f1",
     basePath: "/app/proyecfer",
+    // Retirada el 10 nov 2026: solo se oculta. Para volver a prenderla, borrar esta línea.
+    retired: true,
   },
   fernance: {
     id: "fernance",
@@ -41,9 +48,17 @@ export const APPS: Record<AppId, AppConfig> = {
   },
 };
 
+/** Las apps que se ofrecen (sin las retiradas), en el orden del lanzador. */
+export const ACTIVE_APP_IDS: readonly AppId[] = (Object.keys(APPS) as AppId[]).filter((id) => !APPS[id].retired);
+
+function isActiveApp(v: string | null): v is AppId {
+  return v !== null && (ACTIVE_APP_IDS as readonly string[]).includes(v);
+}
+
+/** La última app abierta. Una retirada (o un valor que no es de ninguna app) cuenta como ninguna. */
 export function getLastApp(): AppId | null {
   const v = localStorage.getItem(LAST_APP_KEY);
-  return v === "habitfer" || v === "proyecfer" || v === "fernance" || v === "nutrifer" ? v : null;
+  return isActiveApp(v) ? v : null;
 }
 
 export function setLastApp(id: AppId) {

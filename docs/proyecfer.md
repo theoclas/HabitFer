@@ -1,5 +1,17 @@
 # ProyecFer
 
+> **Retirada el 10 nov 2026 (solo oculta).** Fernando pidió retirarla y eligió la opción que se puede deshacer:
+> ProyecFer ya no sale en el lanzador de apps, en «Bienvenido a Fersua» ni en la pantalla de entrada, y cualquier
+> dirección `/app/proyecfer/*` lleva a HabitFer. Su código (web y API) y sus tablas siguen intactos, y la API
+> `/api/proyecfer` sigue respondiendo. Ninguna otra app usa sus datos (ni el respaldo de HabitFer ni los avisos).
+>
+> Para volver a prenderla: borrar `retired: true` de `proyecfer` en `web/src/platform/apps.ts` (la marca también
+> controla la ruta en `web/src/router.tsx`) y desplegar la web. Si algún día se borra del todo, sus tablas son
+> Workspace, WorkspaceMember, CollabProject, CollabProjectMember, CollabTask, CollabTaskCompletion, Page, Block,
+> Database, DatabaseProperty, DatabaseRow, DatabaseView, Comment, ActivityLog, CollabNotification, WorkGuide y
+> WorkGuideStep. Hace falta respaldo antes, y ojo: el arranque de la API corre `db push` sin `--accept-data-loss`, así
+> que si se quitan del esquema sin borrarlas a mano en producción, la API no arranca.
+
 Modulo colaborativo tipo Notion dentro de la plataforma Fersua (HabitFer + ProyecFer).
 
 ## Rutas frontend

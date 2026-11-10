@@ -25,7 +25,7 @@ import { ProyecFerStatsPage } from "./apps/proyecfer/pages/ProyecFerStatsPage";
 import { WorkGuidePage } from "./apps/proyecfer/pages/WorkGuidePage";
 import { RequireAuth } from "./layouts/RequireAuth";
 import { AppPickerPage } from "./platform/AppPickerPage";
-import { resolvePostLoginPath } from "./platform/apps";
+import { APPS, resolvePostLoginPath } from "./platform/apps";
 import { AchievementsPage } from "./pages/AchievementsPage";
 import { HabitDetailPage } from "./pages/HabitDetailPage";
 import { HabitsPage } from "./pages/HabitsPage";
@@ -64,16 +64,21 @@ export function AppRouter() {
           <Route path="stats" element={<StatsPage />} />
           <Route path="logros" element={<AchievementsPage />} />
         </Route>
-        <Route path="/app/proyecfer" element={<ProyecFerShell />}>
-          <Route index element={<ProyecFerHomePage />} />
-          <Route path="workspaces" element={<WorkspacesPage />} />
-          <Route path="workspaces/:workspaceId" element={<WorkspaceDashboardPage />} />
-          <Route path="workspaces/:workspaceId/projects/:projectId" element={<CollabProjectPage />} />
-          <Route path="workspaces/:workspaceId/projects/:projectId/guides/:guideId" element={<WorkGuidePage />} />
-          <Route path="workspaces/:workspaceId/pages/:pageId" element={<PageEditorPage />} />
-          <Route path="workspaces/:workspaceId/databases/:databaseId" element={<DatabasePage />} />
-          <Route path="stats" element={<ProyecFerStatsPage />} />
-        </Route>
+        {APPS.proyecfer.retired ? (
+          // ProyecFer está retirada (ver platform/apps.ts): sus direcciones viejas llevan a HabitFer.
+          <Route path="/app/proyecfer/*" element={<Navigate to="/app/habitfer" replace />} />
+        ) : (
+          <Route path="/app/proyecfer" element={<ProyecFerShell />}>
+            <Route index element={<ProyecFerHomePage />} />
+            <Route path="workspaces" element={<WorkspacesPage />} />
+            <Route path="workspaces/:workspaceId" element={<WorkspaceDashboardPage />} />
+            <Route path="workspaces/:workspaceId/projects/:projectId" element={<CollabProjectPage />} />
+            <Route path="workspaces/:workspaceId/projects/:projectId/guides/:guideId" element={<WorkGuidePage />} />
+            <Route path="workspaces/:workspaceId/pages/:pageId" element={<PageEditorPage />} />
+            <Route path="workspaces/:workspaceId/databases/:databaseId" element={<DatabasePage />} />
+            <Route path="stats" element={<ProyecFerStatsPage />} />
+          </Route>
+        )}
         <Route path="/app/fernance" element={<FernanceShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="accounts" element={<AccountsPage />} />

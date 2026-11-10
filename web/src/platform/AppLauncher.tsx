@@ -2,10 +2,12 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { AppGlyph } from "./AppGlyph";
-import { APPS, type AppId } from "./apps";
+import { ACTIVE_APP_IDS, APPS, type AppId } from "./apps";
+import { verticalStep, wideFirst } from "./launcherGrid";
 
-const IDS = Object.keys(APPS) as AppId[];
-const COLS = 2;
+const IDS = ACTIVE_APP_IDS;
+/** Con un número impar de apps, la primera tarjeta va a lo ancho (ver launcherGrid.ts). */
+const WIDE_FIRST = wideFirst(IDS.length);
 /** En pantallas angostas el lanzador sale desde abajo, como una hoja. */
 const SHEET_QUERY = "(max-width: 640px)";
 
@@ -29,8 +31,8 @@ type Props = {
 type Phase = "open" | "closing" | "launching";
 
 /**
- * Lanzador de apps: cuatro tarjetas con su ícono, un brillo que sigue el puntero y un «despegue» al
- * elegir. Teclado: flechas, Tab, 1–4 y Esc. Toma el modo claro u oscuro de la app abierta.
+ * Lanzador de apps: una tarjeta por app con su ícono, un brillo que sigue el puntero y un «despegue» al
+ * elegir. Teclado: flechas, Tab, 1–N y Esc. Toma el modo claro u oscuro de la app abierta.
  */
 export function AppLauncher({ current, anchor, onClose, onLaunch }: Props) {
   const titleId = useId();
@@ -106,8 +108,8 @@ export function AppLauncher({ current, anchor, onClose, onLaunch }: Props) {
     let next = -1;
     if (e.key === "ArrowRight") next = (i + 1) % total;
     else if (e.key === "ArrowLeft") next = (i - 1 + total) % total;
-    else if (e.key === "ArrowDown") next = (i + COLS + total) % total;
-    else if (e.key === "ArrowUp") next = (i - COLS + total) % total;
+    else if (e.key === "ArrowDown") next = i < 0 ? 0 : verticalStep(i, 1, total);
+    else if (e.key === "ArrowUp") next = i < 0 ? 0 : verticalStep(i, -1, total);
     else if (e.key === "Tab") next = e.shiftKey ? (i - 1 + total) % total : (i + 1) % total;
     if (next >= 0) {
       e.preventDefault();
@@ -166,7 +168,9 @@ export function AppLauncher({ current, anchor, onClose, onLaunch }: Props) {
                   tiles.current[i] = el;
                 }}
                 type="button"
-                className={`fl-tile${here ? " is-current" : ""}${launching === id ? " is-launching" : ""}`}
+                className={`fl-tile${WIDE_FIRST && i === 0 ? " fl-tile--wide" : ""}${here ? " is-current" : ""}${
+                  launching === id ? " is-launching" : ""
+                }`}
                 style={style}
                 aria-current={here ? "page" : undefined}
                 aria-keyshortcuts={String(i + 1)}
