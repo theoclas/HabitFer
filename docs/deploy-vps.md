@@ -179,8 +179,10 @@ Si el diff trae `DROP`, no encender: `prisma db push` corre sin `--accept-data-l
 («lo de siempre»); columnas nuevas en `FinanceAccount` (`kind`, `institution`, `last4`, `openingBalance`, `reconciledAt`,
 `reconciledBalance`, `reconciledMoment`) y en `Income` (`migratedAt`). Al arrancar, la API pasa una sola vez los ingresos de
 `Income` a `FinanceTransaction` (con el mismo id y, si la descripción lo dice, su categoría) y los marca con `migratedAt`; la
-tabla vieja queda como respaldo. El log dice `[FerFinance] Ingresos pasados a movimientos: N (M con categoría).` Las categorías
-colombianas se siembran solas por persona la primera vez que se piden.
+tabla vieja queda como respaldo. El log dice `[FerFinance] Ingresos pasados a movimientos: N (M con categoría).` (si no había
+ingresos, no dice nada). Las categorías colombianas se siembran solas por persona la primera vez que se piden.
+En producción desde el 10 nov 2026 (commit 0532887), con respaldo previo en `~/backups/habitfer-antes-ferfinance-f1-<fecha>.sql`.
+Para comprobar que no quedó nada por pasar: `SELECT COUNT(*) FROM Income WHERE migratedAt IS NULL;` debe dar 0.
 
 ---
 
