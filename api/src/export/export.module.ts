@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { FernanceModule } from '../fernance/fernance.module';
 import { NutritionModule } from '../nutrition/nutrition.module';
 import { ExportController } from './export.controller';
 import { ExportService } from './export.service';
 
 @Module({
-  imports: [NutritionModule],
+  imports: [NutritionModule, FernanceModule],
   controllers: [ExportController],
   providers: [ExportService],
 })

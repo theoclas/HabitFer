@@ -1063,7 +1063,8 @@
   font-family: var(--font-body, system-ui, sans-serif);
 }
 :root[data-hf-theme="day"] .fl-launch,
-:root[data-nf-theme="light"] .fl-launch {
+:root[data-nf-theme="light"] .fl-launch,
+:root[data-ff-theme="light"] .fl-launch {
   --fl-panel: rgba(255, 255, 255, 0.93);
   --fl-line: rgba(20, 32, 25, 0.11);
   --fl-tile: rgba(20, 32, 25, 0.025);

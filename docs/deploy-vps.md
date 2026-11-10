@@ -158,7 +158,12 @@ cd api
 npx prisma db push
 ```
 
-Luego accede a Fernance en `/app/fernance` o rutinas diarias en ProyecFer (`/app/proyecfer`) desde el App Picker tras iniciar sesión.
+Luego accede a FerFinance en `/app/fernance` o rutinas diarias en ProyecFer (`/app/proyecfer`) desde el App Picker tras iniciar sesión.
+
+**FerFinance fase 0** (nov 2026): el esquema solo agrega columnas (`FinanceAccount.archivedAt`, `Credit.datesCheckedAt`,
+`CreditInstallment.paidDate/paidAmount/paidAccountId`). Al arrancar, la API revisa una sola vez los créditos viejos y corrige las
+cuotas pendientes que el cálculo anterior dejó corridas (si la primera caía el 29, 30 o 31); el log dice
+`[FerFinance] Fechas de cuotas revisadas: N créditos, M cuotas corregidas.`
 
 ---
 

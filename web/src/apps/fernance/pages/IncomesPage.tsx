@@ -1,153 +1,122 @@
-import { Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, message } from "antd";
-import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import {
-  createIncome,
-  deleteIncome,
-  fetchFinanceAccounts,
-  fetchIncomes,
-  updateIncome,
-} from "../../../api/client";
-import type { FinanceAccount, Income } from "../../../types/fernance";
-import { formatCalendarDate } from "../../../utils/dates";
+import { PlusOutlined } from "@ant-design/icons";
+import { Button, Skeleton } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { apiErrorMessage } from "../../habitfer/format";
+import { fetchIncomes } from "../api";
 import { AccountSelector } from "../components/AccountSelector";
-import { MonthRangePicker } from "../components/MonthRangePicker";
-import { MoneyDisplay } from "../components/MoneyDisplay";
-import { useFinanceContext } from "../context/FinanceContext";
+import { DateBlock, EmptyState } from "../components/bits";
+import { IncomeFormModal } from "../components/IncomeFormModal";
+import { Money } from "../components/Money";
+import { PeriodPicker } from "../components/PeriodPicker";
+import { monthLabel, rangeLabel, useFinanceContext } from "../context/FinanceContext";
+import { formatCop } from "../money";
+import type { Income } from "../types";
 
 export function IncomesPage() {
-  const { accountId, bounds } = useFinanceContext();
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const { accountId, bounds, periodMode, year, month, accounts } = useFinanceContext();
+  const [incomes, setIncomes] = useState<Income[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Income | null>(null);
-  const [form] = Form.useForm();
+  const [open, setOpen] = useState(false);
 
-  const load = () => {
-    setLoading(true);
-    void Promise.all([
-      fetchIncomes({ accountId: accountId ?? undefined, from: bounds.from, to: bounds.to }),
-      fetchFinanceAccounts(),
-    ])
-      .then(([inc, acc]) => {
-        setIncomes(inc);
-        setAccounts(acc);
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, [accountId, bounds.from, bounds.to]);
-
-  const openCreate = () => {
-    setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({
-      date: dayjs(),
-      accountId: accountId ?? accounts[0]?.id,
-    });
-    setOpen(true);
-  };
-
-  const openEdit = (row: Income) => {
-    setEditing(row);
-    form.setFieldsValue({
-      ...row,
-      date: dayjs(row.date),
-    });
-    setOpen(true);
-  };
-
-  const onSubmit = async () => {
-    const values = await form.validateFields();
-    const payload = {
-      accountId: values.accountId,
-      amount: values.amount,
-      date: (values.date as dayjs.Dayjs).format("YYYY-MM-DD"),
-      description: values.description,
-    };
+  const load = useCallback(async () => {
     try {
-      if (editing) {
-        await updateIncome(editing.id, payload);
-        message.success("Ingreso actualizado");
-      } else {
-        await createIncome(payload);
-        message.success("Ingreso registrado");
-      }
-      setOpen(false);
-      load();
-    } catch {
-      message.error("No se pudo guardar");
+      setError(null);
+      setIncomes(await fetchIncomes({ accountId: accountId ?? undefined, from: bounds.from, to: bounds.to }));
+    } catch (err) {
+      setError(apiErrorMessage(err, "No se pudieron cargar los ingresos."));
     }
+  }, [accountId, bounds.from, bounds.to]);
+
+  useEffect(() => {
+    setIncomes(null);
+    void load();
+  }, [load]);
+
+  const total = (incomes ?? []).reduce((s, i) => s + i.amount, 0);
+  const periodName = periodMode === "month" ? monthLabel(year, month) : rangeLabel(bounds.from, bounds.to);
+
+  const openNew = () => {
+    setEditing(null);
+    setOpen(true);
   };
 
   return (
-    <div>
-      <div className="fern-page-toolbar">
-        <AccountSelector />
-        <MonthRangePicker />
-        <Button type="primary" onClick={openCreate}>
-          Registrar ingreso
+    <div className="ff-page">
+      <div className="ff-pagehead">
+        <div>
+          <h1 className="ff-title">Ingresos</h1>
+          <p className="ff-subtitle">
+            {incomes ? (
+              <>
+                Entró <Money value={total} tone="in" /> en {periodName}.
+              </>
+            ) : (
+              "Lo que te entra, por cuenta."
+            )}
+          </p>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openNew} disabled={!accounts.length}>
+          Anotar ingreso
         </Button>
       </div>
+      <div className="ff-toolbar">
+        <AccountSelector />
+        <PeriodPicker />
+      </div>
 
-      <Table
-        loading={loading}
-        rowKey="id"
-        dataSource={incomes}
-        columns={[
-          { title: "Fecha", dataIndex: "date", render: (d: string) => formatCalendarDate(d) },
-          { title: "Cuenta", dataIndex: ["account", "name"], render: (_: unknown, r: Income) => r.account?.name ?? "—" },
-          { title: "Descripcion", dataIndex: "description", render: (d: string | null) => d || "Ingreso" },
-          {
-            title: "Monto",
-            dataIndex: "amount",
-            align: "right" as const,
-            render: (v: number) => <MoneyDisplay amount={v} className="fern-money-positive" />,
-          },
-          {
-            title: "",
-            render: (_: unknown, row: Income) => (
-              <Space>
-                <Button size="small" onClick={() => openEdit(row)}>Editar</Button>
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => {
-                    Modal.confirm({
-                      title: "Eliminar ingreso",
-                      onOk: async () => {
-                        await deleteIncome(row.id);
-                        message.success("Eliminado");
-                        load();
-                      },
-                    });
-                  }}
-                >
-                  Eliminar
-                </Button>
-              </Space>
-            ),
-          },
-        ]}
-      />
+      {error && (
+        <EmptyState title="No se pudieron cargar los ingresos" action={<Button onClick={() => void load()}>Reintentar</Button>}>
+          {error}
+        </EmptyState>
+      )}
+      {!incomes && !error && <Skeleton active paragraph={{ rows: 5 }} />}
 
-      <Modal title={editing ? "Editar ingreso" : "Nuevo ingreso"} open={open} onCancel={() => setOpen(false)} onOk={() => void onSubmit()} okText="Guardar">
-        <Form form={form} layout="vertical">
-          <Form.Item name="accountId" label="Cuenta" rules={[{ required: true }]}>
-            <Select options={accounts.map((a) => ({ value: a.id, label: a.name }))} />
-          </Form.Item>
-          <Form.Item name="amount" label="Monto (COP)" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: "100%" }} formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")} />
-          </Form.Item>
-          <Form.Item name="date" label="Fecha" rules={[{ required: true }]}>
-            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-          </Form.Item>
-          <Form.Item name="description" label="Descripcion">
-            <Input placeholder="Salario, venta, etc." />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {incomes && incomes.length === 0 && (
+        <EmptyState
+          title="Sin ingresos en este periodo"
+          action={
+            <Button type="primary" icon={<PlusOutlined />} onClick={openNew} disabled={!accounts.length}>
+              Anotar el primero
+            </Button>
+          }
+        >
+          {accounts.length ? "Anota tu salario, una venta o la prima, y aparece aquí y en el resumen." : "Primero crea una cuenta en la pestaña Cuentas."}
+        </EmptyState>
+      )}
+
+      {incomes && incomes.length > 0 && (
+        <section className="ff-card" aria-label={`Ingresos de ${periodName}`}>
+          <div className="ff-list">
+            {incomes.map((i) => (
+              <button
+                key={i.id}
+                type="button"
+                className="ff-row"
+                onClick={() => {
+                  setEditing(i);
+                  setOpen(true);
+                }}
+                aria-label={`${i.description || "Ingreso"}, ${formatCop(i.amount)}. Toca para editar`}
+              >
+                <DateBlock dateKey={i.date} />
+                <span className="ff-row__main">
+                  <span className="ff-row__title">{i.description || "Ingreso"}</span>
+                  <span className="ff-row__meta">
+                    <span className="ff-dot" style={{ background: i.account?.color ?? undefined }} />
+                    {i.account?.name ?? "Cuenta"}
+                  </span>
+                </span>
+                <span className="ff-row__end">
+                  <Money value={i.amount} signed tone="in" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <IncomeFormModal open={open} income={editing} onClose={() => setOpen(false)} onDone={() => void load()} />
     </div>
   );
 }

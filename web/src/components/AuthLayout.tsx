@@ -38,7 +38,7 @@ export function AuthLayout({ title, subtitle, children, wide }: Props) {
             </li>
             <li>
               <span className="auth-hero__dot auth-hero__dot--fern" />
-              Fernance
+              FerFinance
             </li>
           </ul>
         </div>

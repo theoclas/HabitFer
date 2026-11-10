@@ -1,134 +1,193 @@
-import { Button, Card, Form, Input, Modal, Select, Space, Table, message } from "antd";
-import { useEffect, useState } from "react";
-import { createFinanceAccount, deleteFinanceAccount, fetchFinanceAccounts, updateFinanceAccount } from "../../../api/client";
-import type { FinanceAccount, FinanceAccountType } from "../../../types/fernance";
-import { ACCOUNT_TYPE_LABELS } from "../../../types/fernance";
+import { DeleteOutlined, EditOutlined, InboxOutlined, PlusOutlined, UndoOutlined } from "@ant-design/icons";
+import { App, Button, Skeleton } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { apiErrorMessage } from "../../habitfer/format";
+import { archiveFinanceAccount, fetchFinanceAccounts, purgeFinanceAccount, restoreFinanceAccount } from "../api";
+import { AccountFormModal } from "../components/AccountFormModal";
+import { BackupCard } from "../components/BackupCard";
+import { EmptyState } from "../components/bits";
+import { useFinanceContext } from "../context/FinanceContext";
+import { ACCOUNT_TYPE_LABELS, type FinanceAccount } from "../types";
 
 export function AccountsPage() {
-  const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const { message, modal, notification } = App.useApp();
+  const { reloadAccounts } = useFinanceContext();
+  const [all, setAll] = useState<FinanceAccount[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<FinanceAccount | null>(null);
-  const [form] = Form.useForm();
+  const [open, setOpen] = useState(false);
 
-  const load = () => {
-    setLoading(true);
-    void fetchFinanceAccounts()
-      .then(setAccounts)
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const openCreate = () => {
-    setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({ type: "PERSONAL", color: "#D4AF37" });
-    setOpen(true);
-  };
-
-  const openEdit = (row: FinanceAccount) => {
-    setEditing(row);
-    form.setFieldsValue(row);
-    setOpen(true);
-  };
-
-  const onSubmit = async () => {
-    const values = await form.validateFields();
+  const load = useCallback(async () => {
     try {
-      if (editing) {
-        await updateFinanceAccount(editing.id, values);
-        message.success("Cuenta actualizada");
-      } else {
-        await createFinanceAccount(values);
-        message.success("Cuenta creada");
-      }
-      setOpen(false);
-      load();
-    } catch {
-      message.error("No se pudo guardar");
+      setError(null);
+      setAll(await fetchFinanceAccounts({ archived: true }));
+    } catch (err) {
+      setError(apiErrorMessage(err, "No se pudieron cargar las cuentas."));
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const refresh = async () => {
+    await Promise.all([load(), reloadAccounts()]);
+  };
+
+  const active = (all ?? []).filter((a) => !a.archivedAt);
+  const archived = (all ?? []).filter((a) => a.archivedAt);
+
+  const restore = async (account: FinanceAccount, quiet = false) => {
+    try {
+      await restoreFinanceAccount(account.id);
+      if (!quiet) message.success(`«${account.name}» volvió a tus cuentas`);
+      await refresh();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo restaurar"));
     }
   };
 
-  const onDelete = (row: FinanceAccount) => {
-    Modal.confirm({
-      title: "Eliminar cuenta",
-      content: `Se eliminaran ingresos y creditos de "${row.name}".`,
+  const archive = async (account: FinanceAccount) => {
+    try {
+      await archiveFinanceAccount(account.id);
+      await refresh();
+      const key = `archive-${account.id}`;
+      notification.open({
+        key,
+        title: `«${account.name}» está en la papelera`,
+        description: "Sus ingresos y créditos dejan de salir. Puedes restaurarla cuando quieras.",
+        actions: (
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => {
+              notification.destroy(key);
+              void restore(account, true).then(() => message.success("Listo, la cuenta volvió"));
+            }}
+          >
+            Deshacer
+          </Button>
+        ),
+        duration: 8,
+      });
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo archivar"));
+    }
+  };
+
+  const purge = (account: FinanceAccount) => {
+    modal.confirm({
+      title: `¿Borrar «${account.name}» para siempre?`,
+      content: "Se borran también todos sus ingresos y créditos, con sus cuotas. No se puede deshacer. Si quieres, descarga antes un respaldo.",
+      okText: "Borrar para siempre",
       okType: "danger",
+      cancelText: "Volver",
       onOk: async () => {
-        await deleteFinanceAccount(row.id);
-        message.success("Cuenta eliminada");
-        load();
+        try {
+          await purgeFinanceAccount(account.id);
+          message.success("Cuenta borrada");
+          await refresh();
+        } catch (err) {
+          message.error(apiErrorMessage(err, "No se pudo borrar"));
+        }
       },
     });
   };
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={openCreate}>
+    <div className="ff-page">
+      <div className="ff-pagehead">
+        <div>
+          <h1 className="ff-title">Cuentas</h1>
+          <p className="ff-subtitle">Cada cuenta agrupa sus ingresos y créditos, por ejemplo «Personal» y «Negocio».</p>
+        </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditing(null);
+            setOpen(true);
+          }}
+        >
           Nueva cuenta
         </Button>
-      </Space>
-      <Card>
-        <Table
-          loading={loading}
-          rowKey="id"
-          dataSource={accounts}
-          columns={[
-            {
-              title: "Nombre",
-              dataIndex: "name",
-              render: (name: string, row: FinanceAccount) => (
-                <span>
-                  <span className="fern-account-dot" style={{ background: row.color ?? "#D4AF37" }} />
-                  {name}
-                </span>
-              ),
-            },
-            {
-              title: "Tipo",
-              dataIndex: "type",
-              render: (t: FinanceAccountType) => ACCOUNT_TYPE_LABELS[t],
-            },
-            { title: "Moneda", dataIndex: "currency" },
-            {
-              title: "Acciones",
-              render: (_: unknown, row: FinanceAccount) => (
-                <Space>
-                  <Button size="small" onClick={() => openEdit(row)}>Editar</Button>
-                  <Button size="small" danger onClick={() => onDelete(row)}>Eliminar</Button>
-                </Space>
-              ),
-            },
-          ]}
-        />
-      </Card>
+      </div>
 
-      <Modal
-        title={editing ? "Editar cuenta" : "Nueva cuenta"}
-        open={open}
-        onCancel={() => setOpen(false)}
-        onOk={() => void onSubmit()}
-        okText="Guardar"
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Nombre" rules={[{ required: true }]}>
-            <Input placeholder="Finanzas personales" />
-          </Form.Item>
-          <Form.Item name="type" label="Tipo" rules={[{ required: true }]}>
-            <Select
-              options={(Object.keys(ACCOUNT_TYPE_LABELS) as FinanceAccountType[]).map((k) => ({
-                value: k,
-                label: ACCOUNT_TYPE_LABELS[k],
-              }))}
-            />
-          </Form.Item>
-          <Form.Item name="color" label="Color">
-            <Input type="color" style={{ width: 80, height: 36, padding: 2 }} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {error && (
+        <EmptyState title="No se pudieron cargar las cuentas" action={<Button onClick={() => void load()}>Reintentar</Button>}>
+          {error}
+        </EmptyState>
+      )}
+      {!all && !error && <Skeleton active paragraph={{ rows: 4 }} />}
+
+      {all && active.length === 0 && (
+        <EmptyState title="Todavía no tienes cuentas" action={<Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Crear la primera</Button>}>
+          Crea «Personal» para tu plata y, si tienes, «Negocio» para la del negocio.
+        </EmptyState>
+      )}
+
+      {active.length > 0 && (
+        <div className="ff-accounts">
+          {active.map((a) => (
+            <article key={a.id} className="ff-account" style={{ ["--ff-account" as string]: a.color ?? undefined }}>
+              <div style={{ display: "grid", gap: 2 }}>
+                <h2 className="ff-account__name">{a.name}</h2>
+                <span className="ff-hint">
+                  {ACCOUNT_TYPE_LABELS[a.type]} · {a.currency}
+                </span>
+              </div>
+              <div className="ff-actions">
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    setEditing(a);
+                    setOpen(true);
+                  }}
+                >
+                  Editar
+                </Button>
+                <Button size="small" icon={<InboxOutlined />} onClick={() => void archive(a)}>
+                  Archivar
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {archived.length > 0 && (
+        <section className="ff-card" aria-labelledby="ff-trash-title">
+          <h2 id="ff-trash-title" className="ff-section-title">
+            Papelera
+          </h2>
+          <p className="ff-hint">Lo de estas cuentas no sale en ningún lado. Restáuralas para volver a usarlas.</p>
+          <div className="ff-accounts">
+            {archived.map((a) => (
+              <article key={a.id} className="ff-account ff-account--archived" style={{ ["--ff-account" as string]: a.color ?? undefined }}>
+                <div style={{ display: "grid", gap: 2 }}>
+                  <h3 className="ff-account__name">{a.name}</h3>
+                  <span className="ff-hint">
+                    {ACCOUNT_TYPE_LABELS[a.type]} · archivada el {new Date(a.archivedAt as string).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+                <div className="ff-actions">
+                  <Button size="small" icon={<UndoOutlined />} onClick={() => void restore(a)}>
+                    Restaurar
+                  </Button>
+                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => purge(a)}>
+                    Borrar para siempre
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <BackupCard onImported={() => void refresh()} />
+
+      <AccountFormModal open={open} account={editing} onClose={() => setOpen(false)} onDone={() => void refresh()} />
     </div>
   );
 }

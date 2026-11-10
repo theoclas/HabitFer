@@ -1,10 +1,17 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { fetchFinanceAccounts } from "../api";
+import type { FinanceAccount } from "../types";
 
 export type PeriodMode = "month" | "range";
 
 type FinanceContextValue = {
+  /** Cuenta elegida en el filtro; null = todas. */
   accountId: string | null;
   setAccountId: (id: string | null) => void;
+  /** Cuentas activas (sin las de la papelera), compartidas por todas las pantallas. */
+  accounts: FinanceAccount[];
+  accountsLoaded: boolean;
+  reloadAccounts: () => Promise<void>;
   periodMode: PeriodMode;
   year: number;
   month: number;
@@ -38,12 +45,33 @@ export function rangeLabel(from: string, to: string): string {
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const now = new Date();
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountId, setAccountIdState] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [periodMode, setPeriodModeState] = useState<PeriodMode>("month");
   const [period, setPeriod] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 });
   const [customRange, setCustomRangeState] = useState<{ from: string; to: string } | null>(null);
 
   const { year, month } = period;
+
+  const reloadAccounts = useCallback(async () => {
+    try {
+      setAccounts(await fetchFinanceAccounts());
+    } catch {
+      /* la pantalla muestra su propio error */
+    } finally {
+      setAccountsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reloadAccounts();
+  }, [reloadAccounts]);
+
+  // Si la cuenta del filtro se archiva, el filtro vuelve a «todas».
+  useEffect(() => {
+    if (accountId && accountsLoaded && !accounts.some((a) => a.id === accountId)) setAccountIdState(null);
+  }, [accountId, accounts, accountsLoaded]);
 
   const bounds = useMemo(() => {
     if (periodMode === "range" && customRange) return customRange;
@@ -81,7 +109,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       accountId,
-      setAccountId,
+      setAccountId: setAccountIdState,
+      accounts,
+      accountsLoaded,
+      reloadAccounts,
       periodMode,
       year,
       month,
@@ -90,7 +121,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setPeriodMode,
       setCustomRange,
     }),
-    [accountId, periodMode, year, month, bounds, shiftMonth, setPeriodMode, setCustomRange],
+    [accountId, accounts, accountsLoaded, reloadAccounts, periodMode, year, month, bounds, shiftMonth, setPeriodMode, setCustomRange],
   );
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
@@ -101,10 +132,3 @@ export function useFinanceContext() {
   if (!ctx) throw new Error("useFinanceContext debe usarse dentro de FinanceProvider");
   return ctx;
 }
-
-/** @deprecated use useFinanceContext */
-export const AccountFilterProvider = FinanceProvider;
-/** @deprecated use useFinanceContext */
-export const useAccountFilter = useFinanceContext;
-/** @deprecated use useFinanceContext */
-export const useMonthRange = useFinanceContext;

@@ -1,40 +1,59 @@
-import { IsDateString, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsDateKey, IsMoney } from './validators';
+
+const ACCOUNT_MSG = { message: 'Elige una cuenta.' };
 
 export class CreateIncomeDto {
-  @IsString()
-  @MinLength(1)
+  @IsString(ACCOUNT_MSG)
+  @Matches(/\S/, ACCOUNT_MSG)
   accountId!: string;
 
-  @IsNumber()
-  @Min(0.01)
+  @IsMoney('El monto')
   amount!: number;
 
-  @IsDateString()
+  @IsDateKey()
   date!: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(200)
+  @IsString({ message: 'La descripción debe ser texto.' })
+  @MaxLength(200, {
+    message: 'La descripción es demasiado larga (máximo 200 letras).',
+  })
   description?: string;
 }
 
 export class UpdateIncomeDto {
   @IsOptional()
-  @IsString()
-  @MinLength(1)
+  @IsString(ACCOUNT_MSG)
+  @Matches(/\S/, ACCOUNT_MSG)
   accountId?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0.01)
+  @IsMoney('El monto')
   amount?: number;
 
   @IsOptional()
-  @IsDateString()
+  @IsDateKey()
   date?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(200)
+  @IsString({ message: 'La descripción debe ser texto.' })
+  @MaxLength(200, {
+    message: 'La descripción es demasiado larga (máximo 200 letras).',
+  })
   description?: string;
+}
+
+export class ListIncomesQuery {
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+
+  @IsOptional()
+  @IsDateKey({ message: 'La fecha «desde» no es válida (usa AAAA-MM-DD).' })
+  from?: string;
+
+  @IsOptional()
+  @IsDateKey({ message: 'La fecha «hasta» no es válida (usa AAAA-MM-DD).' })
+  to?: string;
 }

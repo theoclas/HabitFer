@@ -1,128 +1,166 @@
-import { Button, DatePicker, Form, Input, InputNumber, Modal, Select, Table, Tag, message } from "antd";
-import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { createCredit, fetchCredits, fetchFinanceAccounts } from "../../../api/client";
-import type { Credit, FinanceAccount } from "../../../types/fernance";
-import { MoneyDisplay } from "../components/MoneyDisplay";
+import { PlusOutlined } from "@ant-design/icons";
+import { Button, Segmented, Skeleton } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { todayKey } from "../../../utils/dates";
+import { apiErrorMessage } from "../../habitfer/format";
+import { fetchCredits } from "../api";
 import { AccountSelector } from "../components/AccountSelector";
+import { CreditStatusChip, EmptyState, longDate } from "../components/bits";
+import { CreditFormModal } from "../components/CreditFormModal";
+import { Money } from "../components/Money";
 import { useFinanceContext } from "../context/FinanceContext";
+import { dueLabel, formatCop } from "../money";
+import type { Credit } from "../types";
 
 const BASE = "/app/fernance";
+type Tab = "active" | "done";
+
+function CreditCard({ credit, today, onOpen }: { credit: Credit; today: string; onOpen: () => void }) {
+  const count = credit.installments.length;
+  const pct = count ? Math.round((credit.paidCount / count) * 100) : 0;
+  const next = credit.nextDue;
+  const late = Boolean(next && next.dueDate < today);
+  return (
+    <button type="button" className="ff-credit" onClick={onOpen} aria-label={`${credit.name}. Abrir el detalle`}>
+      <span className="ff-credit__top">
+        <span style={{ display: "grid", gap: 4, minWidth: 0 }}>
+          <span className="ff-credit__name">{credit.name}</span>
+          <span className="ff-row__meta">
+            <span className="ff-dot" style={{ background: credit.account.color ?? undefined }} />
+            {credit.account.name}
+          </span>
+        </span>
+        <CreditStatusChip status={credit.status} />
+      </span>
+      <span className="ff-progress" role="img" aria-label={`${credit.paidCount} de ${count} cuotas pagadas`}>
+        <i style={{ width: `${pct}%` }} />
+      </span>
+      <span className="ff-credit__nums">
+        <span>
+          {credit.paidCount} de {count} cuotas · pagado <b>{formatCop(credit.paidTotal)}</b>
+        </span>
+        <span>
+          Falta <b>{formatCop(credit.pendingTotal)}</b>
+        </span>
+      </span>
+      {credit.status === "ACTIVE" && next && (
+        <p className={`ff-credit__next${late ? " is-late" : ""}`}>
+          {late
+            ? `${credit.overdueCount > 1 ? `${credit.overdueCount} cuotas vencidas` : "Cuota vencida"}: ${formatCop(credit.overdueTotal)} · ${dueLabel(next.dueDate, today)}`
+            : `Próxima: ${longDate(next.dueDate, today)} · ${formatCop(next.amount)} · ${dueLabel(next.dueDate, today)}`}
+        </p>
+      )}
+      {credit.status === "PAID_OFF" && <p className="ff-credit__next">Pagado del todo. ¡Bien!</p>}
+      {credit.status === "CANCELLED" && <p className="ff-credit__next">Cancelado: sus cuotas pendientes ya no cuentan.</p>}
+    </button>
+  );
+}
 
 export function CreditsPage() {
-  const { accountId } = useFinanceContext();
-  const [credits, setCredits] = useState<Credit[]>([]);
-  const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [form] = Form.useForm();
+  const navigate = useNavigate();
+  const { accountId, accounts } = useFinanceContext();
+  const [credits, setCredits] = useState<Credit[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("active");
+  const [createOpen, setCreateOpen] = useState(false);
+  const today = todayKey();
 
-  const load = () => {
-    setLoading(true);
-    void Promise.all([
-      fetchCredits({ accountId: accountId ?? undefined, status: "ACTIVE" }),
-      fetchFinanceAccounts(),
-    ])
-      .then(([c, a]) => {
-        setCredits(c);
-        setAccounts(a);
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, [accountId]);
-
-  const onSubmit = async () => {
-    const values = await form.validateFields();
+  const load = useCallback(async () => {
     try {
-      await createCredit({
-        accountId: values.accountId,
-        name: values.name,
-        totalAmount: values.totalAmount,
-        installmentAmount: values.installmentAmount,
-        firstDueDate: (values.firstDueDate as dayjs.Dayjs).format("YYYY-MM-DD"),
-      });
-      message.success("Credito creado con cuotas");
-      setOpen(false);
-      form.resetFields();
-      load();
-    } catch {
-      message.error("No se pudo crear el credito");
+      setError(null);
+      setCredits(await fetchCredits({ accountId: accountId ?? undefined }));
+    } catch (err) {
+      setError(apiErrorMessage(err, "No se pudieron cargar los créditos."));
     }
-  };
+  }, [accountId]);
+
+  useEffect(() => {
+    setCredits(null);
+    void load();
+  }, [load]);
+
+  const active = (credits ?? []).filter((c) => c.status === "ACTIVE");
+  const done = (credits ?? []).filter((c) => c.status !== "ACTIVE");
+  const shown = tab === "active" ? active : done;
+  const owed = active.reduce((s, c) => s + c.pendingTotal, 0);
 
   return (
-    <div>
-      <div className="fern-page-toolbar">
-        <AccountSelector />
-        <Button
-          type="primary"
-          onClick={() => {
-            form.resetFields();
-            form.setFieldsValue({
-              accountId: accountId ?? accounts[0]?.id,
-              firstDueDate: dayjs().add(1, "month").date(1),
-            });
-            setOpen(true);
-          }}
-        >
-          Nuevo credito
+    <div className="ff-page">
+      <div className="ff-pagehead">
+        <div>
+          <h1 className="ff-title">Créditos</h1>
+          <p className="ff-subtitle">
+            {credits ? (
+              active.length ? (
+                <>
+                  Debes <Money value={owed} tone="out" /> en {active.length === 1 ? "1 crédito activo" : `${active.length} créditos activos`}.
+                </>
+              ) : (
+                "No tienes créditos activos."
+              )
+            ) : (
+              "Tus préstamos, compras a cuotas y tarjetas."
+            )}
+          </p>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)} disabled={!accounts.length}>
+          Nuevo crédito
         </Button>
       </div>
+      <div className="ff-toolbar">
+        <AccountSelector />
+        <Segmented
+          aria-label="Qué créditos ver"
+          value={tab}
+          onChange={(v) => setTab(v as Tab)}
+          options={[
+            { value: "active", label: `Activos${credits ? ` (${active.length})` : ""}` },
+            { value: "done", label: `Terminados${credits ? ` (${done.length})` : ""}` },
+          ]}
+        />
+      </div>
 
-      <Table
-        loading={loading}
-        rowKey="id"
-        dataSource={credits}
-        columns={[
-          {
-            title: "Nombre",
-            dataIndex: "name",
-            render: (name: string, row: Credit) => (
-              <Link to={`${BASE}/credits/${row.id}`} style={{ color: "#F5C542" }}>
-                {name}
-              </Link>
-            ),
-          },
-          { title: "Cuenta", render: (_: unknown, r: Credit) => r.account?.name ?? "—" },
-          { title: "Total", dataIndex: "totalAmount", render: (v: number) => <MoneyDisplay amount={v} /> },
-          { title: "Cuota", dataIndex: "installmentAmount", render: (v: number) => <MoneyDisplay amount={v} /> },
-          {
-            title: "Cuotas",
-            render: (_: unknown, r: Credit) => {
-              const total = r.installments?.length ?? 0;
-              const paid = r.installments?.filter((i) => i.status === "PAID").length ?? 0;
-              return `${paid}/${total}`;
-            },
-          },
-          {
-            title: "Estado",
-            dataIndex: "status",
-            render: (s: string) => <Tag color={s === "ACTIVE" ? "gold" : "default"}>{s}</Tag>,
-          },
-        ]}
+      {error && (
+        <EmptyState title="No se pudieron cargar los créditos" action={<Button onClick={() => void load()}>Reintentar</Button>}>
+          {error}
+        </EmptyState>
+      )}
+      {!credits && !error && <Skeleton active paragraph={{ rows: 5 }} />}
+
+      {credits && shown.length === 0 && (
+        <EmptyState
+          title={tab === "active" ? "Sin créditos activos" : "Todavía no terminas ninguno"}
+          action={
+            tab === "active" ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)} disabled={!accounts.length}>
+                Agregar un crédito
+              </Button>
+            ) : undefined
+          }
+        >
+          {tab === "active"
+            ? "Agrega un préstamo, una compra a cuotas o la tarjeta, y FerFinance te muestra cada cuota y cuándo vence."
+            : "Aquí quedan los créditos pagados del todo y los cancelados, con su historia."}
+        </EmptyState>
+      )}
+
+      {credits && shown.length > 0 && (
+        <div className="ff-credit-grid">
+          {shown.map((c) => (
+            <CreditCard key={c.id} credit={c} today={today} onOpen={() => navigate(`${BASE}/credits/${c.id}`)} />
+          ))}
+        </div>
+      )}
+
+      <CreditFormModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onDone={(c) => {
+          void load();
+          navigate(`${BASE}/credits/${c.id}`);
+        }}
       />
-
-      <Modal title="Nuevo credito" open={open} onCancel={() => setOpen(false)} onOk={() => void onSubmit()} okText="Crear">
-        <Form form={form} layout="vertical">
-          <Form.Item name="accountId" label="Cuenta" rules={[{ required: true }]}>
-            <Select options={accounts.map((a) => ({ value: a.id, label: a.name }))} />
-          </Form.Item>
-          <Form.Item name="name" label="Nombre" rules={[{ required: true }]}>
-            <Input placeholder="Tarjeta, prestamo..." />
-          </Form.Item>
-          <Form.Item name="totalAmount" label="Valor total" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item name="installmentAmount" label="Valor cuota" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item name="firstDueDate" label="Primera cuota" rules={[{ required: true }]}>
-            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 }

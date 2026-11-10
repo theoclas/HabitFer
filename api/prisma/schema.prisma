@@ -795,17 +795,21 @@ enum InstallmentStatus {
 }
 
 model FinanceAccount {
-  id        String             @id @default(cuid())
-  userId    String
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String             @db.VarChar(120)
-  type      FinanceAccountType @default(PERSONAL)
-  currency  String             @default("COP") @db.VarChar(3)
-  color     String?            @db.VarChar(7)
-  incomes   Income[]
-  credits   Credit[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id                  String              @id @default(cuid())
+  userId              String
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String              @db.VarChar(120)
+  type                FinanceAccountType  @default(PERSONAL)
+  currency            String              @default("COP") @db.VarChar(3)
+  color               String?             @db.VarChar(7)
+  incomes             Income[]
+  credits             Credit[]
+  /// Cuotas que se pagaron desde esta cuenta (cuando no fue la del crédito).
+  installmentPayments CreditInstallment[] @relation("InstallmentPaidFrom")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  /// Archivada = en la papelera: no sale en listas ni en el resumen y se puede restaurar. null = activa.
+  archivedAt          DateTime?
 
   @@index([userId])
 }
@@ -837,20 +841,32 @@ model Credit {
   installments      CreditInstallment[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+  /// Cuándo se revisaron las fechas de sus cuotas (los créditos viejos podían saltarse un mes si la cuota caía
+  /// el 29, 30 o 31). null = falta revisar; los créditos nuevos nacen revisados.
+  datesCheckedAt    DateTime?
 
   @@index([userId, accountId])
 }
 
 model CreditInstallment {
-  id       String            @id @default(cuid())
-  creditId String
-  credit   Credit            @relation(fields: [creditId], references: [id], onDelete: Cascade)
-  dueDate  DateTime          @db.Date
-  amount   Decimal           @db.Decimal(14, 2)
-  status   InstallmentStatus @default(PENDING)
-  paidAt   DateTime?
+  id            String            @id @default(cuid())
+  creditId      String
+  credit        Credit            @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  dueDate       DateTime          @db.Date
+  amount        Decimal           @db.Decimal(14, 2)
+  status        InstallmentStatus @default(PENDING)
+  /// Momento en que se marcó como pagada.
+  paidAt        DateTime?
+  /// Día real del pago (el que eligió la persona). null en pagos viejos: se usa el día de paidAt.
+  paidDate      DateTime?         @db.Date
+  /// Valor que se pagó de verdad. null = el valor de la cuota.
+  paidAmount    Decimal?          @db.Decimal(14, 2)
+  /// Cuenta de donde salió el pago. null = la cuenta del crédito.
+  paidAccountId String?
+  paidAccount   FinanceAccount?   @relation("InstallmentPaidFrom", fields: [paidAccountId], references: [id], onDelete: SetNull)
 
   @@index([creditId, dueDate])
+  @@index([paidAccountId])
 }
 
 /**

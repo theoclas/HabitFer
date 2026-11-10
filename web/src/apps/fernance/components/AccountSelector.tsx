@@ -1,35 +1,27 @@
 import { Select } from "antd";
-import { useEffect, useState } from "react";
-import { fetchFinanceAccounts } from "../../../api/client";
-import type { FinanceAccount } from "../../../types/fernance";
 import { useFinanceContext } from "../context/FinanceContext";
 
+/** Filtro por cuenta de todas las pantallas (vacío = todas). */
 export function AccountSelector() {
-  const { accountId, setAccountId } = useFinanceContext();
-  const [accounts, setAccounts] = useState<FinanceAccount[]>([]);
-
-  useEffect(() => {
-    void fetchFinanceAccounts().then(setAccounts).catch(() => setAccounts([]));
-  }, []);
+  const { accountId, setAccountId, accounts } = useFinanceContext();
 
   return (
     <Select
       allowClear
       placeholder="Todas las cuentas"
-      style={{ minWidth: 200 }}
+      aria-label="Filtrar por cuenta"
+      style={{ minWidth: 190 }}
       value={accountId ?? undefined}
       onChange={(v) => setAccountId(v ?? null)}
-      options={[
-        ...accounts.map((a) => ({
-          value: a.id,
-          label: (
-            <span>
-              <span className="fern-account-dot" style={{ background: a.color ?? "#D4AF37" }} />
-              {a.name}
-            </span>
-          ),
-        })),
-      ]}
+      options={accounts.map((a) => ({
+        value: a.id,
+        label: (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span className="ff-dot" style={{ background: a.color ?? undefined }} />
+            {a.name}
+          </span>
+        ),
+      }))}
     />
   );
 }

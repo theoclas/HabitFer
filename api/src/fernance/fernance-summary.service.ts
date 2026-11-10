@@ -1,159 +1,84 @@
-import { Injectable } from '@nestjs/common';
-import { InstallmentStatus } from '@prisma/client';
-import { parseDateKey, toDateKey } from '../common/date.utils';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { localTodayKey, parseDateKey, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
-import { decimalToNumber, isDateInRange, parseRange, roundMoney, toLocalDateKey } from './fernance.utils';
-import { FernanceAccountsService } from './fernance-accounts.service';
-
-type Movement = {
-  id: string;
-  type: 'income' | 'installment_paid' | 'installment_pending';
-  date: string;
-  amount: number;
-  label: string;
-  accountId: string;
-  accountName: string;
-  creditId?: string;
-  installmentId?: string;
-  status?: string;
-};
-
-type ProjectionMonth = {
-  month: string;
-  label: string;
-  total: number;
-  installments: { id: string; creditId: string; creditName: string; dueDate: string; amount: number }[];
-};
+import { decimalToNumber, parseRange } from './fernance.utils';
+import { paidKeyOf } from './fernance-credits.service';
+import { buildSummary } from './fernance-summary.utils';
 
 @Injectable()
 export class FernanceSummaryService {
-  constructor(
-    private prisma: PrismaService,
-    private accounts: FernanceAccountsService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async getSummary(userId: string, accountId?: string, from?: string, to?: string) {
-    const range = parseRange(from, to);
-    if (accountId) await this.accounts.assertAccount(userId, accountId);
+  async getSummary(
+    userId: string,
+    accountId?: string,
+    from?: string,
+    to?: string,
+  ) {
+    const todayKey = localTodayKey();
+    const range = parseRange(from, to, todayKey);
 
-    const accountFilter = accountId ? { accountId } : { userId };
-
-    const incomes = await this.prisma.income.findMany({
-      where: {
-        ...accountFilter,
-        date: { gte: parseDateKey(range.from), lte: parseDateKey(range.to) },
-      },
-      include: { account: { select: { id: true, name: true } } },
-      orderBy: { date: 'asc' },
+    const accounts = await this.prisma.financeAccount.findMany({
+      where: { userId },
+      select: { id: true, name: true, archivedAt: true },
     });
+    const accountNames = new Map(accounts.map((a) => [a.id, a.name]));
+    if (accountId && !accountNames.has(accountId))
+      throw new NotFoundException('No encontré esa cuenta.');
+    // Lo de las cuentas en la papelera no cuenta (salvo que se pida esa cuenta).
+    const archived = accounts
+      .filter((a) => a.archivedAt !== null)
+      .map((a) => a.id);
+    const accountWhere = accountId
+      ? {}
+      : archived.length
+        ? { accountId: { notIn: archived } }
+        : {};
 
-    const credits = await this.prisma.credit.findMany({
-      where: accountFilter,
-      include: {
-        account: { select: { id: true, name: true } },
-        installments: true,
-      },
-    });
+    const [incomes, credits] = await Promise.all([
+      this.prisma.income.findMany({
+        where: {
+          userId,
+          ...(accountId ? { accountId } : accountWhere),
+          date: { gte: parseDateKey(range.from), lte: parseDateKey(range.to) },
+        },
+        orderBy: { date: 'asc' },
+      }),
+      this.prisma.credit.findMany({
+        where: { userId, ...accountWhere },
+        include: { installments: true },
+      }),
+    ]);
 
-    let totalIncome = 0;
-    let totalPaid = 0;
-    let committed = 0;
-    const movements: Movement[] = [];
-
-    for (const inc of incomes) {
-      const amount = decimalToNumber(inc.amount);
-      totalIncome = roundMoney(totalIncome + amount);
-      movements.push({
+    return buildSummary({
+      range,
+      todayKey,
+      accountId: accountId ?? null,
+      accountNames,
+      incomes: incomes.map((inc) => ({
         id: inc.id,
-        type: 'income',
-        date: toDateKey(inc.date),
-        amount,
+        dateKey: toDateKey(inc.date),
+        amount: decimalToNumber(inc.amount),
         label: inc.description || 'Ingreso',
         accountId: inc.accountId,
-        accountName: inc.account.name,
-      });
-    }
-
-    const projectionMap = new Map<string, ProjectionMonth>();
-
-    for (const credit of credits) {
-      for (const inst of credit.installments) {
-        const amount = decimalToNumber(inst.amount);
-        const dueKey = toDateKey(inst.dueDate);
-
-        if (inst.status === InstallmentStatus.PAID && inst.paidAt) {
-          const paidKey = toLocalDateKey(inst.paidAt);
-          if (isDateInRange(paidKey, range.from, range.to)) {
-            totalPaid = roundMoney(totalPaid + amount);
-            movements.push({
-              id: inst.id,
-              type: 'installment_paid',
-              date: paidKey,
-              amount: -amount,
-              label: `Cuota: ${credit.name}`,
-              accountId: credit.accountId,
-              accountName: credit.account.name,
-              creditId: credit.id,
-              installmentId: inst.id,
-              status: 'PAID',
-            });
-          }
-        } else if (inst.status === InstallmentStatus.PENDING) {
-          if (isDateInRange(dueKey, range.from, range.to)) {
-            committed = roundMoney(committed + amount);
-            movements.push({
-              id: inst.id,
-              type: 'installment_pending',
-              date: dueKey,
-              amount: -amount,
-              label: `Cuota pendiente: ${credit.name}`,
-              accountId: credit.accountId,
-              accountName: credit.account.name,
-              creditId: credit.id,
-              installmentId: inst.id,
-              status: 'PENDING',
-            });
-          } else if (dueKey > range.to) {
-            const month = dueKey.slice(0, 7);
-            if (!projectionMap.has(month)) {
-              projectionMap.set(month, {
-                month,
-                label: month,
-                total: 0,
-                installments: [],
-              });
-            }
-            const bucket = projectionMap.get(month)!;
-            bucket.total = roundMoney(bucket.total + amount);
-            bucket.installments.push({
-              id: inst.id,
-              creditId: credit.id,
-              creditName: credit.name,
-              dueDate: dueKey,
-              amount,
-            });
-          }
-        }
-      }
-    }
-
-    movements.sort((a, b) => a.date.localeCompare(b.date));
-
-    const available = roundMoney(totalIncome - totalPaid);
-    const projection = [...projectionMap.values()].sort((a, b) => a.month.localeCompare(b.month));
-
-    return {
-      from: range.from,
-      to: range.to,
-      accountId: accountId ?? null,
-      totals: {
-        income: totalIncome,
-        paidInstallments: totalPaid,
-        available,
-        committed,
-      },
-      movements,
-      projection,
-    };
+        accountName: accountNames.get(inc.accountId) ?? 'Cuenta',
+      })),
+      credits: credits.map((c) => ({
+        id: c.id,
+        name: c.name,
+        accountId: c.accountId,
+        status: c.status,
+        installments: c.installments.map((i) => ({
+          id: i.id,
+          dueKey: toDateKey(i.dueDate),
+          amount: decimalToNumber(i.amount),
+          status: i.status,
+          paidKey: paidKeyOf(i),
+          paidAmount:
+            i.paidAmount === null ? null : decimalToNumber(i.paidAmount),
+          paidAccountId: i.paidAccountId,
+        })),
+      })),
+    });
   }
 }

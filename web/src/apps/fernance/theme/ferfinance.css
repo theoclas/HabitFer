@@ -1,0 +1,457 @@
+/* =========================================================================
+   FerFinance · sistema visual «Tumbaga»
+   El oro precolombino sobre papel moneda (claro) o sobre una bóveda verde muy oscura (oscuro).
+   Esmeralda para la plata que entra, cobre para la que sale. El billete del resumen es oscuro en
+   los dos temas, como un billete de verdad.
+   Los tokens viven en <html data-ff-theme> para que los diálogos que se abren encima los usen.
+   ========================================================================= */
+
+:root[data-ff-theme] {
+  --ff-display: "Sora", "DM Sans", system-ui, sans-serif;
+  --ff-text: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ff-bill-bg: linear-gradient(135deg, #17251e 0%, #0f1a14 55%, #1c1b0e 100%);
+  --ff-bill-ink: #f1f5ef;
+  --ff-bill-muted: #aebcb3;
+  --ff-bill-oro: #e2c15a;
+  --ff-bill-line: rgba(226, 193, 90, 0.35);
+  --ff-bill-negative: #f2a27c;
+}
+
+:root[data-ff-theme="light"] {
+  --ff-bg: #edf1ea;
+  --ff-surface: #fafcf8;
+  --ff-sunk: #e1e7dc;
+  --ff-ink: #12201a;
+  --ff-body: #2b3932;
+  --ff-muted: #5a6860;
+  --ff-faint: #8a978e;
+  --ff-line: #cfd9cb;
+  /* Oro para letra (se lee sobre el papel) y para rellenos. */
+  --ff-oro: #7e5f0e;
+  --ff-oro-fill: #c9a227;
+  --ff-oro-soft: #f2e8c6;
+  --ff-esmeralda: #0d6e4c;
+  --ff-esmeralda-soft: #d5ede2;
+  --ff-cobre: #a64a22;
+  --ff-cobre-soft: #f6e1d6;
+  --ff-glass: rgba(237, 241, 234, 0.9);
+  --ff-shadow: 0 12px 32px -18px rgba(18, 32, 26, 0.35);
+}
+
+:root[data-ff-theme="dark"] {
+  --ff-bg: #0a100d;
+  --ff-surface: #111915;
+  --ff-sunk: #17211c;
+  --ff-ink: #eef3ee;
+  --ff-body: #cad5ce;
+  --ff-muted: #92a098;
+  --ff-faint: #5e6d64;
+  --ff-line: #23302a;
+  --ff-oro: #e2c15a;
+  --ff-oro-fill: #d4af37;
+  --ff-oro-soft: #2b2613;
+  --ff-esmeralda: #4cc892;
+  --ff-esmeralda-soft: #12301f;
+  --ff-cobre: #ee9562;
+  --ff-cobre-soft: #3a2116;
+  --ff-glass: rgba(10, 16, 13, 0.88);
+  --ff-shadow: 0 14px 36px -18px rgba(0, 0, 0, 0.75);
+}
+
+.ff-shell {
+  min-height: 100dvh;
+  background: var(--ff-bg);
+  color: var(--ff-body);
+  font-family: var(--ff-text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/* ---------- Encabezado ---------- */
+.ff-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--ff-glass);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--ff-line);
+}
+.ff-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 800 1.12rem/1 var(--ff-display);
+  color: var(--ff-ink);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+/* Una moneda de oro. */
+.ff-brand__mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: none;
+  background: radial-gradient(circle at 34% 30%, #f8e39a 0%, #d4af37 42%, #8c6a12 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22), inset 0 0 0 5px rgba(0, 0, 0, 0.1);
+}
+.ff-topnav {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+.ff-navlink {
+  border: 0;
+  background: transparent;
+  color: var(--ff-muted);
+  font: 600 0.95rem/1 var(--ff-text);
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.ff-navlink:hover { color: var(--ff-ink); }
+.ff-navlink[aria-current="page"] {
+  color: var(--ff-ink);
+  background: var(--ff-sunk);
+}
+.ff-navlink:focus-visible,
+.ff-icon-btn:focus-visible,
+.ff-tab:focus-visible { outline: 2px solid var(--ff-oro-fill); outline-offset: 2px; }
+.ff-header__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ff-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ff-line);
+  background: var(--ff-surface);
+  color: var(--ff-ink);
+  cursor: pointer;
+  font-size: 16px;
+}
+.ff-icon-btn:hover { border-color: var(--ff-faint); }
+
+/* ---------- Contenido ---------- */
+.ff-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px max(16px, env(safe-area-inset-right, 0px)) calc(104px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+@media (min-width: 768px) {
+  .ff-main { padding: 28px 32px 56px; }
+}
+.ff-page { display: grid; gap: 18px; }
+.ff-pagehead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ff-pagehead > div { display: grid; gap: 4px; min-width: 0; }
+.ff-title {
+  margin: 0;
+  font: 800 clamp(1.55rem, 3.2vw, 2.1rem)/1.08 var(--ff-display);
+  color: var(--ff-ink);
+  letter-spacing: -0.025em;
+}
+.ff-subtitle { margin: 0; color: var(--ff-muted); font-size: 0.95rem; }
+.ff-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ff-section-title { margin: 0; font: 700 1.08rem/1.25 var(--ff-display); color: var(--ff-ink); letter-spacing: -0.01em; }
+.ff-hint { color: var(--ff-muted); font-size: 0.86rem; margin: 0; }
+
+/* Mes o rango */
+.ff-period { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ff-period__label {
+  min-width: 150px;
+  text-align: center;
+  font: 700 1rem/1.2 var(--ff-display);
+  color: var(--ff-ink);
+  text-transform: capitalize;
+}
+
+/* ---------- Tarjetas ---------- */
+.ff-card {
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-line);
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  align-content: start;
+}
+.ff-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ff-card--late { border-color: var(--ff-cobre); }
+
+/* ---------- Billete ---------- */
+.ff-billete {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--ff-bill-line);
+  background: var(--ff-bill-bg);
+  color: var(--ff-bill-ink);
+  padding: 20px 20px 18px;
+  display: grid;
+  gap: 6px;
+  box-shadow: var(--ff-shadow);
+}
+.ff-billete canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.ff-billete > :not(canvas) { position: relative; }
+.ff-billete__label {
+  font: 700 0.72rem/1.2 var(--ff-text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ff-bill-oro);
+}
+.ff-billete__amount {
+  font: 800 clamp(2.2rem, 6vw, 3.1rem)/1 var(--ff-display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-bill-ink);
+  overflow-wrap: anywhere;
+}
+.ff-billete__amount.is-negative { color: var(--ff-bill-negative); }
+.ff-billete__sub { color: var(--ff-bill-muted); font-size: 0.9rem; line-height: 1.45; max-width: 56ch; margin: 0; }
+.ff-billete__sub b { color: var(--ff-bill-ink); font-weight: 600; }
+
+/* ---------- Cifras ---------- */
+.ff-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .ff-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ff-tile {
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ff-tile__label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ff-muted); }
+.ff-tile__value { font: 700 1.18rem/1.15 var(--ff-display); color: var(--ff-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ff-tile--in .ff-tile__value { color: var(--ff-esmeralda); }
+.ff-tile--late { border-color: var(--ff-cobre); background: var(--ff-cobre-soft); }
+.ff-tile--late .ff-tile__value,
+.ff-tile--late .ff-tile__label { color: var(--ff-cobre); }
+
+/* ---------- Resumen a dos columnas en el computador ---------- */
+.ff-dash { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.ff-dash__main,
+.ff-dash__side { display: grid; gap: 16px; min-width: 0; align-content: start; }
+@media (min-width: 1024px) {
+  .ff-dash { grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); align-items: start; }
+  .ff-dash__side { position: sticky; top: 84px; }
+}
+
+/* ---------- Listas ---------- */
+.ff-list { display: grid; }
+.ff-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--ff-line);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+}
+.ff-row:last-child { border-bottom: 0; }
+button.ff-row { cursor: pointer; border-radius: 10px; }
+button.ff-row:hover { background: var(--ff-sunk); }
+button.ff-row:focus-visible { outline: 2px solid var(--ff-oro-fill); outline-offset: 1px; }
+.ff-row__date { width: 44px; text-align: center; display: grid; line-height: 1.05; }
+.ff-row__day { font: 800 1.08rem/1 var(--ff-display); color: var(--ff-ink); font-variant-numeric: tabular-nums; }
+.ff-row__mon { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ff-muted); }
+.ff-row__main { min-width: 0; display: grid; gap: 2px; }
+.ff-row__title { color: var(--ff-ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ff-row__meta { color: var(--ff-muted); font-size: 0.82rem; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ff-row__end { display: grid; justify-items: end; gap: 4px; }
+.ff-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ff-ink); white-space: nowrap; }
+.ff-amount--in { color: var(--ff-esmeralda); }
+.ff-amount--out { color: var(--ff-cobre); }
+.ff-amount--muted { color: var(--ff-muted); font-weight: 600; }
+.ff-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; background: var(--ff-oro-fill); }
+.ff-more { justify-self: start; }
+
+/* ---------- Chips ---------- */
+.ff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 2px 9px;
+  background: var(--ff-sunk);
+  color: var(--ff-muted);
+  white-space: nowrap;
+}
+.ff-chip--ok { background: var(--ff-esmeralda-soft); color: var(--ff-esmeralda); }
+.ff-chip--gold { background: var(--ff-oro-soft); color: var(--ff-oro); }
+.ff-chip--late { background: var(--ff-cobre-soft); color: var(--ff-cobre); }
+
+/* ---------- Barra de avance ---------- */
+.ff-progress { height: 8px; border-radius: 99px; background: var(--ff-sunk); overflow: hidden; }
+.ff-progress > i { display: block; height: 100%; border-radius: inherit; background: var(--ff-esmeralda); }
+
+/* ---------- Lo que viene (proyección) ---------- */
+.ff-proj { display: grid; gap: 10px; }
+.ff-proj__row { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 0.88rem; }
+.ff-proj__month { color: var(--ff-muted); text-transform: capitalize; }
+.ff-proj__bar { height: 10px; border-radius: 99px; background: var(--ff-sunk); overflow: hidden; }
+.ff-proj__bar > i { display: block; height: 100%; border-radius: inherit; background: var(--ff-oro-fill); }
+
+/* ---------- Créditos ---------- */
+.ff-credit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.ff-credit {
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-line);
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  transition: border-color 0.15s;
+}
+.ff-credit:hover { border-color: var(--ff-oro-fill); }
+.ff-credit:focus-visible { outline: 2px solid var(--ff-oro-fill); outline-offset: 2px; }
+.ff-credit__top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.ff-credit__name { font: 700 1.05rem/1.25 var(--ff-display); color: var(--ff-ink); overflow-wrap: anywhere; }
+.ff-credit__nums { display: flex; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: var(--ff-muted); flex-wrap: wrap; }
+.ff-credit__nums b { color: var(--ff-ink); font-variant-numeric: tabular-nums; }
+.ff-credit__next { font-size: 0.88rem; color: var(--ff-body); margin: 0; }
+.ff-credit__next.is-late { color: var(--ff-cobre); font-weight: 600; }
+
+.ff-kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.ff-kv > div { background: var(--ff-sunk); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.ff-kv span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ff-muted); font-weight: 700; }
+.ff-kv b { font: 700 1.05rem/1.2 var(--ff-display); color: var(--ff-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ff-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Cuotas del detalle */
+.ff-inst {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--ff-line);
+}
+.ff-inst:last-child { border-bottom: 0; }
+.ff-inst__n {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 700 0.78rem/1 var(--ff-display);
+  background: var(--ff-sunk);
+  color: var(--ff-muted);
+}
+.ff-inst--paid .ff-inst__n { background: var(--ff-esmeralda-soft); color: var(--ff-esmeralda); }
+.ff-inst--late .ff-inst__n { background: var(--ff-cobre-soft); color: var(--ff-cobre); }
+.ff-inst__main { min-width: 0; display: grid; gap: 2px; }
+.ff-inst__end { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .ff-inst { grid-template-columns: 30px minmax(0, 1fr); }
+  .ff-inst__end { grid-column: 2; justify-content: flex-start; }
+}
+
+/* ---------- Cuentas ---------- */
+.ff-accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.ff-account {
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-line);
+  border-top: 4px solid var(--ff-account, var(--ff-oro-fill));
+  border-radius: 18px;
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.ff-account--archived { border-style: dashed; border-top-style: solid; }
+.ff-account__name { font: 700 1.05rem/1.25 var(--ff-display); color: var(--ff-ink); overflow-wrap: anywhere; margin: 0; }
+
+/* ---------- Varios ---------- */
+.ff-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 22px;
+  border: 1px dashed var(--ff-line);
+  border-radius: 18px;
+  background: var(--ff-surface);
+  color: var(--ff-muted);
+}
+.ff-empty h3 { margin: 0; font: 700 1.05rem/1.25 var(--ff-display); color: var(--ff-ink); }
+.ff-empty p { margin: 0; }
+.ff-preview { background: var(--ff-oro-soft); color: var(--ff-ink); border-radius: 12px; padding: 10px 12px; font-size: 0.9rem; margin: 0; }
+.ff-backup { display: flex; flex-wrap: wrap; gap: 8px; }
+.ff-error { color: var(--ff-cobre); }
+
+/* ---------- Barra de abajo (teléfono) ---------- */
+.ff-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  background: var(--ff-glass);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border-top: 1px solid var(--ff-line);
+}
+.ff-tab {
+  border: 0;
+  background: transparent;
+  color: var(--ff-muted);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  font: 600 0.72rem/1.1 var(--ff-text);
+  padding: 6px 2px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.ff-tab .anticon { font-size: 20px; }
+.ff-tab[aria-current="page"] { color: var(--ff-oro); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-credit { transition: none; }
+}

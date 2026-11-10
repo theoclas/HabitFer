@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { HabitKind, ScheduleType, TaskPriority, TaskStatus, TimeOfDay } from '@prisma/client';
 import { parseDateKey, startOfToday, toDateKey } from '../common/date.utils';
+import { FinanceExportService, type FinanceImportReport } from '../fernance/finance-export.service';
 import { parseScheduleDays } from '../habits/habit-rules';
 import { NutritionExportService, type NutritionImportReport } from '../nutrition/export/nutrition-export.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -44,6 +45,8 @@ export type ImportReport = {
   tasks: number;
   /** Lo de NutriFer que se sumó (si el respaldo lo traía). */
   nutrition?: NutritionImportReport;
+  /** Lo de FerFinance que se sumó (si el respaldo lo traía). */
+  finance?: FinanceImportReport;
 };
 
 /**
@@ -55,10 +58,11 @@ export class ExportService {
   constructor(
     private prisma: PrismaService,
     private nutrition: NutritionExportService,
+    private finance: FinanceExportService,
   ) {}
 
   async exportJson(userId: string) {
-    const [user, habits, pauses, moods, projects, tasks, nutrition] = await Promise.all([
+    const [user, habits, pauses, moods, projects, tasks, nutrition, finance] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, fullName: true } }),
       this.prisma.habit.findMany({
         where: { userId },
@@ -77,6 +81,7 @@ export class ExportService {
       this.prisma.project.findMany({ where: { userId }, orderBy: { sortOrder: 'asc' } }),
       this.prisma.task.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
       this.nutrition.exportJson(userId),
+      this.finance.exportJson(userId),
     ]);
     const key = (d: Date | null) => (d ? toDateKey(d) : null);
     return {
@@ -86,6 +91,8 @@ export class ExportService {
       user: user ? { username: user.username, fullName: user.fullName } : null,
       /** Lo de NutriFer: diario de comida, agua, peso, ayunos, alimentos propios y comidas guardadas. */
       nutrition,
+      /** Lo de FerFinance: cuentas, ingresos y créditos con sus cuotas. */
+      finance,
       habits: habits.map((h) => ({
         id: h.id,
         title: h.title,
@@ -291,8 +298,9 @@ export class ExportService {
       report.tasks++;
     }
 
-    // NutriFer viaja dentro del mismo respaldo.
+    // NutriFer y FerFinance viajan dentro del mismo respaldo.
     if (isObj(body.nutrition)) report.nutrition = await this.nutrition.importJson(userId, body.nutrition);
+    if (isObj(body.finance)) report.finance = await this.finance.importJson(userId, body.finance);
 
     return report;
   }

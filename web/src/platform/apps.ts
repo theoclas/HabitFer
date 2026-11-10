@@ -27,8 +27,8 @@ export const APPS: Record<AppId, AppConfig> = {
   },
   fernance: {
     id: "fernance",
-    name: "Fernance",
-    description: "Finanzas personales, ingresos y créditos",
+    name: "FerFinance",
+    description: "Tu plata: cuentas, ingresos y créditos",
     color: "#D4AF37",
     basePath: "/app/fernance",
   },

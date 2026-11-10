@@ -1,144 +1,113 @@
-import {
-  CreditCardOutlined,
-  DollarOutlined,
-  PieChartOutlined,
-  UserOutlined,
-  WalletOutlined,
-} from "@ant-design/icons";
-import { Layout } from "antd";
-import { useState } from "react";
+import { BankOutlined, BulbOutlined, CreditCardOutlined, MoonOutlined, PieChartOutlined, RiseOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import { App as AntApp, ConfigProvider } from "antd";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ProfileModal } from "../../../components/ProfileModal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { AppSwitcher } from "../../../platform/AppSwitcher";
+import { setLastApp } from "../../../platform/apps";
 import { FinanceProvider } from "../context/FinanceContext";
-import "../theme/fernance.css";
+import { tumbagaThemeFor } from "../theme/tumbagaTheme";
+import { useFfTheme, type FfThemePref } from "../theme/useFfTheme";
+import "../theme/ferfinance.css";
 
-const { Content, Sider, Header } = Layout;
 const BASE = "/app/fernance";
-
-const navItems = [
-  { key: BASE, icon: <PieChartOutlined />, label: "Resumen" },
-  { key: `${BASE}/accounts`, icon: <WalletOutlined />, label: "Cuentas" },
-  { key: `${BASE}/incomes`, icon: <DollarOutlined />, label: "Ingresos" },
-  { key: `${BASE}/credits`, icon: <CreditCardOutlined />, label: "Creditos" },
+const NAV = [
+  { key: BASE, label: "Resumen", icon: <PieChartOutlined /> },
+  { key: `${BASE}/incomes`, label: "Ingresos", icon: <RiseOutlined /> },
+  { key: `${BASE}/credits`, label: "Créditos", icon: <CreditCardOutlined /> },
+  { key: `${BASE}/accounts`, label: "Cuentas", icon: <BankOutlined /> },
 ];
 
-const pageTitles: Record<string, string> = {
-  [BASE]: "Resumen",
-  [`${BASE}/accounts`]: "Cuentas",
-  [`${BASE}/incomes`]: "Ingresos",
-  [`${BASE}/credits`]: "Creditos",
+const NEXT_PREF: Record<FfThemePref, FfThemePref> = { auto: "light", light: "dark", dark: "auto" };
+const PREF_LABEL: Record<FfThemePref, string> = {
+  auto: "Tema: el del teléfono",
+  light: "Tema: claro",
+  dark: "Tema: oscuro",
 };
 
-function isNavActive(pathname: string, itemKey: string): boolean {
-  if (itemKey === BASE) return pathname === BASE || pathname === `${BASE}/`;
-  return pathname === itemKey || pathname.startsWith(itemKey + "/");
-}
-
-function resolveTitle(pathname: string): string {
-  if (pathname.includes("/credits/")) return "Detalle credito";
-  const match = navItems.find((item) => isNavActive(pathname, item.key));
-  return match ? pageTitles[match.key] ?? match.label : "Fernance";
-}
-
-function FernanceShellInner() {
+/** FerFinance: tus finanzas, con su propio encabezado, tema Tumbaga y barra de abajo en el teléfono. */
+export function FernanceShell() {
+  const { pref, mode, setPref } = useFfTheme();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useIsMobile();
   const [profileOpen, setProfileOpen] = useState(false);
-  const selectedKey = navItems.find((item) => isNavActive(location.pathname, item.key))?.key ?? BASE;
+
+  useEffect(() => {
+    setLastApp("fernance");
+  }, []);
+
+  const current = NAV.find((n) => n.key !== BASE && location.pathname.startsWith(n.key))?.key ?? BASE;
+  const themeIcon = pref === "auto" ? <BulbOutlined /> : pref === "light" ? <SunOutlined /> : <MoonOutlined />;
 
   return (
-    <div className="app-shell app-shell--fernance">
-      <Layout className="app-shell__inner" style={{ minHeight: "100dvh", background: "transparent" }}>
-        {!isMobile && (
-          <Sider width={248} className="app-shell__sider">
-            <div className="app-shell__brand app-shell__brand--fern">
-              <span className="fern-logo" aria-hidden>
-                ✦
-              </span>
-              Fernance
-            </div>
-            <nav className="app-shell__nav">
-              {navItems.map((item) => {
-                const active = selectedKey === item.key;
-                return (
+    <ConfigProvider theme={tumbagaThemeFor(mode)}>
+      <AntApp>
+        <FinanceProvider>
+          <div className="ff-shell">
+            <header className="ff-header">
+              <div className="ff-brand">
+                <span className="ff-brand__mark" aria-hidden="true" />
+                FerFinance
+              </div>
+              {!isMobile && (
+                <nav className="ff-topnav" aria-label="Secciones de FerFinance">
+                  {NAV.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className="ff-navlink"
+                      aria-current={current === item.key ? "page" : undefined}
+                      onClick={() => navigate(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+              )}
+              <div className="ff-header__actions">
+                <button
+                  type="button"
+                  className="ff-icon-btn"
+                  onClick={() => setPref(NEXT_PREF[pref])}
+                  aria-label={`${PREF_LABEL[pref]}. Toca para cambiar`}
+                  title={PREF_LABEL[pref]}
+                >
+                  {themeIcon}
+                </button>
+                <button type="button" className="ff-icon-btn" onClick={() => setProfileOpen(true)} aria-label="Tu cuenta">
+                  <UserOutlined />
+                </button>
+                <AppSwitcher compact={isMobile} />
+              </div>
+            </header>
+
+            <main className="ff-main">
+              <Outlet />
+            </main>
+
+            {isMobile && (
+              <nav className="ff-tabbar" aria-label="Secciones de FerFinance">
+                {NAV.map((item) => (
                   <button
                     key={item.key}
                     type="button"
+                    className="ff-tab"
+                    aria-current={current === item.key ? "page" : undefined}
                     onClick={() => navigate(item.key)}
-                    className={`app-nav-btn app-nav-btn--fern ${active ? "app-nav-btn--active" : ""}`}
                   >
-                    <span style={{ fontSize: 18 }}>{item.icon}</span>
+                    {item.icon}
                     {item.label}
                   </button>
-                );
-              })}
-              <button type="button" onClick={() => setProfileOpen(true)} className="app-nav-btn app-nav-btn--fern">
-                <span style={{ fontSize: 18 }}><UserOutlined /></span>
-                Perfil
-              </button>
-            </nav>
-          </Sider>
-        )}
-        <Layout style={{ background: "transparent" }}>
-          <Header
-            className="app-shell__header"
-            style={{ padding: isMobile ? "0 16px" : "0 40px", height: isMobile ? 56 : 64 }}
-          >
-            <span className="app-shell__header-title" style={{ fontSize: isMobile ? 17 : 20, color: "#F5C542" }}>
-              {resolveTitle(location.pathname)}
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <button type="button" className="profile-trigger profile-trigger--fern" onClick={() => setProfileOpen(true)} aria-label="Perfil">
-                <UserOutlined />
-              </button>
-              <AppSwitcher />
-            </div>
-          </Header>
-          <Content
-            className="app-shell__content"
-            style={{ padding: isMobile ? "12px 16px 100px" : "32px 40px 40px", maxWidth: isMobile ? "100%" : 1200 }}
-          >
-            <Outlet />
-          </Content>
-          {isMobile && (
-            <nav className="mobile-tab-bar">
-              {[
-                navItems[0],
-                navItems[1],
-                navItems[2],
-                navItems[3],
-                { key: "profile", icon: <UserOutlined />, label: "Perfil" },
-              ].map((item) => {
-                const isProfile = item.key === "profile";
-                const isActive = !isProfile && isNavActive(location.pathname, item.key);
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => (isProfile ? setProfileOpen(true) : navigate(item.key))}
-                    className={`mobile-tab-btn mobile-tab-btn--fern ${isActive ? "mobile-tab-btn--active" : ""}`}
-                  >
-                    <span style={{ fontSize: 20 }}>{item.icon}</span>
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-          )}
-        </Layout>
-      </Layout>
-      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-    </div>
-  );
-}
+                ))}
+              </nav>
+            )}
 
-export function FernanceShell() {
-  return (
-    <FinanceProvider>
-      <FernanceShellInner />
-    </FinanceProvider>
+            <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+          </div>
+        </FinanceProvider>
+      </AntApp>
+    </ConfigProvider>
   );
 }
