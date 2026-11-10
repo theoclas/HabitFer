@@ -4,6 +4,8 @@
 > ProyecFer ya no sale en el lanzador de apps, en «Bienvenido a Fersua» ni en la pantalla de entrada, y cualquier
 > dirección `/app/proyecfer/*` lleva a HabitFer. Su código (web y API) y sus tablas siguen intactos, y la API
 > `/api/proyecfer` sigue respondiendo. Ninguna otra app usa sus datos (ni el respaldo de HabitFer ni los avisos).
+> En producción desde el 10 nov 2026 (commit 4682c30): solo se reconstruyó `web`, la API no se reinició; respaldo previo
+> en `~/backups/habitfer-antes-retiro-proyecfer-20261110-124857.sql`.
 >
 > Para volver a prenderla: borrar `retired: true` de `proyecfer` en `web/src/platform/apps.ts` (la marca también
 > controla la ruta en `web/src/router.tsx`) y desplegar la web. Si algún día se borra del todo, sus tablas son
