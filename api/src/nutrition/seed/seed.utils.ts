@@ -47,6 +47,25 @@ export function suspicious(p: { kcal: number; protein: number; fat: number; carb
   return ratio < 0.65 || ratio > 1.35;
 }
 
+/**
+ * Empacados por traer de Open Food Facts: sin repetir, solo códigos de barras válidos y, salvo que
+ * se pida refrescar, únicamente los que todavía no están guardados.
+ */
+export function packagedPlan(list: { code: string }[], saved: Set<string>, refresh: boolean): { fetch: string[]; skip: string[]; invalid: string[] } {
+  const seen = new Set<string>();
+  const plan = { fetch: [] as string[], skip: [] as string[], invalid: [] as string[] };
+  for (const { code } of list) {
+    if (!/^\d{8,14}$/.test(code)) {
+      plan.invalid.push(code);
+      continue;
+    }
+    if (seen.has(code)) continue;
+    seen.add(code);
+    (saved.has(code) && !refresh ? plan.skip : plan.fetch).push(code);
+  }
+  return plan;
+}
+
 /** Palabras con mayúscula inicial tras «de», etc. no cambian: solo se usa para comparar nombres. */
 export function nameKey(s: string): string {
   return s

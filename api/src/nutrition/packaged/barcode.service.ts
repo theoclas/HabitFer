@@ -1,13 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { FoodSource, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FoodsService } from '../foods.service';
-import { wordsOf } from '../search.utils';
 import { barcodeVariants, isBarcode, offToFood, type PackagedFood } from './off.map';
 import { OpenFoodFactsClient } from './open-food-facts.client';
-
-/** Empacados de Open Food Facts: abajo de lo básico en la búsqueda, salvo que se busquen por su nombre o marca. */
-const OFF_PRIORITY = -1;
+import { savePackaged } from './save-packaged';
 
 export type BarcodeResult =
   | { status: 'found'; foodId: string; from: 'base' | 'off'; check: boolean }
@@ -57,36 +54,7 @@ export class BarcodeService {
 
   /** Lo guarda en la base compartida (o lo actualiza si ya estaba) con sus medidas. */
   async save(f: PackagedFood): Promise<string> {
-    const data = {
-      name: f.name,
-      searchText: wordsOf(f.name, f.brand).join(' '),
-      category: 'Empacados',
-      brand: f.brand,
-      barcode: f.code,
-      kcal: f.per100.kcal,
-      protein: f.per100.protein,
-      fat: f.per100.fat,
-      carbs: f.per100.carbs,
-      fiber: f.per100.fiber,
-      sugar: f.per100.sugar,
-      satFat: f.per100.satFat,
-      sodium: f.per100.sodium,
-      nutrients: { transFat: f.transFat, sweetener: f.sweetener, check: f.check, estimated: f.estimated, liquid: f.liquid } as Prisma.InputJsonValue,
-      priority: OFF_PRIORITY,
-      archived: false,
-    };
-    const portions = f.portions.map((p, i) => ({ ...p, sortOrder: i }));
-    const id = await this.prisma.$transaction(async (tx) => {
-      const row = await tx.food.upsert({
-        where: { source_sourceCode: { source: FoodSource.OFF, sourceCode: f.code } },
-        create: { source: FoodSource.OFF, sourceCode: f.code, ...data },
-        update: data,
-        select: { id: true },
-      });
-      await tx.foodPortion.deleteMany({ where: { foodId: row.id } });
-      if (portions.length) await tx.foodPortion.createMany({ data: portions.map((p) => ({ ...p, foodId: row.id })) });
-      return row.id;
-    });
+    const id = await savePackaged(this.prisma, f);
     // Que aparezca ya en la búsqueda (la base compartida vive en memoria).
     this.foods.invalidate();
     return id;

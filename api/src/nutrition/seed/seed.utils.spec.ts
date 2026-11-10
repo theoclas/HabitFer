@@ -1,4 +1,4 @@
-import { nameKey, portionLabel, slug, suspicious, tidyName } from './seed.utils';
+import { nameKey, packagedPlan, portionLabel, slug, suspicious, tidyName } from './seed.utils';
 
 describe('cargador: ayudas', () => {
   it('tidyName: mayúsculas a frase; lo demás se respeta', () => {
@@ -29,5 +29,12 @@ describe('cargador: ayudas', () => {
     expect(suspicious({ kcal: 1380, protein: 5, fat: 30, carbs: 60 })).toBe(true); // kJ en el campo de kcal
     expect(suspicious({ kcal: 1, protein: 0.1, fat: 0, carbs: 0 })).toBe(false); // café
     expect(suspicious({ kcal: 0, protein: 0, fat: 0, carbs: 0 })).toBe(false); // agua
+  });
+
+  it('packagedPlan: sin repetir, solo códigos válidos y lo que falta (o todo si se refresca)', () => {
+    const list = [{ code: '7622300489434' }, { code: '7702011000014' }, { code: '7622300489434' }, { code: 'abc' }, { code: '123' }];
+    const saved = new Set(['7702011000014']);
+    expect(packagedPlan(list, saved, false)).toEqual({ fetch: ['7622300489434'], skip: ['7702011000014'], invalid: ['abc', '123'] });
+    expect(packagedPlan(list, saved, true).fetch).toEqual(['7622300489434', '7702011000014']);
   });
 });

@@ -32,4 +32,13 @@ export const ALIASES: AliasRule[] = [
   { code: 'F086', words: ['pollo asado'] },
   { code: 'F089', words: ['pollo asado', 'presa de pollo'] },
   { code: 'E044', words: ['pescado frito', 'pescado'] },
+  // Agregados el 10 nov 2026.
+  { code: 'G020', words: ['quesillo', 'queso pera', 'queso de hebra'] },
+  { code: 'A061', words: ['pan tajado', 'pan de molde', 'tajado'] },
+  { code: 'F070', words: ['alitas', 'alas de pollo', 'alitas de pollo'] },
+  { code: 'A077', words: ['torta', 'bizcocho', 'torta casera'] },
+  { code: 'A078', words: ['torta de chocolate', 'torta negra'] },
+  { code: 'A076', words: ['torta de cumpleanos', 'torta con crema'] },
+  { code: 'A073', words: ['espagueti', 'espaguetis', 'spaghetti', 'fideos'] },
+  { code: 'G005', words: ['lechera'] },
 ];

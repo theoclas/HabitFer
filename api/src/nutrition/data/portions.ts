@@ -108,4 +108,10 @@ export const PORTIONS: PortionRule[] = [
   { code: 'S017', portions: [['Unidad', 220, true]] },
   { code: 'S005', portions: [['Unidad', 150, true]] },
   { code: 'S006', portions: [['Unidad', 100, true]] },
+  // Agregados el 10 nov 2026.
+  { code: 'F070', portions: [['Unidad', 45, true], ['4 alitas', 180]] },
+  { code: 'G020', portions: [['Tajada', 30, true]] },
+  ...byCode(['A076', 'A077', 'A078'], [['Tajada', 70, true]]),
+  { code: 'A073', portions: [['Plato', 180, true], ['Porción pequeña', 100]] },
+  { code: 'G005', portions: [['Cucharada', 20, true]] },
 ];
