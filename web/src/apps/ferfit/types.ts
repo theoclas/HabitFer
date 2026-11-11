@@ -47,10 +47,14 @@ export type ReadyRoutine = {
   minutes: number;
 };
 
+/** Calentamiento o estiramiento que el modo guiado agrega solo (todo por tiempo; segundos por lado). */
+export type Block = { name: string; minutes: number; items: ReadyItem[] };
+
 export type Library = {
   version: string;
   exercises: Exercise[];
   ready: ReadyRoutine[];
+  blocks: { warmup: Block; cooldown: Block };
   labels: {
     focus: Record<string, string>;
     equipment: Record<string, string>;
@@ -73,7 +77,11 @@ export type Routine = {
 };
 export type RoutineInput = Pick<Routine, "name" | "notes" | "circuit" | "rounds"> & { items: Omit<RoutineItem, "id">[] };
 
-export type WorkoutItem = { key: string; name: string; sets: number; reps: number | null; seconds: number | null; done: boolean };
+/** Una serie hecha de verdad: repeticiones, segundos y peso en kg (lo que aplique). */
+export type SetLog = { reps: number | null; seconds: number | null; weight: number | null };
+export type WorkoutItem = { key: string; name: string; sets: number; reps: number | null; seconds: number | null; done: boolean; log?: SetLog[] };
+/** La última vez de cada ejercicio con series anotadas. */
+export type History = Record<string, { date: string; sets: SetLog[] }>;
 export type Workout = {
   id: string;
   date: string;
@@ -85,6 +93,7 @@ export type Workout = {
   minutes: number | null;
   items: WorkoutItem[] | null;
   completed: boolean;
+  effort: number | null;
   note: string | null;
   counts: boolean;
 };
@@ -109,5 +118,16 @@ export type Home = {
 
 /** Lo que se le manda a la API al chulear. */
 export type WorkoutSave =
-  | { date: string; kind: "ROUTINE"; routineId?: string; readyKey?: string; done?: number[]; completed?: boolean }
+  | {
+      date: string;
+      kind: "ROUTINE";
+      routineId?: string;
+      readyKey?: string;
+      done?: number[];
+      completed?: boolean;
+      /** Modo guiado: se suman a lo ya chuleado, con sus series reales y los minutos. */
+      addDone?: number[];
+      logs?: { index: number; sets: SetLog[] }[];
+      minutes?: number;
+    }
   | { date: string; kind: "ACTIVITY"; activity: string; minutes: number; name?: string };

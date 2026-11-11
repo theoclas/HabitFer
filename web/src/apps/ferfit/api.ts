@@ -1,5 +1,5 @@
 import { api } from "../../api/client";
-import type { Home, Library, Routine, RoutineInput, Workout, WorkoutSave } from "./types";
+import type { History, Home, Library, Routine, RoutineInput, Workout, WorkoutSave } from "./types";
 
 const LIB_KEY = "fit_library";
 
@@ -67,8 +67,16 @@ export async function saveWorkout(input: WorkoutSave) {
   return data;
 }
 
-export async function updateWorkout(id: string, patch: { done?: number[]; completed?: boolean; minutes?: number }) {
+export async function updateWorkout(id: string, patch: { done?: number[]; completed?: boolean; minutes?: number; effort?: number }) {
   const { data } = await api.patch<Workout>(`/fit/workouts/${encodeURIComponent(id)}`, patch);
+  return data;
+}
+
+/** La última vez de cada ejercicio con series anotadas. */
+export async function fetchHistory(keys: string[]): Promise<History> {
+  const unique = [...new Set(keys)].slice(0, 40);
+  if (!unique.length) return {};
+  const { data } = await api.get<History>("/fit/history", { params: { keys: unique.join(",") } });
   return data;
 }
 

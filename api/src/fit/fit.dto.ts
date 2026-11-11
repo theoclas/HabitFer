@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -83,6 +84,42 @@ export class CopyRoutineDto {
   readyKey!: string;
 }
 
+/** Una serie hecha de verdad (modo guiado). */
+export class SetLogDto {
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(500, { message: 'Son demasiadas repeticiones.' })
+  reps?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(3600, { message: 'Una serie va hasta una hora.' })
+  seconds?: number | null;
+
+  /** Kilos (de a medio kilo). */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El peso es un número.' })
+  @Min(0)
+  @Max(500, { message: 'Revisa el peso.' })
+  weight?: number | null;
+}
+
+/** Las series reales de un ejercicio, por su posición en la rutina. */
+export class ItemLogDto {
+  @IsInt()
+  @Min(0)
+  @Max(29)
+  index!: number;
+
+  @IsArray()
+  @ArrayMaxSize(20, { message: 'Son demasiadas series.' })
+  @ValidateNested({ each: true })
+  @Type(() => SetLogDto)
+  sets!: SetLogDto[];
+}
+
 export class WorkoutDto {
   @Matches(DATE_KEY, DATE_MSG)
   date!: string;
@@ -130,6 +167,30 @@ export class WorkoutDto {
   @IsBoolean()
   completed?: boolean;
 
+  /** Ejercicios hechos que se suman a lo ya chuleado ese día (modo guiado). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(29, { each: true })
+  addDone?: number[];
+
+  /** Las series reales de cada ejercicio (modo guiado). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @ValidateNested({ each: true })
+  @Type(() => ItemLogDto)
+  logs?: ItemLogDto[];
+
+  /** Qué tan duro se sintió, de 1 a 10. */
+  @IsOptional()
+  @IsInt()
+  @Min(1, { message: 'El esfuerzo va de 1 a 10.' })
+  @Max(10, { message: 'El esfuerzo va de 1 a 10.' })
+  effort?: number;
+
   @IsOptional()
   @IsString()
   @MaxLength(300)
@@ -155,10 +216,23 @@ export class WorkoutUpdateDto {
   @Max(600)
   minutes?: number;
 
+  /** Qué tan duro se sintió, de 1 a 10. */
+  @IsOptional()
+  @IsInt()
+  @Min(1, { message: 'El esfuerzo va de 1 a 10.' })
+  @Max(10, { message: 'El esfuerzo va de 1 a 10.' })
+  effort?: number;
+
   @IsOptional()
   @IsString()
   @MaxLength(300)
   note?: string;
+}
+
+/** Claves de ejercicios separadas por coma (hasta 40). */
+export class HistoryQueryDto {
+  @Matches(/^[a-z0-9-]{1,60}(,[a-z0-9-]{1,60}){0,39}$/, { message: 'Pide las claves de los ejercicios separadas por coma.' })
+  keys!: string;
 }
 
 export class SettingsDto {

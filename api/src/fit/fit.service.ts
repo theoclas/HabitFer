@@ -4,7 +4,7 @@ import { localTodayKey, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { checkedDate } from '../nutrition/entry.shared';
 import { daysBetween } from '../nutrition/progress/days';
-import { counts, routineMinutes, streakOf, type WorkoutItem } from './fit-math';
+import { applyLogs, counts, lastLogs, markDone, routineMinutes, streakOf, type WorkoutItem } from './fit-math';
 import type { Activity, RoutineDto, WorkoutDto, WorkoutUpdateDto } from './fit.dto';
 import { EXERCISE_BY_KEY, READY_BY_KEY } from './library';
 
@@ -47,7 +47,7 @@ function routineView(r: RoutineRow) {
   };
 }
 
-function itemsOf(w: FitWorkout): WorkoutItem[] | null {
+function itemsOf(w: Pick<FitWorkout, 'items'>): WorkoutItem[] | null {
   return Array.isArray(w.items) ? (w.items as unknown as WorkoutItem[]) : null;
 }
 
@@ -64,6 +64,7 @@ function workoutView(w: FitWorkout) {
     minutes: w.minutes,
     items,
     completed: w.completed,
+    effort: w.effort,
     note: w.note,
     counts: counts({ date: toDateKey(w.date), kind: w.kind, completed: w.completed, items }),
   };
@@ -220,14 +221,6 @@ export class FitService {
     throw new BadRequestException('Di qué rutina hiciste.');
   }
 
-  private withDone(items: WorkoutItem[], done: number[] | undefined, completed: boolean | undefined): WorkoutItem[] {
-    if (completed) return items.map((i) => ({ ...i, done: true }));
-    if (completed === false && !done) return items.map((i) => ({ ...i, done: false }));
-    if (!done) return items;
-    const set = new Set(done);
-    return items.map((it, i) => ({ ...it, done: set.has(i) }));
-  }
-
   private checkDay(dateKey: string) {
     const date = checkedDate(dateKey);
     if (dateKey > localTodayKey()) throw new BadRequestException('Ese día aún no llega.');
@@ -256,13 +249,16 @@ export class FitService {
     });
     // Si ya estaba, se conserva lo que se chuleó antes (si la rutina no cambió de tamaño).
     const base = existing && itemsOf(existing)?.length === snap.items.length ? itemsOf(existing)! : snap.items;
-    const items = this.withDone(base, dto.done, dto.completed);
+    const items = applyLogs(markDone(base, { done: dto.done, addDone: dto.addDone, completed: dto.completed }), dto.logs);
     const completed = items.length > 0 && items.every((i) => i.done);
+    // Si ese día ya había minutos (por ejemplo, de una parte guardada antes), quedan los mayores.
+    const minutes = dto.minutes != null && existing?.minutes != null ? Math.max(dto.minutes, existing.minutes) : (dto.minutes ?? existing?.minutes ?? null);
     const data = {
       name: snap.name,
       items: items as unknown as Prisma.InputJsonValue,
       completed,
-      minutes: dto.minutes ?? existing?.minutes ?? null,
+      minutes,
+      effort: dto.effort ?? existing?.effort ?? null,
       note: dto.note?.trim() || existing?.note || null,
     };
     const saved = existing
@@ -280,7 +276,7 @@ export class FitService {
     const w = await this.prisma.fitWorkout.findFirst({ where: { id, userId } });
     if (!w) throw new NotFoundException('Eso ya no está.');
     const current = itemsOf(w);
-    const items = current ? this.withDone(current, dto.done, dto.completed) : null;
+    const items = current ? markDone(current, { done: dto.done, completed: dto.completed }) : null;
     const completed = w.kind === FitWorkoutKind.ACTIVITY ? true : !!items && items.length > 0 && items.every((i) => i.done);
     const saved = await this.prisma.fitWorkout.update({
       where: { id },
@@ -288,6 +284,7 @@ export class FitService {
         ...(items ? { items: items as unknown as Prisma.InputJsonValue } : {}),
         completed,
         ...(dto.minutes !== undefined ? { minutes: dto.minutes } : {}),
+        ...(dto.effort !== undefined ? { effort: dto.effort } : {}),
         ...(dto.note !== undefined ? { note: dto.note.trim() || null } : {}),
       },
     });
@@ -308,6 +305,23 @@ export class FitService {
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     });
     return rows.map(workoutView);
+  }
+
+  /**
+   * La última vez que se anotaron series de cada ejercicio (modo guiado), para ver si vas mejorando.
+   * Revisa los últimos 300 entrenamientos con rutina.
+   */
+  async history(userId: string, keys: string[]) {
+    const rows = await this.prisma.fitWorkout.findMany({
+      where: { userId, kind: FitWorkoutKind.ROUTINE },
+      orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+      take: 300,
+      select: { date: true, items: true },
+    });
+    return lastLogs(
+      rows.map((r) => ({ date: toDateKey(r.date), items: itemsOf(r) })),
+      [...new Set(keys)],
+    );
   }
 
   /* ---------- Hoy y la racha ---------- */

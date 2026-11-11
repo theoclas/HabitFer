@@ -28,5 +28,25 @@ por semanas. Propuesta y fases: https://claude.ai/artifact/Pe5D3bn3rXScTw858jFRN
 | `GET /api/fit/home?date=` | La racha, lo chuleado ese día y las rutinas propias |
 | `GET/POST /api/fit/routines`, `GET/PUT/DELETE /api/fit/routines/:id` | Rutinas propias (borrar las archiva) |
 | `POST /api/fit/routines/copy` | Copiar una rutina lista (`{ readyKey }`) |
-| `GET /api/fit/workouts?from&to`, `POST /api/fit/workouts`, `PATCH/DELETE /api/fit/workouts/:id` | Chulear |
+| `GET /api/fit/workouts?from&to`, `POST /api/fit/workouts`, `PATCH/DELETE /api/fit/workouts/:id` | Chulear (el modo guiado manda `addDone`, `logs`, `minutes`; el esfuerzo va con `PATCH`) |
+| `GET /api/fit/history?keys=a,b` | La última vez de cada ejercicio con series anotadas |
 | `PUT /api/fit/settings` | Meta de días por semana |
+
+## Fase 1: entreno guiado
+
+Ruta `/app/ferfit/rutinas/:id/entrenar` o `/app/ferfit/listas/:key/entrenar` (pantalla completa, sin menú).
+
+- **Plan** (`web/src/apps/ferfit/player/plan.ts`): convierte la rutina en pasos (prepárate, trabajo, descanso) con lo
+  que dice la voz. Modos: como está (series o circuito), intervalos (trabajo y descanso fijos, con vueltas) y cada
+  minuto (EMOM). Agrega el calentamiento y el estiramiento de la biblioteca (`api/src/fit/data/blocks.ts`, unos 5 min
+  cada uno), apagados por defecto en rutinas de movilidad o estiramiento.
+- **Reloj** (`player/engine.ts`): con marcas de tiempo, no con un contador; si el celular deja la app en segundo
+  plano, al volver se pone al día. Pausa, saltar, atrás (repite el ejercicio o vuelve al anterior) y +10 s.
+- **Voz y pitidos** (`player/coach.ts`): la voz en español del celular (prefiere es-CO) y tonos del audio del
+  navegador; el primer sonido tiene que salir de un toque (iPhone). La pantalla no se apaga con la Wake Lock API.
+- **Series reales**: repeticiones, peso (ejercicios con mancuernas) y segundos (los «terminé antes»); se guardan en
+  `FitWorkout.items[].log` y la rutina muestra «La última vez». Al terminar se pide el esfuerzo de 1 a 10
+  (`FitWorkout.effort`). El calentamiento y el estiramiento no se anotan.
+- **A medias**: el entrenamiento se guarda en el teléfono (`fit_player_session`) en cada paso; al volver se ofrece
+  «Seguir donde ibas» por 12 horas, si la rutina no cambió. Las preferencias (voz, pitidos, calentar, estirar,
+  intervalos) quedan en `fit_player_prefs`.

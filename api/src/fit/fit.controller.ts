@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Res, Use
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
-import { CopyRoutineDto, HomeQueryDto, RangeQueryDto, RoutineDto, SettingsDto, WorkoutDto, WorkoutUpdateDto } from './fit.dto';
+import { CopyRoutineDto, HistoryQueryDto, HomeQueryDto, RangeQueryDto, RoutineDto, SettingsDto, WorkoutDto, WorkoutUpdateDto } from './fit.dto';
 import { FitService } from './fit.service';
 import { library } from './library';
 
@@ -56,6 +56,12 @@ export class FitController {
   @Delete('routines/:id')
   removeRoutine(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
     return this.fit.removeRoutine(user.userId, id);
+  }
+
+  /** La última vez de cada ejercicio con series anotadas: ?keys=sentadilla,flexion-pared */
+  @Get('history')
+  history(@CurrentUser() user: AuthUserPayload, @Query() query: HistoryQueryDto) {
+    return this.fit.history(user.userId, query.keys.split(','));
   }
 
   @Get('workouts')

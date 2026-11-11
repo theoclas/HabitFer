@@ -36,6 +36,17 @@ export function FerFitShell() {
     NAV.find((n) => n.key !== FF_BASE && [n.key, ...(n.also ?? [])].some((k) => location.pathname.startsWith(k)))?.key ?? FF_BASE;
   const themeIcon = pref === "auto" ? <BulbOutlined /> : pref === "light" ? <SunOutlined /> : <MoonOutlined />;
 
+  // Entrenando: pantalla completa, sin encabezado ni menú.
+  if (/\/entrenar\/?$/.test(location.pathname)) {
+    return (
+      <ConfigProvider theme={cicloviaThemeFor(mode)}>
+        <div className="fit-shell fit-shell--focus">
+          <Outlet />
+        </div>
+      </ConfigProvider>
+    );
+  }
+
   return (
     <ConfigProvider theme={cicloviaThemeFor(mode)}>
       <div className="fit-shell">

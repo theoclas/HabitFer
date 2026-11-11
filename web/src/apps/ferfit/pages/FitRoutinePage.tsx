@@ -1,15 +1,16 @@
-import { CheckOutlined, CopyOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { CaretRightOutlined, CheckOutlined, CopyOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { Button, Modal, message } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
-import { copyReadyRoutine, deleteRoutine, fetchRoutine, fetchWorkouts, saveWorkout } from "../api";
+import { copyReadyRoutine, deleteRoutine, fetchHistory, fetchRoutine, fetchWorkouts, saveWorkout } from "../api";
 import { ExerciseFigure } from "../components/ExerciseFigure";
 import { ExerciseSheet } from "../components/ExerciseSheet";
-import { LEVEL_LABELS, dayLabel, doseText, minutesText, restText, todayKey } from "../format";
+import { LEVEL_LABELS, dayLabel, doseText, lastText, minutesText, restText, todayKey } from "../format";
 import { useLibrary } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
-import type { Routine, Workout } from "../types";
+import { readSession } from "../player/storage";
+import type { History, Routine, Workout } from "../types";
 
 type Item = { exerciseKey: string; sets: number; reps: number | null; seconds: number | null; restSeconds: number };
 
@@ -26,6 +27,7 @@ export function FitRoutinePage() {
   const [saving, setSaving] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<History>({});
   const [modal, holder] = Modal.useModal();
 
   const today = todayKey();
@@ -71,6 +73,16 @@ export function FitRoutinePage() {
   }, [own, ready]);
 
   const target = id ? { routineId: id } : { readyKey: key };
+  const itemKeys = view ? view.items.map((i) => i.exerciseKey).join(",") : "";
+  useEffect(() => {
+    if (!itemKeys) return;
+    fetchHistory(itemKeys.split(","))
+      .then(setHistory)
+      .catch(() => undefined);
+  }, [itemKeys]);
+  // Un entrenamiento guiado que quedó a medias con esta rutina.
+  const pending = useMemo(() => readSession(id ? `r:${id}` : `l:${key ?? ""}`), [id, key]);
+  const playUrl = `${FF_BASE}/${id ? `rutinas/${id}` : `listas/${key}`}/entrenar${date !== today ? `?fecha=${date}` : ""}`;
 
   const save = async (next: Set<number>, completed?: boolean) => {
     const prev = done;
@@ -158,6 +170,9 @@ export function FitRoutinePage() {
           {view.text && <p className="fit-sub">{view.text}</p>}
         </div>
         <div className="fit-actions">
+          <Button type="primary" icon={<CaretRightOutlined />} onClick={() => navigate(playUrl)}>
+            {pending ? "Seguir donde ibas" : "Empezar"}
+          </Button>
           {id ? (
             <>
               <Button icon={<EditOutlined />} onClick={() => navigate(`${FF_BASE}/rutinas/${id}/editar`)}>
@@ -204,6 +219,7 @@ export function FitRoutinePage() {
                     </button>
                     <span className="fit-ex__dose">{doseText(it, ex?.perSide, view.circuit)}</span>
                     <span className="fit-ex__rest">{restText(it.restSeconds)}</span>
+                    {history[it.exerciseKey] && <span className="fit-ex__last">La última vez: {lastText(history[it.exerciseKey].sets)}</span>}
                   </div>
                   <button
                     type="button"
@@ -233,13 +249,20 @@ export function FitRoutinePage() {
             <div className="fit-progress" aria-hidden="true">
               <span style={{ width: `${total ? (done.size / total) * 100 : 0}%` }} />
             </div>
-            <Button type={allDone ? "default" : "primary"} size="large" block icon={allDone ? undefined : <CheckOutlined />} loading={saving} onClick={() => void markAll()}>
+            <Button type="primary" size="large" block icon={<CaretRightOutlined />} onClick={() => navigate(playUrl)}>
+              {pending ? "Seguir donde ibas" : "Empezar entreno guiado"}
+            </Button>
+            <Button size="large" block icon={allDone ? undefined : <CheckOutlined />} loading={saving} onClick={() => void markAll()}>
               {allDone ? "Desmarcar todo" : "Marcar toda como hecha"}
             </Button>
             <span className="fit-hint">
               {workout?.counts || done.size > 0
                 ? "Ya cuenta para tu racha de esta semana."
                 : "Chulea cada ejercicio al terminarlo, o toda la rutina de una vez."}
+            </span>
+            <span className="fit-hint">
+              El entreno guiado te lleva paso a paso con tiempos y voz, anota tus series y agrega 5 min para calentar y 5 para estirar
+              (los puedes quitar).
             </span>
           </section>
         </div>

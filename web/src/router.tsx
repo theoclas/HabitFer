@@ -10,6 +10,7 @@ import { HabitFerShell } from "./apps/habitfer/layouts/HabitFerShell";
 import { FerFitShell } from "./apps/ferfit/layouts/FerFitShell";
 import { FitEditorPage } from "./apps/ferfit/pages/FitEditorPage";
 import { FitExercisesPage } from "./apps/ferfit/pages/FitExercisesPage";
+import { FitPlayerPage } from "./apps/ferfit/pages/FitPlayerPage";
 import { FitRoutinePage } from "./apps/ferfit/pages/FitRoutinePage";
 import { FitRoutinesPage } from "./apps/ferfit/pages/FitRoutinesPage";
 import { FitTodayPage } from "./apps/ferfit/pages/FitTodayPage";
@@ -109,7 +110,9 @@ export function AppRouter() {
           <Route path="rutinas/nueva" element={<FitEditorPage />} />
           <Route path="rutinas/:id" element={<FitRoutinePage />} />
           <Route path="rutinas/:id/editar" element={<FitEditorPage />} />
+          <Route path="rutinas/:id/entrenar" element={<FitPlayerPage />} />
           <Route path="listas/:key" element={<FitRoutinePage />} />
+          <Route path="listas/:key/entrenar" element={<FitPlayerPage />} />
           <Route path="ejercicios" element={<FitExercisesPage />} />
         </Route>
         <Route path="/app" element={<AppRedirect />} />

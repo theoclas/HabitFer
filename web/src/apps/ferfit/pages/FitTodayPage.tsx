@@ -149,7 +149,13 @@ export function FitTodayPage() {
                             {w.name}
                           </span>
                           <span className="fit-hint">
-                            {w.kind === "ACTIVITY" ? `${w.minutes ?? 0} min` : w.completed ? `Completa · ${total} ejercicios` : `${done} de ${total} ejercicios`}
+                            {[
+                              w.kind === "ACTIVITY" ? `${w.minutes ?? 0} min` : w.completed ? `Completa · ${total} ejercicios` : `${done} de ${total} ejercicios`,
+                              w.kind === "ROUTINE" && w.minutes ? `${w.minutes} min` : "",
+                              w.effort ? `esfuerzo ${w.effort}/10` : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </span>
                         </button>
                         <button type="button" className="fit-icon-btn fit-icon-btn--sm" aria-label={`Quitar ${w.name}`} onClick={() => remove(w)}>

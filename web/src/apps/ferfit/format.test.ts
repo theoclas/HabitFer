@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { dayLabel, doseText, minutesText, restText, shiftDay, todayKey } from "./format.ts";
+import { clock, dayLabel, doseText, effortText, lastText, minutesText, restText, shiftDay, todayKey } from "./format.ts";
 
 test("series y repeticiones", () => {
   assert.equal(doseText({ sets: 3, reps: 12 }), "3 × 12");
@@ -25,4 +25,16 @@ test("días", () => {
   assert.equal(dayLabel("2026-11-10", "2026-11-10"), "Hoy");
   assert.equal(dayLabel("2026-11-09", "2026-11-10"), "Ayer");
   assert.equal(dayLabel("2026-11-03", "2026-11-10"), "martes 3 de noviembre");
+});
+
+test("reloj, última vez y esfuerzo", () => {
+  assert.equal(clock(65_000), "1:05");
+  assert.equal(clock(400), "0:01");
+  assert.equal(clock(400, "down"), "0:00");
+  assert.equal(clock(-5), "0:00");
+  assert.equal(lastText([{ reps: 12, seconds: null, weight: 5 }, { reps: 10, seconds: null, weight: 5 }]), "12 · 10 rep · 5 kg");
+  assert.equal(lastText([{ reps: 12, seconds: null, weight: 5 }, { reps: 10, seconds: null, weight: 7.5 }]), "12 · 10 rep · hasta 7,5 kg");
+  assert.equal(lastText([{ reps: null, seconds: 30, weight: null }, { reps: null, seconds: 25, weight: null }]), "30 s · 25 s");
+  assert.equal(lastText([]), "");
+  assert.equal(effortText(6), "Esfuerzo 6/10 · moderado");
 });

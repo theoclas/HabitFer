@@ -1,5 +1,7 @@
 /** Textos de FerFit: series y repeticiones, descansos, fechas. Funciones puras (se prueban solas). */
 
+import type { SetLog } from "./types.ts";
+
 export const LEVEL_LABELS: Record<number, string> = { 1: "Principiante", 2: "Intermedio", 3: "Avanzado" };
 export const WEEKDAY_SHORT = ["L", "M", "X", "J", "V", "S", "D"];
 
@@ -57,3 +59,29 @@ export function dayLabel(key: string, today: string): string {
 /** «3 semanas», «1 semana». */
 export const weeksText = (n: number) => `${n} ${n === 1 ? "semana" : "semanas"}`;
 export const daysText = (n: number) => `${n} ${n === 1 ? "día" : "días"}`;
+
+/** Reloj «m:ss». `up`: redondea hacia arriba (en la cuenta regresiva, 0,4 s se ve 0:01); `down`: hacia abajo. */
+export function clock(ms: number, round: "up" | "down" = "up"): string {
+  const secs = Math.max(0, round === "up" ? Math.ceil(ms / 1000) : Math.floor(ms / 1000));
+  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+}
+
+/** Kilos con coma: «5 kg», «7,5 kg». */
+export const kgText = (n: number) => `${String(n).replace(".", ",")} kg`;
+
+/** La última vez, corto: «12 · 12 · 10 rep · 5 kg», «30 s · 30 s», «12 · 10 rep · hasta 7,5 kg». */
+export function lastText(sets: SetLog[]): string {
+  if (!sets.length) return "";
+  const allReps = sets.every((s) => s.reps != null);
+  const parts = sets.map((s) => (s.reps != null ? String(s.reps) : s.seconds != null ? `${s.seconds} s` : "—"));
+  const weights = sets.map((s) => s.weight).filter((w): w is number => w != null && w > 0);
+  const max = weights.length ? Math.max(...weights) : null;
+  const weight = max === null ? "" : weights.every((w) => w === max) ? ` · ${kgText(max)}` : ` · hasta ${kgText(max)}`;
+  return parts.join(" · ") + (allReps ? " rep" : "") + weight;
+}
+
+/** «Esfuerzo 6/10 · moderado». */
+export function effortText(n: number): string {
+  const word = n <= 2 ? "muy suave" : n <= 4 ? "suave" : n <= 6 ? "moderado" : n <= 8 ? "duro" : "al máximo";
+  return `Esfuerzo ${n}/10 · ${word}`;
+}

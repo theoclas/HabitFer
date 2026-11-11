@@ -27,13 +27,73 @@ export function routineMinutes(items: TimedItem[], circuit: boolean, rounds: num
   return Math.max(1, Math.round(total / 60));
 }
 
-/** Lo que se guarda de cada ejercicio hecho. */
-export type WorkoutItem = { key: string; name: string; sets: number; reps: number | null; seconds: number | null; done: boolean };
+/** Una serie hecha de verdad: repeticiones, segundos y peso (kg), lo que aplique. */
+export type SetLog = { reps: number | null; seconds: number | null; weight: number | null };
+
+/** Lo que se guarda de cada ejercicio hecho. `log`: las series reales, si se entrenó con el modo guiado. */
+export type WorkoutItem = { key: string; name: string; sets: number; reps: number | null; seconds: number | null; done: boolean; log?: SetLog[] };
 export type WorkoutLike = { date: string; kind: 'ROUTINE' | 'ACTIVITY'; completed: boolean; items: WorkoutItem[] | null };
 
 /** Un entrenamiento cuenta si se hizo completo, si es una actividad o si se chuleó al menos un ejercicio. */
 export function counts(w: WorkoutLike): boolean {
   return w.completed || w.kind === 'ACTIVITY' || (w.items ?? []).some((i) => i.done);
+}
+
+/**
+ * Qué queda chuleado. `completed`: todo (o nada si es false y no viene `done`); `done`: exactamente esos;
+ * `addDone`: esos se suman a lo que ya estaba (el modo guiado no desmarca lo que se chuleó a mano).
+ */
+export function markDone(items: WorkoutItem[], opts: { done?: number[]; addDone?: number[]; completed?: boolean }): WorkoutItem[] {
+  if (opts.completed) return items.map((i) => ({ ...i, done: true }));
+  let out = items;
+  if (opts.completed === false && !opts.done) out = out.map((i) => ({ ...i, done: false }));
+  if (opts.done) {
+    const set = new Set(opts.done);
+    out = out.map((it, i) => ({ ...it, done: set.has(i) }));
+  }
+  if (opts.addDone?.length) {
+    const set = new Set(opts.addDone);
+    out = out.map((it, i) => (set.has(i) ? { ...it, done: true } : it));
+  }
+  return out;
+}
+
+const roundTo = (n: number, step: number) => Math.round(n / step) * step;
+
+/** Una serie limpia: enteros para repeticiones y segundos, el peso al medio kilo. */
+function cleanSet(s: Partial<SetLog>): SetLog {
+  const int = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
+  const weight = typeof s.weight === 'number' && Number.isFinite(s.weight) && s.weight > 0 ? roundTo(s.weight, 0.5) : null;
+  return { reps: int(s.reps), seconds: int(s.seconds), weight };
+}
+
+/** Pone las series reales en cada ejercicio (por su posición). Reemplaza las que tuviera ese ejercicio. */
+export function applyLogs(items: WorkoutItem[], logs: { index: number; sets: Partial<SetLog>[] }[] | undefined): WorkoutItem[] {
+  if (!logs?.length) return items;
+  const byIndex = new Map(logs.filter((l) => l.index >= 0 && l.index < items.length).map((l) => [l.index, l.sets]));
+  return items.map((it, i) => {
+    const sets = byIndex.get(i);
+    return sets ? { ...it, log: sets.slice(0, 20).map(cleanSet) } : it;
+  });
+}
+
+export type LastLog = { date: string; sets: SetLog[] };
+
+/**
+ * La última vez de cada ejercicio con series anotadas. `rows` va del más nuevo al más viejo; si un día tiene
+ * varias rutinas con el mismo ejercicio, gana la primera que llegue (la más reciente).
+ */
+export function lastLogs(rows: { date: string; items: WorkoutItem[] | null }[], keys: string[]): Record<string, LastLog> {
+  const wanted = new Set(keys);
+  const out: Record<string, LastLog> = {};
+  for (const row of rows) {
+    for (const it of row.items ?? []) {
+      if (!wanted.has(it.key) || out[it.key] || !it.log?.length) continue;
+      out[it.key] = { date: row.date, sets: it.log };
+    }
+    if (Object.keys(out).length === wanted.size) break;
+  }
+  return out;
 }
 
 export type WeekDay = { date: string; trained: boolean };

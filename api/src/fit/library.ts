@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
+import { COOLDOWN, WARMUP } from './data/blocks';
 import { EXERCISES } from './data/exercises';
 import { READY_ROUTINES } from './data/routines';
-import type { ExerciseDef, ReadyRoutine } from './data/types';
+import type { ExerciseDef, ReadyItem, ReadyRoutine } from './data/types';
 import { routineMinutes } from './fit-math';
 import { buildFigure, type Figure } from './figure';
 
@@ -38,6 +39,17 @@ export function readyMinutes(r: ReadyRoutine): number {
   );
 }
 
+/** Segundos de un bloque de calentamiento o estiramiento (los ejercicios por lado cuentan doble). */
+export function blockSeconds(items: ReadyItem[]): number {
+  return items.reduce((s, i) => s + (i.seconds ?? 0) * (EXERCISE_BY_KEY.get(i.key)?.perSide ? 2 : 1) + i.rest, 0);
+}
+
+/** Los bloques que el modo guiado agrega solos al principio y al final. */
+export const BLOCKS = {
+  warmup: { name: 'Calentamiento', items: WARMUP },
+  cooldown: { name: 'Estirar', items: COOLDOWN },
+} as const;
+
 let cached: { version: string; body: unknown } | null = null;
 
 /** La biblioteca completa (se arma una vez: no cambia mientras la API corre). */
@@ -45,7 +57,11 @@ export function library() {
   if (cached) return cached;
   const exercises: ExerciseView[] = EXERCISES.map((e) => ({ ...e, figure: buildFigure(e.figure) }));
   const ready: ReadyView[] = READY_ROUTINES.map((r) => ({ ...r, minutes: readyMinutes(r) }));
-  const body = { exercises, ready, labels: { focus: FOCUS_LABELS, equipment: EQUIPMENT_LABELS, muscles: MUSCLE_LABELS } };
+  const blocks = {
+    warmup: { ...BLOCKS.warmup, minutes: Math.round(blockSeconds(WARMUP) / 60) },
+    cooldown: { ...BLOCKS.cooldown, minutes: Math.round(blockSeconds(COOLDOWN) / 60) },
+  };
+  const body = { exercises, ready, blocks, labels: { focus: FOCUS_LABELS, equipment: EQUIPMENT_LABELS, muscles: MUSCLE_LABELS } };
   const version = createHash('sha1').update(JSON.stringify(body)).digest('hex').slice(0, 12);
   cached = { version, body: { version, ...body } };
   return cached;

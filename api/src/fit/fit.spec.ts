@@ -1,8 +1,8 @@
 import { EXERCISES } from './data/exercises';
 import { READY_ROUTINES } from './data/routines';
-import { counts, routineMinutes, streakOf } from './fit-math';
+import { applyLogs, counts, lastLogs, markDone, routineMinutes, streakOf, type WorkoutItem } from './fit-math';
 import { buildFigure, figurePoints } from './figure';
-import { EXERCISE_BY_KEY, library } from './library';
+import { BLOCKS, EXERCISE_BY_KEY, blockSeconds, library } from './library';
 
 describe('racha por semanas', () => {
   // El 10 de noviembre de 2026 es martes: la semana va del lunes 9 al domingo 15.
@@ -96,5 +96,63 @@ describe('biblioteca', () => {
     const body = lib.body as { ready: { minutes: number }[] };
     expect(lib.version).toMatch(/^[0-9a-f]{12}$/);
     expect(body.ready.every((r) => r.minutes > 0)).toBe(true);
+  });
+});
+
+describe('series reales del modo guiado', () => {
+  const it3 = (): WorkoutItem[] =>
+    ['sentadilla', 'flexion-pared', 'puente-gluteo'].map((key) => ({ key, name: key, sets: 3, reps: 10, seconds: null, done: false }));
+
+  it('addDone suma a lo chuleado sin desmarcar nada', () => {
+    const manual = markDone(it3(), { done: [2] });
+    const after = markDone(manual, { addDone: [0] });
+    expect(after.map((i) => i.done)).toEqual([true, false, true]);
+    expect(markDone(it3(), { completed: true }).every((i) => i.done)).toBe(true);
+    expect(markDone(manual, { completed: false }).some((i) => i.done)).toBe(false);
+  });
+
+  it('las series se ponen por posición y se limpian', () => {
+    const out = applyLogs(it3(), [
+      { index: 1, sets: [{ reps: 12.4, seconds: null, weight: 5.26 }, { reps: 10, weight: 0 }] },
+      { index: 7, sets: [{ reps: 1 }] },
+    ]);
+    expect(out[0].log).toBeUndefined();
+    expect(out[1].log).toEqual([
+      { reps: 12, seconds: null, weight: 5.5 },
+      { reps: 10, seconds: null, weight: null },
+    ]);
+    expect(out).toHaveLength(3);
+  });
+
+  it('la última vez es la más reciente que tenga series', () => {
+    const withLog = (key: string, reps: number): WorkoutItem => ({ key, name: key, sets: 1, reps, seconds: null, done: true, log: [{ reps, seconds: null, weight: null }] });
+    const rows = [
+      { date: '2026-11-10', items: [{ key: 'sentadilla', name: 's', sets: 3, reps: 10, seconds: null, done: true }] },
+      { date: '2026-11-08', items: [withLog('sentadilla', 12), withLog('superman', 8)] },
+      { date: '2026-11-05', items: [withLog('sentadilla', 9)] },
+    ];
+    const last = lastLogs(rows, ['sentadilla', 'superman', 'nino']);
+    expect(last.sentadilla).toEqual({ date: '2026-11-08', sets: [{ reps: 12, seconds: null, weight: null }] });
+    expect(last.superman.date).toBe('2026-11-08');
+    expect(last.nino).toBeUndefined();
+  });
+});
+
+describe('calentar y estirar', () => {
+  it('usan ejercicios que existen, todo por tiempo, y duran unos 5 minutos', () => {
+    for (const block of [BLOCKS.warmup, BLOCKS.cooldown]) {
+      for (const i of block.items) {
+        expect([i.key, EXERCISE_BY_KEY.has(i.key), typeof i.seconds]).toEqual([i.key, true, 'number']);
+      }
+      const secs = blockSeconds([...block.items]);
+      expect(secs).toBeGreaterThanOrEqual(240);
+      expect(secs).toBeLessThanOrEqual(330);
+    }
+  });
+
+  it('vienen en la biblioteca con sus minutos', () => {
+    const body = library().body as { blocks: { warmup: { minutes: number }; cooldown: { minutes: number } } };
+    expect(body.blocks.warmup.minutes).toBeGreaterThanOrEqual(4);
+    expect(body.blocks.cooldown.minutes).toBeGreaterThanOrEqual(4);
   });
 });
