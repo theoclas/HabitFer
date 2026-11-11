@@ -19,7 +19,7 @@ beforeEach(() => store.clear());
 
 test("ProyecFer está retirada y no se ofrece", () => {
   assert.equal(APPS.proyecfer.retired, true);
-  assert.deepEqual(ACTIVE_APP_IDS, ["habitfer", "fernance", "nutrifer"]);
+  assert.deepEqual(ACTIVE_APP_IDS, ["habitfer", "fernance", "nutrifer", "ferfit"]);
 });
 
 test("una última app retirada cuenta como ninguna y lleva al selector", () => {

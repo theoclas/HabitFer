@@ -9,6 +9,7 @@ function detectCurrentApp(pathname: string): AppId {
   if (pathname.startsWith("/app/proyecfer")) return "proyecfer";
   if (pathname.startsWith("/app/fernance")) return "fernance";
   if (pathname.startsWith("/app/nutrifer")) return "nutrifer";
+  if (pathname.startsWith("/app/ferfit")) return "ferfit";
   return "habitfer";
 }
 

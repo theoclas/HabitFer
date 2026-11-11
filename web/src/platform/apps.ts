@@ -1,4 +1,4 @@
-export type AppId = "habitfer" | "proyecfer" | "fernance" | "nutrifer";
+export type AppId = "habitfer" | "proyecfer" | "fernance" | "nutrifer" | "ferfit";
 
 export const LAST_APP_KEY = "fersua_last_app";
 
@@ -45,6 +45,13 @@ export const APPS: Record<AppId, AppConfig> = {
     description: "Comida colombiana, calorías y nutrientes",
     color: "#46C27A",
     basePath: "/app/nutrifer",
+  },
+  ferfit: {
+    id: "ferfit",
+    name: "FerFit",
+    description: "Rutinas en casa, tu semana y tu racha",
+    color: "#2F6BFF",
+    basePath: "/app/ferfit",
   },
 };
 

@@ -10,6 +10,7 @@ import { envValidationSchema } from './config/env.validation';
 import { ExportModule } from './export/export.module';
 import { OriginGuard } from './common/guards/origin.guard';
 import { FernanceModule } from './fernance/fernance.module';
+import { FitModule } from './fit/fit.module';
 import { HabitsModule } from './habits/habits.module';
 import { MailModule } from './mail/mail.module';
 import { MoodsModule } from './moods/moods.module';
@@ -53,6 +54,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     ProyecFerModule,
     FernanceModule,
     NutritionModule,
+    FitModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

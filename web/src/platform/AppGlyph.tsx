@@ -13,11 +13,25 @@ function AvocadoIcon() {
   );
 }
 
+/** Una mancuerna: el ícono de FerFit. */
+function DumbbellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false">
+      <rect x="1.6" y="8.6" width="3" height="6.8" rx="1.2" />
+      <rect x="5" y="5.6" width="3.6" height="12.8" rx="1.4" />
+      <rect x="8.4" y="10.7" width="7.2" height="2.6" rx="1" />
+      <rect x="15.4" y="5.6" width="3.6" height="12.8" rx="1.4" />
+      <rect x="19.4" y="8.6" width="3" height="6.8" rx="1.2" />
+    </svg>
+  );
+}
+
 const GLYPHS: Record<AppId, ReactNode> = {
   habitfer: <FireFilled />,
   proyecfer: <ProjectFilled />,
   fernance: <WalletFilled />,
   nutrifer: <AvocadoIcon />,
+  ferfit: <DumbbellIcon />,
 };
 
 /** Mezcla un color #RRGGBB con blanco (t > 0) o con negro (t < 0). */

@@ -1,0 +1,82 @@
+import { api } from "../../api/client";
+import type { Home, Library, Routine, RoutineInput, Workout, WorkoutSave } from "./types";
+
+const LIB_KEY = "fit_library";
+
+/** La biblioteca guardada en el teléfono (si la hay): sirve para pintar de una vez mientras llega la de la API. */
+export function cachedLibrary(): Library | null {
+  try {
+    const raw = localStorage.getItem(LIB_KEY);
+    return raw ? (JSON.parse(raw) as Library) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchLibrary(): Promise<Library> {
+  const { data } = await api.get<Library>("/fit/library");
+  try {
+    localStorage.setItem(LIB_KEY, JSON.stringify(data));
+  } catch {
+    /* sin espacio: se vuelve a pedir la próxima vez */
+  }
+  return data;
+}
+
+export async function fetchHome(date?: string) {
+  const { data } = await api.get<Home>("/fit/home", { params: date ? { date } : {} });
+  return data;
+}
+
+export async function fetchRoutine(id: string) {
+  const { data } = await api.get<Routine>(`/fit/routines/${encodeURIComponent(id)}`);
+  return data;
+}
+
+export async function fetchRoutines() {
+  const { data } = await api.get<Routine[]>("/fit/routines");
+  return data;
+}
+
+export async function createRoutine(input: RoutineInput) {
+  const { data } = await api.post<Routine>("/fit/routines", input);
+  return data;
+}
+
+export async function updateRoutine(id: string, input: RoutineInput) {
+  const { data } = await api.put<Routine>(`/fit/routines/${encodeURIComponent(id)}`, input);
+  return data;
+}
+
+export async function deleteRoutine(id: string) {
+  await api.delete(`/fit/routines/${encodeURIComponent(id)}`);
+}
+
+export async function copyReadyRoutine(readyKey: string) {
+  const { data } = await api.post<Routine>("/fit/routines/copy", { readyKey });
+  return data;
+}
+
+export async function fetchWorkouts(from: string, to: string) {
+  const { data } = await api.get<Workout[]>("/fit/workouts", { params: { from, to } });
+  return data;
+}
+
+export async function saveWorkout(input: WorkoutSave) {
+  const { data } = await api.post<Workout>("/fit/workouts", input);
+  return data;
+}
+
+export async function updateWorkout(id: string, patch: { done?: number[]; completed?: boolean; minutes?: number }) {
+  const { data } = await api.patch<Workout>(`/fit/workouts/${encodeURIComponent(id)}`, patch);
+  return data;
+}
+
+export async function deleteWorkout(id: string) {
+  await api.delete(`/fit/workouts/${encodeURIComponent(id)}`);
+}
+
+export async function saveFitSettings(weeklyGoalDays: number) {
+  const { data } = await api.put<{ weeklyGoalDays: number }>("/fit/settings", { weeklyGoalDays });
+  return data;
+}

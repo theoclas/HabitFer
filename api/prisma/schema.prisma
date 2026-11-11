@@ -112,6 +112,9 @@ model User {
   nutritionAgentKeys    NutritionAgentKey[]
   fasts                 Fast[]
   mealPlanItems         MealPlanItem[]
+  fitRoutines           FitRoutine[]
+  fitWorkouts           FitWorkout[]
+  fitSettings           FitSettings?
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
@@ -1462,4 +1465,93 @@ model MealPlanItem {
   createdAt DateTime @default(now())
 
   @@index([userId, date])
+}
+
+/* ---------------------------------------------------------------------------
+   FerFit: ejercicio en casa. Los ejercicios y las rutinas listas viven en el código
+   (api/src/fit/data), y aquí se guardan por su clave.
+   --------------------------------------------------------------------------- */
+
+/// Una rutina propia (armada o copiada de una rutina lista).
+model FitRoutine {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String           @db.VarChar(80)
+  notes      String?          @db.VarChar(500)
+  /// Circuito: los ejercicios seguidos, una serie de cada uno, y se repite `rounds` veces.
+  circuit    Boolean          @default(false)
+  rounds     Int              @default(1)
+  /// La rutina lista de la que salió, por su clave.
+  sourceKey  String?          @db.VarChar(60)
+  /// Borrada: sale de la lista pero el historial la conserva.
+  archived   Boolean          @default(false)
+  lastDoneAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  items      FitRoutineItem[]
+
+  @@index([userId])
+}
+
+/// Un ejercicio de una rutina propia, con sus series y repeticiones (o segundos) y el descanso.
+model FitRoutineItem {
+  id          String     @id @default(cuid())
+  routineId   String
+  routine     FitRoutine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  /// Clave del ejercicio en la biblioteca (api/src/fit/data/exercises.ts).
+  exerciseKey String     @db.VarChar(60)
+  sets        Int        @default(3)
+  /// Repeticiones por serie; null si va por tiempo.
+  reps        Int?
+  /// Segundos por serie; null si va por repeticiones.
+  seconds     Int?
+  restSeconds Int        @default(45)
+  sortOrder   Int        @default(0)
+
+  @@index([routineId])
+}
+
+enum FitWorkoutKind {
+  /// Una rutina (propia o lista), con sus ejercicios.
+  ROUTINE
+  /// Otra actividad: caminar, bici, fútbol…
+  ACTIVITY
+}
+
+/// Lo que se chuleó un día: una rutina (completa o ejercicio por ejercicio) o una actividad suelta.
+model FitWorkout {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime       @db.Date
+  kind      FitWorkoutKind
+  /// La rutina propia, si fue una.
+  routineId String?        @db.VarChar(30)
+  /// La rutina lista, por su clave, si fue una.
+  readyKey  String?        @db.VarChar(60)
+  /// El nombre de ese momento (la rutina puede cambiar o borrarse después).
+  name      String         @db.VarChar(80)
+  /// Actividad suelta: caminar, bici, futbol, nadar, bailar u otra.
+  activity  String?        @db.VarChar(30)
+  minutes   Int?
+  /// Los ejercicios de la rutina con lo que se hizo: [{ key, name, sets, reps, seconds, done }].
+  items     Json?
+  /// Hecha completa.
+  completed Boolean        @default(false)
+  note      String?        @db.VarChar(300)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId, date])
+}
+
+/// Ajustes de FerFit.
+model FitSettings {
+  userId         String   @id
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Días a la semana para cumplir la meta (la racha cuenta semanas cumplidas).
+  weeklyGoalDays Int      @default(3)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
