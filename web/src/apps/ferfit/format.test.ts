@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { clock, dayLabel, doseText, effortText, lastText, minutesText, restText, shiftDay, todayKey } from "./format.ts";
+import { clock, dayLabel, dayTitle, doseText, effortText, lastText, minutesText, restText, shiftDay, todayKey, weekRange, weekdayName } from "./format.ts";
+
+test("la semana", () => {
+  assert.equal(weekdayName("2026-11-11"), "miércoles");
+  assert.equal(dayTitle("2026-11-09"), "Lunes 9");
+  assert.equal(weekRange("2026-11-09", "2026-11-15"), "9 al 15 de noviembre");
+  assert.equal(weekRange("2026-11-30", "2026-12-06"), "30 de noviembre al 6 de diciembre");
+});
 
 test("series y repeticiones", () => {
   assert.equal(doseText({ sets: 3, reps: 12 }), "3 × 12");

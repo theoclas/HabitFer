@@ -47,6 +47,34 @@ Ruta `/app/ferfit/rutinas/:id/entrenar` o `/app/ferfit/listas/:key/entrenar` (pa
 - **Series reales**: repeticiones, peso (ejercicios con mancuernas) y segundos (los «terminé antes»); se guardan en
   `FitWorkout.items[].log` y la rutina muestra «La última vez». Al terminar se pide el esfuerzo de 1 a 10
   (`FitWorkout.effort`). El calentamiento y el estiramiento no se anotan.
-- **A medias**: el entrenamiento se guarda en el teléfono (`fit_player_session`) en cada paso; al volver se ofrece
+- **A medias (fase 1)**: el entrenamiento se guarda en el teléfono (`fit_player_session`) en cada paso; al volver se ofrece
   «Seguir donde ibas» por 12 horas, si la rutina no cambió. Las preferencias (voz, pitidos, calentar, estirar,
   intervalos) quedan en `fit_player_prefs`.
+
+## Fase 2: tu semana
+
+Página `/app/ferfit/semana` (pestaña «Semana») y la tarjeta «Hoy te toca» en Hoy.
+
+- **Plan de la semana** (`FitWeekPlan`): una rutina por día (0 = lunes … 6 = domingo); sin fila = descanso.
+- **Programas** (`api/src/fit/data/programs.ts` y `FitProgramRun`): «Empieza desde cero» (4 semanas, 3 días) y «Bajo
+  impacto para bajar de peso» (6 semanas, 4 días). Cada sesión es una rutina lista con clave
+  `<programa>--s<semana>-<número>` (se abre en `/app/ferfit/listas/<clave>` y tiene su entreno guiado). La persona
+  escoge los días y si empieza esta semana o la próxima. Mientras un programa corre, el plan queda en pausa; al
+  terminar su última semana, o al dejarlo, vuelve el plan.
+- **Mover** (`FitPlanChange`): una rutina pendiente pasa a otro día de la misma semana, de hoy en adelante; se puede
+  deshacer (también deshace lo que se movió después desde ese día).
+- **Qué quedó hecho** (`api/src/fit/fit-plan.ts`, funciones puras): lo planeado cuenta como hecho si se entrenó esa
+  rutina ese día, o un día después en la misma semana (cada entreno cuenta una sola vez).
+- **Meta por días o por minutos** (`FitSettings.goalKind`, `weeklyGoalMinutes`): la racha cuenta semanas cumplidas.
+  Los minutos de lo chuleado a mano se calculan con lo que se hizo.
+- **Recordatorio** (`FitSettings.remindOn`, `remindAt`): el revisor de avisos de HabitFer (cada minuto) manda
+  «Hoy te toca…» los días que hay algo pendiente: notificación (abre el entreno guiado), la campana (`WORKOUT`), y
+  correo o WhatsApp si la persona los tiene en «Todo». Uno por día.
+
+| Ruta | Para qué |
+|---|---|
+| `GET /api/fit/week?date=` | La semana: los 7 días con lo planeado y cómo va, el plan, el programa y los ajustes |
+| `PUT /api/fit/plan` | El plan de la semana (`days: [{ weekday, routineId \| readyKey }]`) |
+| `POST /api/fit/plan/moves`, `DELETE /api/fit/plan/moves/:id` | Mover una rutina de día y deshacerlo |
+| `POST /api/fit/programs/start`, `POST /api/fit/programs/stop` | Empezar (`programKey`, `weekdays`, `start`) o dejar un programa |
+| `PUT /api/fit/settings` | Meta (días o minutos) y recordatorio; se manda solo lo que cambia |

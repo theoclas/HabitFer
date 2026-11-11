@@ -1,5 +1,5 @@
 import { api } from "../../api/client";
-import type { History, Home, Library, Routine, RoutineInput, Workout, WorkoutSave } from "./types";
+import type { FitSettings, History, Home, Library, Routine, RoutineInput, Week, Workout, WorkoutSave } from "./types";
 
 const LIB_KEY = "fit_library";
 
@@ -84,7 +84,43 @@ export async function deleteWorkout(id: string) {
   await api.delete(`/fit/workouts/${encodeURIComponent(id)}`);
 }
 
-export async function saveFitSettings(weeklyGoalDays: number) {
-  const { data } = await api.put<{ weeklyGoalDays: number }>("/fit/settings", { weeklyGoalDays });
+/** Cambia solo lo que se mande: la meta (días o minutos) y el recordatorio. */
+export async function saveFitSettings(patch: Partial<FitSettings>) {
+  const { data } = await api.put<FitSettings>("/fit/settings", patch);
+  return data;
+}
+
+/* ---------- La semana ---------- */
+
+export async function fetchWeek(date?: string) {
+  const { data } = await api.get<Week>("/fit/week", { params: date ? { date } : {} });
+  return data;
+}
+
+/** El plan de la semana: una rutina por día (0 = lunes); los días que no van quedan de descanso. */
+export async function savePlan(days: { weekday: number; routineId?: string; readyKey?: string }[]) {
+  const { data } = await api.put<Week>("/fit/plan", { days });
+  return data;
+}
+
+/** Pasa una rutina planeada a otro día de la misma semana. */
+export async function moveRoutine(input: { from: string; to: string; routineId?: string | null; readyKey?: string | null }) {
+  const body = { from: input.from, to: input.to, ...(input.routineId ? { routineId: input.routineId } : { readyKey: input.readyKey ?? undefined }) };
+  const { data } = await api.post<Week>("/fit/plan/moves", body);
+  return data;
+}
+
+export async function undoMove(id: string) {
+  const { data } = await api.delete<Week>(`/fit/plan/moves/${encodeURIComponent(id)}`);
+  return data;
+}
+
+export async function startProgram(input: { programKey: string; weekdays: number[]; start: "this" | "next" }) {
+  const { data } = await api.post<Week>("/fit/programs/start", input);
+  return data;
+}
+
+export async function stopProgram() {
+  const { data } = await api.post<Week>("/fit/programs/stop", {});
   return data;
 }

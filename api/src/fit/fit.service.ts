@@ -4,11 +4,11 @@ import { localTodayKey, toDateKey } from '../common/date.utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { checkedDate } from '../nutrition/entry.shared';
 import { daysBetween } from '../nutrition/progress/days';
-import { applyLogs, counts, lastLogs, markDone, routineMinutes, streakOf, type WorkoutItem } from './fit-math';
-import type { Activity, RoutineDto, WorkoutDto, WorkoutUpdateDto } from './fit.dto';
-import { EXERCISE_BY_KEY, READY_BY_KEY } from './library';
+import { applyLogs, counts, lastLogs, markDone, routineMinutes, streakFor, workoutMinutes, type WorkoutItem } from './fit-math';
+import { FitPlanService, settingsView } from './fit-plan.service';
+import type { Activity, RoutineDto, SettingsDto, WorkoutDto, WorkoutUpdateDto } from './fit.dto';
+import { EXERCISE_BY_KEY, resolveReady } from './library';
 
-const DEFAULT_GOAL = 3;
 /** Rutinas propias como máximo (las borradas no cuentan). */
 const MAX_ROUTINES = 60;
 
@@ -73,7 +73,10 @@ function workoutView(w: FitWorkout) {
 /** FerFit: rutinas propias, lo que se chuleó cada día y la racha por semanas. */
 @Injectable()
 export class FitService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private plan: FitPlanService,
+  ) {}
 
   /* ---------- Rutinas ---------- */
 
@@ -165,7 +168,7 @@ export class FitService {
 
   /** Copiar una rutina lista a «Mis rutinas» para cambiarla. */
   async copyReady(userId: string, readyKey: string) {
-    const r = READY_BY_KEY.get(readyKey);
+    const r = resolveReady(readyKey);
     if (!r) throw new NotFoundException('Esa rutina lista no existe.');
     return this.createRoutine(
       userId,
@@ -202,7 +205,7 @@ export class FitService {
       };
     }
     if (dto.readyKey) {
-      const r = READY_BY_KEY.get(dto.readyKey);
+      const r = resolveReady(dto.readyKey);
       if (!r) throw new NotFoundException('Esa rutina lista no existe.');
       return {
         name: r.name,
@@ -329,28 +332,41 @@ export class FitService {
   async home(userId: string, dateKey?: string) {
     const today = localTodayKey();
     const day = dateKey && dateKey <= today ? dateKey : today;
-    const [settings, history, dayRows, routines] = await Promise.all([
+    const [settingsRow, history, dayRows, routines, plan] = await Promise.all([
       this.prisma.fitSettings.findUnique({ where: { userId } }),
-      this.prisma.fitWorkout.findMany({ where: { userId }, select: { date: true, kind: true, completed: true, items: true } }),
+      this.prisma.fitWorkout.findMany({ where: { userId }, select: { date: true, kind: true, completed: true, items: true, minutes: true } }),
       this.prisma.fitWorkout.findMany({ where: { userId, date: checkedDate(day) }, orderBy: { createdAt: 'asc' } }),
       this.routines(userId),
+      this.plan.dayPlan(userId, day),
     ]);
-    const goal = settings?.weeklyGoalDays ?? DEFAULT_GOAL;
-    const trained = history
-      .filter((w) => counts({ date: toDateKey(w.date), kind: w.kind, completed: w.completed, items: Array.isArray(w.items) ? (w.items as unknown as WorkoutItem[]) : null }))
-      .map((w) => toDateKey(w.date));
+    const settings = settingsView(settingsRow);
+    const logs = history
+      .map((w) => ({ date: toDateKey(w.date), kind: w.kind, completed: w.completed, minutes: w.minutes, items: itemsOf(w) }))
+      .filter((w) => counts(w))
+      .map((w) => ({ date: w.date, minutes: workoutMinutes(w) }));
+    const goal = { kind: settings.goalKind, days: settings.weeklyGoalDays, minutes: settings.weeklyGoalMinutes };
     return {
       today,
       date: day,
-      streak: streakOf(trained, goal, today),
+      streak: streakFor(logs, goal, today),
+      settings,
+      plan,
       workouts: dayRows.map(workoutView),
       routines,
       activities: Object.entries(ACTIVITY_LABELS).map(([key, label]) => ({ key, label })),
     };
   }
 
-  async setSettings(userId: string, weeklyGoalDays: number) {
-    await this.prisma.fitSettings.upsert({ where: { userId }, create: { userId, weeklyGoalDays }, update: { weeklyGoalDays } });
-    return { weeklyGoalDays };
+  /** Cambia solo lo que venga: la meta (días o minutos) y el recordatorio. */
+  async setSettings(userId: string, dto: SettingsDto) {
+    const data = {
+      ...(dto.weeklyGoalDays !== undefined ? { weeklyGoalDays: dto.weeklyGoalDays } : {}),
+      ...(dto.goalKind !== undefined ? { goalKind: dto.goalKind } : {}),
+      ...(dto.weeklyGoalMinutes !== undefined ? { weeklyGoalMinutes: dto.weeklyGoalMinutes } : {}),
+      ...(dto.remindOn !== undefined ? { remindOn: dto.remindOn } : {}),
+      ...(dto.remindAt !== undefined ? { remindAt: dto.remindAt } : {}),
+    };
+    const saved = await this.prisma.fitSettings.upsert({ where: { userId }, create: { userId, ...data }, update: data });
+    return settingsView(saved);
   }
 }

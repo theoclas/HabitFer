@@ -26,6 +26,7 @@ import {
   summaryText,
   taskText,
   testText,
+  workoutText,
 } from './whatsapp-text';
 
 /**
@@ -120,6 +121,11 @@ export class WhatsappRemindersService {
     return this.deliver(userId, 'reminder', async () =>
       taskText({ ...p, link: await this.shortLink(p.token, p.title, 'Marcar como hecha') }),
     );
+  }
+
+  /** FerFit: el día que toca entrenar (nivel ALL, como los avisos de hábitos y tareas). */
+  workout(userId: string, p: { title: string; body: string; path: string }) {
+    return this.deliver(userId, 'reminder', () => workoutText({ title: p.title, body: p.body, link: `${this.appUrl}${p.path}` }));
   }
 
   summary(userId: string, p: { title: string; body: string; items: string[] }) {

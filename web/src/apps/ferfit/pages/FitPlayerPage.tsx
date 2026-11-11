@@ -22,7 +22,7 @@ import { PlayerFinish, type FinishState } from "../components/PlayerFinish";
 import { PlayerSetup } from "../components/PlayerSetup";
 import { Stepper } from "../components/Stepper";
 import { clock, fullDate, lastText, shiftDay, todayKey } from "../format";
-import { useLibrary } from "../hooks";
+import { findReady, useLibrary, waitsForPrograms } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
 import { Coach } from "../player/coach";
 import * as E from "../player/engine";
@@ -114,7 +114,7 @@ export function FitPlayerPage() {
       .then(setOwn)
       .catch(() => setMissing(true));
   }, [id]);
-  const ready = key && lib ? (lib.ready.find((r) => r.key === key) ?? null) : null;
+  const ready = findReady(lib, key);
   const source = useMemo<Source | null>(() => {
     if (own) {
       const items = own.items.map((i) => toPlanItem({ key: i.exerciseKey, sets: i.sets, reps: i.reps, seconds: i.seconds, rest: i.restSeconds }));
@@ -524,7 +524,7 @@ export function FitPlayerPage() {
   };
 
   /* ---------- Pantallas ---------- */
-  if (missing || (key && lib && !ready)) {
+  if (missing || (key && lib && !ready && !waitsForPrograms(lib, key))) {
     return (
       <div className="fit-player fit-player--setup">
         <div className="fit-empty">

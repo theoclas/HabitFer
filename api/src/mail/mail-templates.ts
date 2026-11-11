@@ -168,6 +168,21 @@ export function taskReminderMail(p: { appUrl: string; title: string; body: strin
   });
 }
 
+/** FerFit: el día que toca entrenar. El botón abre el entreno guiado (o la semana, si son varias rutinas). */
+export function workoutReminderMail(p: { appUrl: string; title: string; body: string; path: string }): MailContent {
+  return build({
+    appUrl: p.appUrl,
+    subject: `🏋️ ${p.title}`,
+    preheader: p.body,
+    heading: p.title,
+    paragraphs: [p.body],
+    buttons: [
+      { label: '▶ Empezar', url: `${p.appUrl}${p.path}`, primary: true },
+      { ...openApp(p.appUrl, '/app/ferfit/semana'), label: 'Ver mi semana' },
+    ],
+  });
+}
+
 /** Resumen de la noche: lo que falta hoy, con la lista completa. */
 export function summaryMail(p: { appUrl: string; title: string; body: string; items: string[] }): MailContent {
   return build({

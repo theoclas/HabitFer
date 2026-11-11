@@ -235,11 +235,101 @@ export class HistoryQueryDto {
   keys!: string;
 }
 
+/** Ajustes de FerFit: se manda solo lo que cambia. */
 export class SettingsDto {
+  @IsOptional()
   @IsInt({ message: 'La meta son días enteros.' })
   @Min(1, { message: 'La meta va de 1 a 7 días.' })
   @Max(7, { message: 'La meta va de 1 a 7 días.' })
-  weeklyGoalDays!: number;
+  weeklyGoalDays?: number;
+
+  @IsOptional()
+  @IsIn(['days', 'minutes'], { message: 'La meta es por días o por minutos.' })
+  goalKind?: 'days' | 'minutes';
+
+  @IsOptional()
+  @IsInt({ message: 'Los minutos son un número entero.' })
+  @Min(15, { message: 'La meta va de 15 a 1.500 minutos.' })
+  @Max(1500, { message: 'La meta va de 15 a 1.500 minutos.' })
+  weeklyGoalMinutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  remindOn?: boolean;
+
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'La hora va como HH:MM.' })
+  remindAt?: string;
+}
+
+/** Un día del plan de la semana (0 = lunes … 6 = domingo) con su rutina. Un día sin rutina es descanso. */
+export class PlanDayDto {
+  @IsInt()
+  @Min(0)
+  @Max(6)
+  weekday!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  routineId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  readyKey?: string;
+}
+
+export class PlanDto {
+  @IsArray()
+  @ArrayMaxSize(7)
+  @ValidateNested({ each: true })
+  @Type(() => PlanDayDto)
+  days!: PlanDayDto[];
+}
+
+/** Pasar una rutina planeada a otro día de la misma semana. */
+export class MoveDto {
+  @Matches(DATE_KEY, DATE_MSG)
+  from!: string;
+
+  @Matches(DATE_KEY, DATE_MSG)
+  to!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  routineId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  readyKey?: string;
+}
+
+export class StartProgramDto {
+  @IsString()
+  @MaxLength(60)
+  programKey!: string;
+
+  /** Los días de la semana en que toca (0 = lunes … 6 = domingo). */
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  weekdays!: number[];
+
+  /** Empieza esta semana o la próxima (siempre en lunes). */
+  @IsIn(['this', 'next'])
+  start!: 'this' | 'next';
+}
+
+export class WeekQueryDto {
+  @IsOptional()
+  @Matches(DATE_KEY, DATE_MSG)
+  date?: string;
 }
 
 export class HomeQueryDto {

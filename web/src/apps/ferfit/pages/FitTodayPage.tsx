@@ -3,14 +3,15 @@ import { Button, Modal, message } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
-import { deleteWorkout, fetchHome, saveFitSettings } from "../api";
+import { deleteWorkout, fetchHome, moveRoutine, saveFitSettings } from "../api";
 import { ActivityModal } from "../components/ActivityModal";
 import { ExerciseFigure } from "../components/ExerciseFigure";
+import { PlanTodayCard } from "../components/PlanTodayCard";
 import { StreakCard } from "../components/StreakCard";
 import { dayLabel, fullDate, minutesText, shiftDay, todayKey } from "../format";
 import { useLibrary } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
-import type { Exercise, Home, Routine, Workout } from "../types";
+import type { DayItem, Exercise, FitSettings, Home, Routine, Workout } from "../types";
 
 /** La figura de un ejercicio de la rutina, para reconocerla de un vistazo. */
 function Thumb({ ex }: { ex?: Exercise }) {
@@ -26,6 +27,7 @@ export function FitTodayPage() {
   const [failed, setFailed] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [modal, holder] = Modal.useModal();
 
   const load = useCallback(async () => {
@@ -44,10 +46,24 @@ export function FitTodayPage() {
   const today = home?.today ?? todayKey();
   const label = dayLabel(date, today);
 
-  const setGoal = async (days: number) => {
+  /** Pasa a hoy algo que quedó pendiente antes en la semana. */
+  const bringToday = async (item: DayItem & { date: string }) => {
+    setMoving(true);
+    try {
+      await moveRoutine({ from: item.date, to: today, routineId: item.routineId, readyKey: item.readyKey });
+      message.success(`«${item.name}» quedó para hoy`);
+      await load();
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo mover"));
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  const setGoal = async (patch: Partial<FitSettings>) => {
     setSavingGoal(true);
     try {
-      await saveFitSettings(days);
+      await saveFitSettings(patch);
       await load();
     } catch (err) {
       message.error(apiErrorMessage(err, "No se pudo cambiar la meta"));
@@ -121,7 +137,8 @@ export function FitTodayPage() {
       {home && (
         <div className="fit-split">
           <div className="fit-split__main">
-            <StreakCard streak={home.streak} today={today} saving={savingGoal} onGoal={(d) => void setGoal(d)} />
+            <PlanTodayCard plan={home.plan} date={date} today={today} busy={moving} onBringToday={(i) => void bringToday(i)} />
+            <StreakCard streak={home.streak} today={today} saving={savingGoal} onGoal={(p) => void setGoal(p)} />
 
             <section className="fit-section" aria-labelledby="fit-done-title">
               <div className="fit-section__head">

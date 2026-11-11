@@ -7,7 +7,7 @@ import { copyReadyRoutine, deleteRoutine, fetchHistory, fetchRoutine, fetchWorko
 import { ExerciseFigure } from "../components/ExerciseFigure";
 import { ExerciseSheet } from "../components/ExerciseSheet";
 import { LEVEL_LABELS, dayLabel, doseText, lastText, minutesText, restText, todayKey } from "../format";
-import { useLibrary } from "../hooks";
+import { findReady, useLibrary, waitsForPrograms } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
 import { readSession } from "../player/storage";
 import type { History, Routine, Workout } from "../types";
@@ -33,7 +33,7 @@ export function FitRoutinePage() {
   const today = todayKey();
   const wanted = params.get("fecha");
   const date = wanted && /^\d{4}-\d{2}-\d{2}$/.test(wanted) && wanted <= today ? wanted : today;
-  const ready = key ? (lib?.ready.find((r) => r.key === key) ?? null) : null;
+  const ready = findReady(lib, key);
 
   useEffect(() => {
     if (!id) return;
@@ -148,7 +148,7 @@ export function FitRoutinePage() {
       },
     });
 
-  if (missing || (key && lib && !ready)) {
+  if (missing || (key && lib && !ready && !waitsForPrograms(lib, key))) {
     return (
       <div className="fit-empty">
         Esa rutina ya no existe.

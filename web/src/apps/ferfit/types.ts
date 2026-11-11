@@ -50,11 +50,28 @@ export type ReadyRoutine = {
 /** Calentamiento o estiramiento que el modo guiado agrega solo (todo por tiempo; segundos por lado). */
 export type Block = { name: string; minutes: number; items: ReadyItem[] };
 
+/** Un programa de varias semanas: sessions[semana - 1][número - 1] son rutinas listas con clave «programa--s1-2». */
+export type Program = {
+  key: string;
+  name: string;
+  summary: string;
+  level: 1 | 2 | 3;
+  focus: Focus | "mixta";
+  weeks: number;
+  daysPerWeek: number;
+  /** Días sugeridos (0 = lunes … 6 = domingo). */
+  suggestedDays: number[];
+  weekNotes: string[];
+  sessions: ReadyRoutine[][];
+};
+
 export type Library = {
   version: string;
   exercises: Exercise[];
   ready: ReadyRoutine[];
   blocks: { warmup: Block; cooldown: Block };
+  /** Puede faltar en una biblioteca guardada en el teléfono antes de la fase 2. */
+  programs?: Program[];
   labels: {
     focus: Record<string, string>;
     equipment: Record<string, string>;
@@ -98,19 +115,98 @@ export type Workout = {
   counts: boolean;
 };
 
+export type GoalKind = "days" | "minutes";
+
 export type Streak = {
+  kind: GoalKind;
+  /** Meta por días y por minutos (vale la que diga `kind`). */
   goal: number;
-  week: { start: string; days: { date: string; trained: boolean }[]; trainedDays: number; met: boolean; left: number };
+  goalMinutes: number;
+  /** `left`: días o minutos que faltan esta semana, según la meta. */
+  week: { start: string; days: { date: string; trained: boolean }[]; trainedDays: number; minutes: number; met: boolean; left: number };
   weeks: number;
   bestWeeks: number;
   totalDays: number;
   monthDays: number;
 };
 
+export type FitSettings = {
+  goalKind: GoalKind;
+  weeklyGoalDays: number;
+  weeklyGoalMinutes: number;
+  remindOn: boolean;
+  remindAt: string;
+};
+
+export type ItemStatus = "done" | "missed" | "today" | "upcoming";
+
+/** Una rutina planeada un día: de dónde viene, cómo va y a dónde lleva. */
+export type DayItem = {
+  routineId: string | null;
+  readyKey: string | null;
+  name: string;
+  minutes: number;
+  exists: boolean;
+  /** La página de la rutina (el entreno guiado es `${path}/entrenar`). */
+  path: string;
+  source: "plan" | "program" | "move";
+  movedFrom: string | null;
+  moveId: string | null;
+  week: number | null;
+  doneOn: string | null;
+  status: ItemStatus;
+};
+
+export type DayPlan = {
+  items: DayItem[];
+  /** Si es hoy: lo planeado antes en la semana que no se hizo. */
+  pending: (DayItem & { date: string })[];
+  hasPlan: boolean;
+};
+
+export type ProgramRun = {
+  id: string;
+  key: string;
+  name: string;
+  weeks: number;
+  daysPerWeek: number;
+  weekdays: number[];
+  startDate: string;
+  endDate: string;
+  status: "upcoming" | "active" | "finished";
+  currentWeek: number;
+  done: number;
+  total: number;
+};
+
+export type TemplateDay = {
+  weekday: number;
+  routineId: string | null;
+  readyKey: string | null;
+  name: string | null;
+  minutes: number;
+  exists: boolean;
+  path: string | null;
+};
+
+export type Week = {
+  today: string;
+  monday: string;
+  sunday: string;
+  days: { date: string; weekday: number; items: DayItem[] }[];
+  template: TemplateDay[];
+  /** Un programa corre esta semana: el plan queda en pausa. */
+  planPaused: boolean;
+  program: ProgramRun | null;
+  settings: FitSettings;
+};
+
 export type Home = {
   today: string;
   date: string;
   streak: Streak;
+  settings: FitSettings;
+  plan: DayPlan;
   workouts: Workout[];
   routines: Routine[];
   activities: { key: string; label: string }[];

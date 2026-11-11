@@ -11,6 +11,7 @@ import {
   summaryMail,
   taskReminderMail,
   testMail,
+  workoutReminderMail,
   type MailContent,
 } from './mail-templates';
 import { MailService } from './mail.service';
@@ -80,6 +81,11 @@ export class EmailRemindersService {
         actionUrl: actionLink(appUrl, p.token, p.title, 'Marcar como hecha'),
       }),
     );
+  }
+
+  /** FerFit: el día que toca entrenar (va con los avisos de hábitos y tareas: nivel ALL). */
+  workout(userId: string, p: { title: string; body: string; path: string }) {
+    return this.deliver(userId, 'reminder', (appUrl) => workoutReminderMail({ appUrl, ...p }));
   }
 
   summary(userId: string, p: { title: string; body: string; items: string[] }) {

@@ -14,6 +14,7 @@ import { FitPlayerPage } from "./apps/ferfit/pages/FitPlayerPage";
 import { FitRoutinePage } from "./apps/ferfit/pages/FitRoutinePage";
 import { FitRoutinesPage } from "./apps/ferfit/pages/FitRoutinesPage";
 import { FitTodayPage } from "./apps/ferfit/pages/FitTodayPage";
+import { FitWeekPage } from "./apps/ferfit/pages/FitWeekPage";
 import { NutriFerShell } from "./apps/nutrifer/layouts/NutriFerShell";
 import { NutriGoalPage } from "./apps/nutrifer/pages/NutriGoalPage";
 import { NutriKitchenPage } from "./apps/nutrifer/pages/NutriKitchenPage";
@@ -114,6 +115,7 @@ export function AppRouter() {
           <Route path="listas/:key" element={<FitRoutinePage />} />
           <Route path="listas/:key/entrenar" element={<FitPlayerPage />} />
           <Route path="ejercicios" element={<FitExercisesPage />} />
+          <Route path="semana" element={<FitWeekPage />} />
         </Route>
         <Route path="/app" element={<AppRedirect />} />
         <Route path="/app/habits/*" element={<Navigate to="/app/habitfer/habits" replace />} />

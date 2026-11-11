@@ -275,7 +275,7 @@ export type CreateProjectPayload = {
 
 export type ReminderItem = {
   id: string;
-  sourceType: "HABIT" | "TASK" | "SUMMARY" | "MORNING";
+  sourceType: "HABIT" | "TASK" | "SUMMARY" | "MORNING" | "WORKOUT";
   sourceId: string;
   title: string;
   body: string | null;

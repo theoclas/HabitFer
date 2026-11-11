@@ -37,6 +37,11 @@ export function habitText(p: { icon: string | null; title: string; body: string;
   return lines.join('\n');
 }
 
+/** FerFit: el día que toca entrenar, con el enlace al entreno guiado. */
+export function workoutText(p: { title: string; body: string; link: string }): string {
+  return [`🏋️ ${bold(p.title)}`, oneLine(p.body), '', `▶ Empezar: ${p.link}`].join('\n');
+}
+
 export function taskText(p: { title: string; body: string; link: string | null }): string {
   const lines = [`☑️ ${bold(p.title)}`, oneLine(p.body)];
   if (p.link) lines.push('', `✓ Marcar como hecha: ${p.link}`);

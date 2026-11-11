@@ -1,4 +1,4 @@
-import { AppstoreOutlined, BulbOutlined, CalendarOutlined, MoonOutlined, OrderedListOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, BulbOutlined, CalendarOutlined, HomeOutlined, MoonOutlined, OrderedListOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -12,7 +12,8 @@ import "../theme/ferfit.css";
 
 export const FF_BASE = "/app/ferfit";
 const NAV = [
-  { key: FF_BASE, label: "Hoy", icon: <CalendarOutlined /> },
+  { key: FF_BASE, label: "Hoy", icon: <HomeOutlined /> },
+  { key: `${FF_BASE}/semana`, label: "Semana", icon: <CalendarOutlined /> },
   { key: `${FF_BASE}/rutinas`, label: "Rutinas", icon: <OrderedListOutlined />, also: [`${FF_BASE}/listas`] },
   { key: `${FF_BASE}/ejercicios`, label: "Ejercicios", icon: <AppstoreOutlined /> },
 ];

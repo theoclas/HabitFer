@@ -13,6 +13,7 @@ import {
 } from '../habits/habit-rules';
 import { HABIT_FULL_INCLUDE } from '../habits/habit-view';
 import { toDateKey } from '../habits/habits.utils';
+import { FitPlanService } from '../fit/fit-plan.service';
 import { EmailRemindersService, firstName } from '../mail/email-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
@@ -49,6 +50,7 @@ export class RemindersService {
     private push: PushService,
     private emails: EmailRemindersService,
     private whatsapp: WhatsappRemindersService,
+    private fitPlan: FitPlanService,
   ) {}
 
   /** Pone un envío de correo o WhatsApp en la fila (nunca lanza). */
@@ -247,6 +249,36 @@ export class RemindersService {
       select: { id: true },
     });
     for (const u of early) await this.sendMorning(u.id, today, todayKey, minuteStart);
+
+    // FerFit: el día que toca entrenar y aún no se ha hecho, a la hora que eligió.
+    const athletes = await this.prisma.fitSettings.findMany({
+      where: { remindOn: true, remindAt: hhmm, ...(userId ? { userId } : {}) },
+      select: { userId: true },
+    });
+    for (const a of athletes) await this.sendWorkout(a.userId, todayKey, minuteStart);
+  }
+
+  /** FerFit: «Hoy te toca…» con el botón para empezar el entreno guiado. Uno por día. */
+  private async sendWorkout(userId: string, todayKey: string, minuteStart: Date) {
+    const already = await this.prisma.reminderLog.findFirst({
+      where: { userId, sourceType: ReminderSourceType.WORKOUT, sourceId: `fit-${todayKey}` },
+      select: { id: true },
+    });
+    if (already) return;
+    const text = await this.fitPlan.reminder(userId, todayKey);
+    if (!text) return;
+    const created = await this.createIfNew({
+      userId,
+      sourceType: ReminderSourceType.WORKOUT,
+      sourceId: `fit-${todayKey}`,
+      title: text.title,
+      body: text.body,
+      triggerAt: minuteStart,
+    });
+    if (!created) return;
+    await this.push.sendToUser(userId, { title: `🏋️ ${text.title}`, body: text.body, tag: `fit-${todayKey}`, url: text.path });
+    this.later(() => this.emails.workout(userId, text));
+    this.later(() => this.whatsapp.workout(userId, text));
   }
 
   /** Lo que toca hoy (sin pausas ni congelados), la mejor racha viva y la frase del día. */

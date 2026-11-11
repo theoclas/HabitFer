@@ -96,11 +96,33 @@ export function lastLogs(rows: { date: string; items: WorkoutItem[] | null }[], 
   return out;
 }
 
+/** Minutos de un entreno: los anotados; si no hay (se chuleó a mano), los calculados con lo que se hizo. */
+export function workoutMinutes(w: { kind: 'ROUTINE' | 'ACTIVITY'; minutes: number | null; items: WorkoutItem[] | null }): number {
+  if (w.minutes != null) return w.minutes;
+  if (w.kind === 'ACTIVITY') return 0;
+  const done = (w.items ?? []).filter((i) => i.done);
+  if (!done.length) return 0;
+  return routineMinutes(
+    done.map((i) => ({ sets: i.sets, reps: i.reps, seconds: i.seconds, restSeconds: 30 })),
+    false,
+    1,
+  );
+}
+
+/** La meta de la semana: por días entrenados o por minutos. */
+export type GoalKind = 'days' | 'minutes';
+export type Goal = { kind: GoalKind; days: number; minutes: number };
+/** Un día entrenado y sus minutos (un día puede venir varias veces: se suman). */
+export type DayLog = { date: string; minutes: number };
+
 export type WeekDay = { date: string; trained: boolean };
 export type Streak = {
+  kind: GoalKind;
+  /** Meta por días y meta por minutos (se muestra la que diga `kind`). */
   goal: number;
-  /** Esta semana (lunes a domingo). */
-  week: { start: string; days: WeekDay[]; trainedDays: number; met: boolean; left: number };
+  goalMinutes: number;
+  /** Esta semana (lunes a domingo). `left`: días o minutos que faltan, según la meta. */
+  week: { start: string; days: WeekDay[]; trainedDays: number; minutes: number; met: boolean; left: number };
   /** Semanas seguidas cumpliendo la meta (la de ahora cuenta si ya se cumplió; si no, aún no rompe nada). */
   weeks: number;
   bestWeeks: number;
@@ -108,19 +130,37 @@ export type Streak = {
   monthDays: number;
 };
 
-/**
- * La racha por semanas: una semana se cumple con `goal` días entrenados. Los días de descanso no rompen nada; solo
- * rompe una semana ya terminada que no llegó a la meta.
- */
+/** La racha con meta por días (como al principio). */
 export function streakOf(trainedDates: Iterable<string>, goal: number, today: string): Streak {
-  const days = new Set(trainedDates);
-  const perWeek = new Map<string, number>();
-  for (const d of days) {
-    if (d > today) continue;
-    const w = mondayOf(d);
-    perWeek.set(w, (perWeek.get(w) ?? 0) + 1);
+  return streakFor(
+    [...trainedDates].map((date) => ({ date, minutes: 0 })),
+    { kind: 'days', days: goal, minutes: 0 },
+    today,
+  );
+}
+
+/**
+ * La racha por semanas: una semana se cumple con los días (o los minutos) de la meta. Los días de descanso no rompen
+ * nada; solo rompe una semana ya terminada que no llegó a la meta.
+ */
+export function streakFor(logs: DayLog[], goal: Goal, today: string): Streak {
+  const minutesByDay = new Map<string, number>();
+  for (const l of logs) {
+    if (l.date > today) continue;
+    minutesByDay.set(l.date, (minutesByDay.get(l.date) ?? 0) + Math.max(0, Math.round(l.minutes)));
   }
-  const met = (w: string) => (perWeek.get(w) ?? 0) >= goal;
+  const days = new Set(minutesByDay.keys());
+  const perWeek = new Map<string, { days: number; minutes: number }>();
+  for (const [d, m] of minutesByDay) {
+    const w = mondayOf(d);
+    const cur = perWeek.get(w) ?? { days: 0, minutes: 0 };
+    perWeek.set(w, { days: cur.days + 1, minutes: cur.minutes + m });
+  }
+  const met = (w: string) => {
+    const v = perWeek.get(w);
+    if (!v) return false;
+    return goal.kind === 'minutes' ? v.minutes >= goal.minutes : v.days >= goal.days;
+  };
   const thisWeek = mondayOf(today);
 
   let weeks = 0;
@@ -140,11 +180,14 @@ export function streakOf(trainedDates: Iterable<string>, goal: number, today: st
     const date = shiftKey(thisWeek, i);
     return { date, trained: days.has(date) };
   });
-  const trainedDays = perWeek.get(thisWeek) ?? 0;
+  const now = perWeek.get(thisWeek) ?? { days: 0, minutes: 0 };
+  const left = goal.kind === 'minutes' ? Math.max(0, goal.minutes - now.minutes) : Math.max(0, goal.days - now.days);
   const month = today.slice(0, 7);
   return {
-    goal,
-    week: { start: thisWeek, days: weekDays, trainedDays, met: trainedDays >= goal, left: Math.max(0, goal - trainedDays) },
+    kind: goal.kind,
+    goal: goal.days,
+    goalMinutes: goal.minutes,
+    week: { start: thisWeek, days: weekDays, trainedDays: now.days, minutes: now.minutes, met: met(thisWeek), left },
     weeks,
     bestWeeks,
     totalDays: [...days].filter((d) => d <= today).length,

@@ -2,7 +2,21 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Res, Use
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthUserPayload } from '../common/decorators/current-user.decorator';
-import { CopyRoutineDto, HistoryQueryDto, HomeQueryDto, RangeQueryDto, RoutineDto, SettingsDto, WorkoutDto, WorkoutUpdateDto } from './fit.dto';
+import {
+  CopyRoutineDto,
+  HistoryQueryDto,
+  HomeQueryDto,
+  MoveDto,
+  PlanDto,
+  RangeQueryDto,
+  RoutineDto,
+  SettingsDto,
+  StartProgramDto,
+  WeekQueryDto,
+  WorkoutDto,
+  WorkoutUpdateDto,
+} from './fit.dto';
+import { FitPlanService } from './fit-plan.service';
 import { FitService } from './fit.service';
 import { library } from './library';
 
@@ -10,7 +24,10 @@ import { library } from './library';
 @Controller('fit')
 @UseGuards(JwtAuthGuard)
 export class FitController {
-  constructor(private fit: FitService) {}
+  constructor(
+    private fit: FitService,
+    private plan: FitPlanService,
+  ) {}
 
   /** Ejercicios (con su figura) y rutinas listas. No cambia mientras la API corre. */
   @Get('library')
@@ -87,6 +104,41 @@ export class FitController {
 
   @Put('settings')
   settings(@CurrentUser() user: AuthUserPayload, @Body() dto: SettingsDto) {
-    return this.fit.setSettings(user.userId, dto.weeklyGoalDays);
+    return this.fit.setSettings(user.userId, dto);
+  }
+
+  /* ---------- La semana ---------- */
+
+  /** La semana de esa fecha (o la de hoy): lo planeado cada día y cómo va, el plan, el programa y los ajustes. */
+  @Get('week')
+  week(@CurrentUser() user: AuthUserPayload, @Query() query: WeekQueryDto) {
+    return this.plan.week(user.userId, query.date);
+  }
+
+  /** El plan de la semana: una rutina por día; los que no vienen quedan de descanso. */
+  @Put('plan')
+  setPlan(@CurrentUser() user: AuthUserPayload, @Body() dto: PlanDto) {
+    return this.plan.setPlan(user.userId, dto.days);
+  }
+
+  /** Pasar una rutina planeada a otro día de la misma semana. */
+  @Post('plan/moves')
+  move(@CurrentUser() user: AuthUserPayload, @Body() dto: MoveDto) {
+    return this.plan.move(user.userId, dto);
+  }
+
+  @Delete('plan/moves/:id')
+  undoMove(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.plan.undoMove(user.userId, id);
+  }
+
+  @Post('programs/start')
+  startProgram(@CurrentUser() user: AuthUserPayload, @Body() dto: StartProgramDto) {
+    return this.plan.startProgram(user.userId, dto);
+  }
+
+  @Post('programs/stop')
+  stopProgram(@CurrentUser() user: AuthUserPayload) {
+    return this.plan.stopProgram(user.userId);
   }
 }

@@ -115,6 +115,9 @@ model User {
   fitRoutines           FitRoutine[]
   fitWorkouts           FitWorkout[]
   fitSettings           FitSettings?
+  fitWeekPlan           FitWeekPlan[]
+  fitPlanChanges        FitPlanChange[]
+  fitProgramRuns        FitProgramRun[]
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
@@ -194,6 +197,8 @@ enum ReminderSourceType {
   SUMMARY
   /// Mensaje de la mañana.
   MORNING
+  /// FerFit: el día que toca entrenar.
+  WORKOUT
 }
 
 model ReminderLog {
@@ -1554,7 +1559,62 @@ model FitSettings {
   userId         String   @id
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Días a la semana para cumplir la meta (la racha cuenta semanas cumplidas).
-  weeklyGoalDays Int      @default(3)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  weeklyGoalDays    Int      @default(3)
+  /// La meta se mide por días («days») o por minutos («minutes»).
+  goalKind          String   @default("days") @db.VarChar(10)
+  /// Minutos a la semana, cuando la meta es por minutos.
+  weeklyGoalMinutes Int      @default(90)
+  /// Recordatorio los días que toca entrenar, a esta hora (HH:MM).
+  remindOn          Boolean  @default(false)
+  remindAt          String   @default("07:00") @db.VarChar(5)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+/// Plan de la semana: qué rutina toca cada día (0 = lunes … 6 = domingo). Sin fila = descanso.
+model FitWeekPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekday   Int
+  /// Una rutina propia o una lista (por su clave).
+  routineId String?  @db.VarChar(30)
+  readyKey  String?  @db.VarChar(60)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, weekday])
+}
+
+/// Una rutina que se pasó de un día a otro de la misma semana.
+model FitPlanChange {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// El día que queda sin esa rutina y el día al que pasa.
+  fromDate  DateTime @db.Date
+  toDate    DateTime @db.Date
+  routineId String?  @db.VarChar(30)
+  readyKey  String?  @db.VarChar(60)
+  createdAt DateTime @default(now())
+
+  @@index([userId, fromDate])
+}
+
+/// Un programa de varias semanas (el contenido vive en api/src/fit/data/programs.ts).
+model FitProgramRun {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programKey String    @db.VarChar(60)
+  /// Lunes de la primera semana.
+  startDate  DateTime  @db.Date
+  /// Días de la semana en que toca, en orden (0 = lunes): «0,2,4».
+  weekdays   String    @db.VarChar(20)
+  /// Dejado antes de terminar (si no, termina solo con su última semana).
+  stoppedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId])
 }

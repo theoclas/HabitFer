@@ -49,6 +49,28 @@ export function fullDate(key: string): string {
   return `${WEEKDAYS[wd]} ${d} de ${MONTHS[m - 1]}`;
 }
 
+/** Los días de la semana empezando en lunes (0 = lunes), para el plan. */
+export const WEEKDAY_LONG = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+/** «miércoles», por la fecha. */
+export function weekdayName(key: string): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}
+
+/** «Lunes 9». */
+export function dayTitle(key: string): string {
+  const name = weekdayName(key);
+  return `${name[0].toUpperCase()}${name.slice(1)} ${Number(key.slice(8, 10))}`;
+}
+
+/** «9 al 15 de noviembre», o «30 de noviembre al 6 de diciembre» si cambia el mes. */
+export function weekRange(monday: string, sunday: string): string {
+  const [, m1, d1] = monday.split("-").map(Number);
+  const [, m2, d2] = sunday.split("-").map(Number);
+  return m1 === m2 ? `${d1} al ${d2} de ${MONTHS[m2 - 1]}` : `${d1} de ${MONTHS[m1 - 1]} al ${d2} de ${MONTHS[m2 - 1]}`;
+}
+
 /** «Hoy», «Ayer» o «lunes 3 de noviembre». */
 export function dayLabel(key: string, today: string): string {
   if (key === today) return "Hoy";

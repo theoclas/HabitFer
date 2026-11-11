@@ -154,7 +154,7 @@
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   background: var(--fit-glass);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -609,3 +609,58 @@
 .fit-effort button[aria-pressed="true"] { background: var(--fit-accent); border-color: var(--fit-accent); color: var(--fit-accent-ink); }
 .fit-effort button:disabled { opacity: 0.5; cursor: wait; }
 .fit-effort__ends { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--fit-muted); }
+
+/* =========================================================================
+   Tu semana: los 7 días, el plan, los programas y la meta.
+   ========================================================================= */
+
+/* Meta de la semana: un anillo pequeño junto a la racha. */
+.fit-goalring { margin-left: auto; position: relative; width: 52px; height: 52px; flex: none; }
+.fit-goalring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.fit-goalring__track { fill: none; stroke: var(--fit-surface); stroke-width: 5; }
+.fit-goalring__fill { fill: none; stroke: var(--fit-carril); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.3s ease; }
+.fit-goalring.is-met .fit-goalring__fill { stroke: var(--fit-accent); }
+.fit-goalring span { position: absolute; inset: 0; display: grid; place-items: center; font: 800 0.85rem/1 var(--fit-text); color: var(--fit-ink); font-variant-numeric: tabular-nums; }
+.fit-goalrow { row-gap: 8px; }
+
+/* Hoy te toca. */
+.fit-plancard { gap: 10px; border-color: var(--fit-accent); }
+.fit-plancard--rest { border-color: var(--fit-line); }
+.fit-plan-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--fit-line); }
+.fit-plan-item:first-of-type { border-top: 0; padding-top: 0; }
+.fit-plan-item__body { flex: 1; min-width: 0; display: grid; gap: 2px; background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.fit-plan-item__body .fit-h3 { overflow-wrap: anywhere; }
+.fit-plan-item.is-done .fit-h3 { color: var(--fit-muted); }
+.fit-plan-item--pending .fit-h3 { color: var(--fit-cono); }
+
+/* Los días. */
+.fit-days { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fit-day { background: var(--fit-surface); border: 1px solid var(--fit-line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.fit-day.is-today { border-color: var(--fit-accent); box-shadow: inset 0 0 0 1px var(--fit-accent); }
+.fit-day.is-past { background: transparent; }
+.fit-day__head { display: flex; align-items: center; gap: 8px; }
+.fit-day__name { font: 700 1.05rem/1.1 var(--fit-display); text-transform: uppercase; letter-spacing: 0.02em; color: var(--fit-ink); }
+.fit-day__item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-left: 10px; border-left: 3px solid var(--fit-line); }
+.fit-day__item[data-status="done"] { border-left-color: var(--fit-accent); }
+.fit-day__item[data-status="today"] { border-left-color: var(--fit-accent); }
+.fit-day__item[data-status="missed"] { border-left-color: var(--fit-cono); }
+.fit-day__item[data-status="upcoming"] { border-left-color: var(--fit-carril); }
+.fit-day__body { flex: 1 1 180px; min-width: 0; display: grid; gap: 2px; background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.fit-day__routine { font-weight: 700; color: var(--fit-ink); overflow-wrap: anywhere; }
+.fit-day__item[data-status="done"] .fit-day__routine { color: var(--fit-muted); }
+.fit-day__item[data-status="missed"] .fit-hint { color: var(--fit-cono); }
+.fit-day__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* El plan y los programas. */
+.fit-planlist { list-style: none; margin: 0; padding: 0; display: grid; }
+.fit-planlist li { display: flex; gap: 12px; padding: 7px 0; border-top: 1px solid var(--fit-line); font-size: 0.92rem; min-width: 0; }
+.fit-planlist li:first-child { border-top: 0; }
+.fit-planlist__day { width: 86px; flex: none; color: var(--fit-muted); font-weight: 600; }
+.fit-programbar { gap: 8px; border-color: var(--fit-carril); background: var(--fit-carril-soft); }
+.fit-program { align-content: start; }
+.fit-movegrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fit-movegrid .fit-chip { padding: 12px 10px; white-space: normal; text-align: center; }
+.fit-movegrid .fit-chip small { color: var(--fit-muted); font-weight: 500; }
+.fit-weeknotes { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 0.92rem; line-height: 1.45; }
+.fit-weeknotes__sessions { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; margin-left: 2px; }
+.fit-linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 0.86rem; color: var(--fit-accent-text); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

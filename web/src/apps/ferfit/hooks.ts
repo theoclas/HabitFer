@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { cachedLibrary, fetchLibrary } from "./api";
-import type { Exercise, Library } from "./types";
+import type { Exercise, Library, ReadyRoutine } from "./types";
 
 /*
  * La biblioteca (ejercicios con su figura y rutinas listas) se pide una vez por visita. Mientras llega, se usa la
@@ -25,6 +25,15 @@ function load(): Promise<Library> {
   }
   return request;
 }
+
+/** Una rutina lista o una sesión de programa («programa--s1-2»), por su clave. */
+export function findReady(lib: Library | null, key: string | undefined): ReadyRoutine | null {
+  if (!lib || !key) return null;
+  return lib.ready.find((r) => r.key === key) ?? (lib.programs ?? []).flatMap((p) => p.sessions.flat()).find((s) => s.key === key) ?? null;
+}
+
+/** La clave es de una sesión de programa y la biblioteca guardada aún no trae programas (llega enseguida). */
+export const waitsForPrograms = (lib: Library | null, key: string | undefined) => !!key && key.includes("--s") && !!lib && !lib.programs;
 
 export function useLibrary(): { lib: Library | null; error: boolean; byKey: Map<string, Exercise> } {
   const [lib, setLib] = useState<Library | null>(current);
