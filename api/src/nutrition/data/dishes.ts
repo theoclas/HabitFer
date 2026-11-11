@@ -173,9 +173,8 @@ export const DISHES: DishDef[] = [
   },
   /*
    * ---------- Agregados el 10 nov 2026: lo que se come a diario y la tabla no trae armado ----------
-   * La tabla no trae papitas de paquete ni hojas de oblea: por ahora van con lo más parecido que sí
-   * trae (papa frita tipo francesa, B069, y galleta tipo wafer, A025). Son pocos gramos: cambia entre
-   * 5 y 30 kcal por plato. Se pueden cambiar por un básico del USDA cuando haya cupo en su servicio.
+   * La tabla no trae papitas de paquete ni hojas de oblea: van con los básicos del USDA
+   * (papas-paquete y hoja-oblea, en basics.ts).
    */
   {
     // Masa de maíz con papa y carne, frita (una de las de esquina, unos 80 g).
@@ -223,7 +222,7 @@ export const DISHES: DishDef[] = [
     parts: [
       { label: 'Pan', code: 'A060', grams: 60 },
       { label: 'Salchicha', code: 'F125', grams: 50 },
-      { label: 'Papitas ripio', code: 'B069', grams: 12 },
+      { label: 'Papitas ripio', code: 'papas-paquete', grams: 12 },
       { label: 'Queso', code: 'G019', grams: 15 },
       { label: 'Salsa de tomate', code: 'L017', grams: 10 },
       { label: 'Mayonesa', code: 'D020', grams: 10 },
@@ -243,7 +242,7 @@ export const DISHES: DishDef[] = [
       { label: 'Tomate', code: 'B103', grams: 20 },
       { label: 'Salsa de tomate', code: 'L017', grams: 10 },
       { label: 'Mayonesa', code: 'D020', grams: 10 },
-      { label: 'Papitas ripio', code: 'B069', grams: 10 },
+      { label: 'Papitas ripio', code: 'papas-paquete', grams: 10 },
     ],
   },
   {
@@ -301,7 +300,7 @@ export const DISHES: DishDef[] = [
       { label: 'Pollo', code: 'F086', grams: 50 },
       { label: 'Carne de res', code: 'F104', grams: 40 },
       { label: 'Queso gratinado', code: 'G019', grams: 30 },
-      { label: 'Papitas ripio', code: 'B069', grams: 15 },
+      { label: 'Papitas ripio', code: 'papas-paquete', grams: 15 },
       { label: 'Salsa de tomate', code: 'L017', grams: 10 },
       { label: 'Mayonesa', code: 'D020', grams: 15 },
     ],
@@ -594,7 +593,7 @@ export const DISHES: DishDef[] = [
     portion: 'Unidad',
     category: 'Postres y dulces',
     parts: [
-      { label: 'Obleas (2)', code: 'A025', grams: 12 },
+      { label: 'Obleas (2)', code: 'hoja-oblea', grams: 12 },
       { label: 'Arequipe', code: 'K001', grams: 30 },
     ],
   },
