@@ -1985,3 +1985,20 @@
   .nf-fastring__fill,
   .nf-plandays { transition: none; }
 }
+
+/* ---------- Claude, tu asistente (Meta) ---------- */
+.nf-assist { display: grid; gap: 14px; }
+.nf-assist__block { display: grid; gap: 8px; min-width: 0; }
+.nf-assist__title { margin: 0; font: 700 0.95rem/1.25 var(--nf-display); color: var(--nf-ink); }
+.nf-assist__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.nf-assist__row .ant-select { width: 120px; flex: none; }
+.nf-assist__name.ant-input { flex: 1 1 200px; min-width: 0; width: auto; }
+.nf-assist__keys { list-style: none; margin: 0; padding: 0; display: grid; }
+.nf-assist__key { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--nf-line); }
+.nf-assist__key:last-child { border-bottom: 0; }
+.nf-assist__icon { width: 32px; height: 32px; border-radius: 10px; background: var(--nf-sunk); display: grid; place-items: center; color: var(--nf-accent-text); }
+.nf-assist__keybody { display: grid; gap: 2px; min-width: 0; }
+.nf-assist__keybody > b { color: var(--nf-ink); overflow-wrap: anywhere; }
+.nf-assist__keybody > small { color: var(--nf-muted); font-size: 0.78rem; line-height: 1.4; }
+.nf-assist__tokenbody { display: grid; gap: 6px; min-width: 0; flex: 1; }
+.nf-assist__token .nf-codebox { margin: 0; background: var(--nf-surface); }

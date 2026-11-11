@@ -109,6 +109,7 @@ model User {
   bodyWeights           BodyWeight[]
   energyEstimates       EnergyEstimate[]
   nutritionShortcut     NutritionShortcut?
+  nutritionAgentKeys    NutritionAgentKey[]
   fasts                 Fast[]
   mealPlanItems         MealPlanItem[]
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
@@ -1402,6 +1403,23 @@ model NutritionShortcut {
   hint       String    @db.VarChar(8)
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
+}
+
+/// Llave para que un asistente (Claude) lea el informe de NutriFer: solo lectura, nunca cambia nada.
+/// Se guarda su huella SHA-256; la llave se muestra una sola vez.
+model NutritionAgentKey {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Para reconocerla («Claude en el PC»).
+  name       String    @db.VarChar(60)
+  tokenHash  String    @unique @db.Char(64)
+  /// Los últimos 4 caracteres, para reconocerla.
+  hint       String    @db.VarChar(8)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 /// Un ayuno: empieza y termina (endedAt null = en curso). Cuenta para la racha si llegó a su meta.

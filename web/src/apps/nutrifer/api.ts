@@ -1,5 +1,6 @@
 import { api } from "../../api/client";
 import type {
+  AgentKey,
   AmountChoice,
   AutoSource,
   BarcodeResult,
@@ -403,5 +404,27 @@ export async function downloadNutritionBackup(kind: "json" | "csv") {
 
 export async function importNutritionBackup(backup: unknown) {
   const { data } = await api.post<NutritionImportReport>("/nutrition/export/import", backup, { timeout: 120000 });
+  return data;
+}
+
+/* ---------- Claude: llaves y el informe para copiar ---------- */
+
+export async function fetchAgentKeys() {
+  const { data } = await api.get<AgentKey[]>("/nutrition/agent-keys");
+  return data;
+}
+
+export async function createAgentKey(name: string) {
+  const { data } = await api.post<{ token: string; key: AgentKey }>("/nutrition/agent-keys", { name: name || undefined });
+  return data;
+}
+
+export async function deleteAgentKey(id: string) {
+  await api.delete(`/nutrition/agent-keys/${encodeURIComponent(id)}`);
+}
+
+/** El informe en Markdown, el mismo que lee Claude con su llave. */
+export async function fetchAgentReportText(days: number) {
+  const { data } = await api.get<string>("/nutrition/agent-report", { params: { days, format: "md" }, responseType: "text" });
   return data;
 }

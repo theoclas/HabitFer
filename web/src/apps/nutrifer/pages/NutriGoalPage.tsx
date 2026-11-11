@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchProfile, previewProfile, saveProfile } from "../api";
+import { AssistantCard } from "../components/AssistantCard";
 import { BackupCard } from "../components/BackupCard";
 import { HabitLinksCard } from "../components/HabitLinksCard";
 import { gramsText, intText, kcalText, mlText, nutrientGoals } from "../math";
@@ -410,6 +411,7 @@ export function NutriGoalPage() {
 
       {/* Se guardan solos (no con «Guardar mi meta»). */}
       <HabitLinksCard />
+      <AssistantCard />
       <BackupCard />
       </div>
 

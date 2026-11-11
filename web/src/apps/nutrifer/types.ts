@@ -527,3 +527,6 @@ export type NutritionImportReport = { entries: number; water: number; weights: n
 
 /** Una cadena colombiana: si publica sus calorías (y dónde) y los platos que ya creaste de ella. */
 export type Chain = { name: string; info: "si" | "parcial" | "no"; url?: string; note: string; foods: FoodResult[] };
+
+/** Llave para que Claude lea el informe de NutriFer (solo lectura). */
+export type AgentKey = { id: string; name: string; hint: string; createdAt: string; lastUsedAt: string | null };

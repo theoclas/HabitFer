@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 import { HabitsModule } from '../habits/habits.module';
 import { PushModule } from '../push/push.module';
+import { AgentKeysService } from './assistant/agent-keys.service';
+import {
+  NutritionAgentController,
+  NutritionAssistantController,
+} from './assistant/assistant.controller';
+import { AssistantService } from './assistant/assistant.service';
 import { DiaryService } from './diary.service';
 import { NutritionExportService } from './export/nutrition-export.service';
 import { FastingService } from './fasting/fasting.service';
@@ -23,7 +29,13 @@ import { FoodTextService } from './text/food-text.service';
 
 @Module({
   imports: [HabitsModule, PushModule],
-  controllers: [NutritionController, NutritionShortcutController, NutritionSuperController],
+  controllers: [
+    NutritionController,
+    NutritionShortcutController,
+    NutritionSuperController,
+    NutritionAgentController,
+    NutritionAssistantController,
+  ],
   providers: [
     FoodsService,
     DiaryService,
@@ -41,6 +53,8 @@ import { FoodTextService } from './text/food-text.service';
     FastingService,
     MealPlanService,
     NutritionExportService,
+    AgentKeysService,
+    AssistantService,
   ],
   exports: [FoodsService, DiaryService, NutritionExportService],
 })
