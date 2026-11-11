@@ -14,7 +14,7 @@ export type Figure = {
 };
 
 export type Focus = "fuerza" | "cardio" | "core" | "movilidad" | "estiramiento";
-export type Equipment = "silla" | "pared" | "colchoneta" | "mancuernas" | "banda" | "escalon";
+export type Equipment = "silla" | "pared" | "colchoneta" | "mancuernas" | "banda" | "escalon" | "barra";
 
 export type Exercise = {
   key: string;
@@ -40,11 +40,27 @@ export type ReadyRoutine = {
   name: string;
   summary: string;
   focus: Focus | "mixta";
+  /** Enfoques para buscarla (bajo-impacto, fuerza, cardio, abdomen, movilidad, yoga, caminata, estirar). */
+  topics?: string[];
   level: 1 | 2 | 3;
   circuit: boolean;
   rounds: number;
   items: ReadyItem[];
   minutes: number;
+};
+
+/** Un video de YouTube escogido para un ejercicio o una rutina lista. */
+export type CuratedVideo = { id: string; title: string; channel: string; start?: number };
+
+/** Un video que la persona pegó en un ejercicio o en una rutina. */
+export type MyVideo = {
+  id: string;
+  target: "exercise" | "routine";
+  key: string;
+  videoId: string;
+  start: number;
+  title: string | null;
+  channel: string | null;
 };
 
 /** Calentamiento o estiramiento que el modo guiado agrega solo (todo por tiempo; segundos por lado). */
@@ -72,10 +88,13 @@ export type Library = {
   blocks: { warmup: Block; cooldown: Block };
   /** Puede faltar en una biblioteca guardada en el teléfono antes de la fase 2. */
   programs?: Program[];
+  /** Videos escogidos (desde la fase 3). */
+  videos?: { exercises: Record<string, CuratedVideo>; routines: Record<string, CuratedVideo> };
   labels: {
     focus: Record<string, string>;
     equipment: Record<string, string>;
     muscles: Record<string, string>;
+    topics?: Record<string, string>;
   };
 };
 
@@ -136,6 +155,8 @@ export type FitSettings = {
   weeklyGoalMinutes: number;
   remindOn: boolean;
   remindAt: string;
+  /** Lo que hay en casa; null si no lo ha dicho (se muestra todo). */
+  equipment: string[] | null;
 };
 
 export type ItemStatus = "done" | "missed" | "today" | "upcoming";

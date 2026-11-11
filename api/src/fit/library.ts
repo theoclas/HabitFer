@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { COOLDOWN, WARMUP } from './data/blocks';
 import { EXERCISES } from './data/exercises';
 import { PROGRAMS, type ProgramDef } from './data/programs';
+import { EXERCISE_VIDEOS, ROUTINE_VIDEOS } from './data/videos';
 import { READY_ROUTINES } from './data/routines';
 import type { ExerciseDef, ReadyItem, ReadyRoutine } from './data/types';
 import { routineMinutes } from './fit-math';
@@ -12,7 +13,17 @@ export type ExerciseView = Omit<ExerciseDef, 'figure'> & { figure: Figure };
 export type ReadyView = ReadyRoutine & { minutes: number };
 
 export const FOCUS_LABELS = { fuerza: 'Fuerza', cardio: 'Cardio', core: 'Abdomen y espalda', movilidad: 'Movilidad', estiramiento: 'Estiramiento', mixta: 'Mixta' } as const;
-export const EQUIPMENT_LABELS = { silla: 'Silla', pared: 'Pared', colchoneta: 'Colchoneta', mancuernas: 'Mancuernas', banda: 'Banda elástica', escalon: 'Escalón' } as const;
+export const TOPIC_LABELS = {
+  'bajo-impacto': 'Bajo impacto',
+  fuerza: 'Fuerza',
+  cardio: 'Cardio',
+  abdomen: 'Abdomen',
+  movilidad: 'Movilidad',
+  yoga: 'Yoga suave',
+  caminata: 'Caminata',
+  estirar: 'Estirar',
+} as const;
+export const EQUIPMENT_LABELS = { silla: 'Silla', pared: 'Pared', colchoneta: 'Colchoneta', mancuernas: 'Mancuernas', banda: 'Banda elástica', escalon: 'Escalón', barra: 'Barra de puerta' } as const;
 export const MUSCLE_LABELS = {
   piernas: 'Piernas',
   gluteos: 'Glúteos',
@@ -75,7 +86,14 @@ export function library() {
     ...p,
     sessions: p.sessions.map((week) => week.map((r) => ({ ...r, minutes: readyMinutes(r) }))),
   }));
-  const body = { exercises, ready, blocks, programs, labels: { focus: FOCUS_LABELS, equipment: EQUIPMENT_LABELS, muscles: MUSCLE_LABELS } };
+  const body = {
+    exercises,
+    ready,
+    blocks,
+    programs,
+    videos: { exercises: EXERCISE_VIDEOS, routines: ROUTINE_VIDEOS },
+    labels: { focus: FOCUS_LABELS, equipment: EQUIPMENT_LABELS, muscles: MUSCLE_LABELS, topics: TOPIC_LABELS },
+  };
   const version = createHash('sha1').update(JSON.stringify(body)).digest('hex').slice(0, 12);
   cached = { version, body: { version, ...body } };
   return cached;

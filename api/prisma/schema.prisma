@@ -118,6 +118,7 @@ model User {
   fitWeekPlan           FitWeekPlan[]
   fitPlanChanges        FitPlanChange[]
   fitProgramRuns        FitProgramRun[]
+  fitVideos             FitVideo[]
   /// Coach semanal con IA (si el servidor tiene la llave). false = no escribirle.
   coachEnabled          Boolean                @default(true)
   /// Hora (HH:mm) del resumen nocturno de habitos por push; null = apagado.
@@ -1567,6 +1568,8 @@ model FitSettings {
   /// Recordatorio los días que toca entrenar, a esta hora (HH:MM).
   remindOn          Boolean  @default(false)
   remindAt          String   @default("07:00") @db.VarChar(5)
+  /// Lo que hay en casa, separado por comas («silla,mancuernas»). null: no lo ha dicho (se muestra todo).
+  equipment         String?  @db.VarChar(120)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -1617,4 +1620,23 @@ model FitProgramRun {
   updatedAt  DateTime  @updatedAt
 
   @@index([userId])
+}
+
+/// Un video de YouTube que la persona pegó en un ejercicio o en una rutina (uno por cada uno).
+model FitVideo {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// «exercise» (clave del ejercicio) o «routine» (id de la rutina propia o clave de la lista).
+  targetType String   @db.VarChar(10)
+  targetKey  String   @db.VarChar(60)
+  /// El id del video (11 caracteres) y desde qué segundo empieza.
+  videoId    String   @db.VarChar(11)
+  start      Int      @default(0)
+  title      String?  @db.VarChar(200)
+  channel    String?  @db.VarChar(120)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, targetType, targetKey])
 }

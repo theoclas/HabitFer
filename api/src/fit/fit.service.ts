@@ -357,7 +357,11 @@ export class FitService {
     };
   }
 
-  /** Cambia solo lo que venga: la meta (días o minutos) y el recordatorio. */
+  async getSettings(userId: string) {
+    return settingsView(await this.prisma.fitSettings.findUnique({ where: { userId } }));
+  }
+
+  /** Cambia solo lo que venga: la meta (días o minutos), el recordatorio y el equipo de la casa. */
   async setSettings(userId: string, dto: SettingsDto) {
     const data = {
       ...(dto.weeklyGoalDays !== undefined ? { weeklyGoalDays: dto.weeklyGoalDays } : {}),
@@ -365,6 +369,7 @@ export class FitService {
       ...(dto.weeklyGoalMinutes !== undefined ? { weeklyGoalMinutes: dto.weeklyGoalMinutes } : {}),
       ...(dto.remindOn !== undefined ? { remindOn: dto.remindOn } : {}),
       ...(dto.remindAt !== undefined ? { remindAt: dto.remindAt } : {}),
+      ...(dto.equipment !== undefined ? { equipment: [...new Set(dto.equipment)].join(',') } : {}),
     };
     const saved = await this.prisma.fitSettings.upsert({ where: { userId }, create: { userId, ...data }, update: data });
     return settingsView(saved);

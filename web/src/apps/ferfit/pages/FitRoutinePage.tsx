@@ -3,14 +3,17 @@ import { Button, Modal, message } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
-import { copyReadyRoutine, deleteRoutine, fetchHistory, fetchRoutine, fetchWorkouts, saveWorkout } from "../api";
+import { copyReadyRoutine, deleteRoutine, fetchHistory, fetchRoutine, fetchWorkouts, saveWorkout, updateRoutine } from "../api";
 import { ExerciseFigure } from "../components/ExerciseFigure";
 import { ExerciseSheet } from "../components/ExerciseSheet";
+import { SwapModal } from "../components/SwapModal";
+import { VideoBlock } from "../components/VideoBlock";
 import { LEVEL_LABELS, dayLabel, doseText, lastText, minutesText, restText, todayKey } from "../format";
-import { findReady, useLibrary, waitsForPrograms } from "../hooks";
+import { findReady, fitSettings, useLibrary, waitsForPrograms } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
 import { readSession } from "../player/storage";
-import type { History, Routine, Workout } from "../types";
+import { swapDose } from "../similar";
+import type { Exercise, History, Routine, Workout } from "../types";
 
 type Item = { exerciseKey: string; sets: number; reps: number | null; seconds: number | null; restSeconds: number };
 
@@ -28,6 +31,9 @@ export function FitRoutinePage() {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<History>({});
+  const [swapAt, setSwapAt] = useState<number | null>(null);
+  const [swapping, setSwapping] = useState(false);
+  const has = fitSettings.use()?.equipment ?? null;
   const [modal, holder] = Modal.useModal();
 
   const today = todayKey();
@@ -130,6 +136,32 @@ export function FitRoutinePage() {
     }
   };
 
+  /** Cambiar un ejercicio por otro parecido. En una lista se guarda una copia en tus rutinas con el cambio. */
+  const swap = async (ex: Exercise) => {
+    if (swapAt === null || !view) return;
+    const items = view.items.map((it, i) => {
+      const base = { exerciseKey: it.exerciseKey, sets: it.sets, reps: it.reps, seconds: it.seconds, restSeconds: it.restSeconds };
+      return i === swapAt ? { ...base, exerciseKey: ex.key, ...swapDose(it, ex) } : base;
+    });
+    setSwapping(true);
+    try {
+      if (own) {
+        setOwn(await updateRoutine(own.id, { name: own.name, notes: own.notes, circuit: own.circuit, rounds: own.rounds, items }));
+        message.success(`Listo: ahora haces «${ex.name}»`);
+      } else if (key) {
+        const copy = await copyReadyRoutine(key);
+        await updateRoutine(copy.id, { name: copy.name, notes: copy.notes, circuit: copy.circuit, rounds: copy.rounds, items });
+        message.success(`Quedó en tus rutinas con «${ex.name}»`);
+        navigate(`${FF_BASE}/rutinas/${copy.id}`);
+      }
+      setSwapAt(null);
+    } catch (err) {
+      message.error(apiErrorMessage(err, "No se pudo cambiar"));
+    } finally {
+      setSwapping(false);
+    }
+  };
+
   const remove = () =>
     modal.confirm({
       title: `¿Borrar «${view?.name}»?`,
@@ -220,6 +252,11 @@ export function FitRoutinePage() {
                     <span className="fit-ex__dose">{doseText(it, ex?.perSide, view.circuit)}</span>
                     <span className="fit-ex__rest">{restText(it.restSeconds)}</span>
                     {history[it.exerciseKey] && <span className="fit-ex__last">La última vez: {lastText(history[it.exerciseKey].sets)}</span>}
+                    {ex && (
+                      <button type="button" className="fit-linkbtn fit-ex__swap" onClick={() => setSwapAt(i)} aria-label={`Cambiar ${ex.name} por otro ejercicio`}>
+                        Cambiar por otro
+                      </button>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -234,6 +271,13 @@ export function FitRoutinePage() {
               );
             })}
           </ol>
+
+          <section className="fit-card" aria-labelledby="fit-video-title">
+            <h2 className="fit-h2" id="fit-video-title">
+              Video
+            </h2>
+            <VideoBlock key={id ?? key} target="routine" targetKey={(id ?? key)!} curated={key ? (lib.videos?.routines[key] ?? null) : null} what="esta rutina" />
+          </section>
         </div>
 
         <div className="fit-split__side">
@@ -269,6 +313,15 @@ export function FitRoutinePage() {
       </div>
 
       <ExerciseSheet exercise={open} lib={lib} onClose={() => setOpenKey(null)} onOpen={setOpenKey} />
+      <SwapModal
+        exercise={swapAt !== null ? (byKey.get(view.items[swapAt]?.exerciseKey ?? "") ?? null) : null}
+        lib={lib}
+        has={has}
+        busy={swapping}
+        note={id ? undefined : "Las rutinas listas no se cambian: se guarda una copia en tus rutinas con el cambio."}
+        onClose={() => setSwapAt(null)}
+        onPick={(ex) => void swap(ex)}
+      />
     </>
   );
 }

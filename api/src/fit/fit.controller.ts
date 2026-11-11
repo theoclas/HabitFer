@@ -12,11 +12,13 @@ import {
   RoutineDto,
   SettingsDto,
   StartProgramDto,
+  VideoDto,
   WeekQueryDto,
   WorkoutDto,
   WorkoutUpdateDto,
 } from './fit.dto';
 import { FitPlanService } from './fit-plan.service';
+import { FitVideoService } from './fit-video.service';
 import { FitService } from './fit.service';
 import { library } from './library';
 
@@ -27,6 +29,7 @@ export class FitController {
   constructor(
     private fit: FitService,
     private plan: FitPlanService,
+    private videos: FitVideoService,
   ) {}
 
   /** Ejercicios (con su figura) y rutinas listas. No cambia mientras la API corre. */
@@ -102,6 +105,12 @@ export class FitController {
     return this.fit.removeWorkout(user.userId, id);
   }
 
+  /** La meta, el recordatorio y lo que hay en casa. */
+  @Get('settings')
+  getSettings(@CurrentUser() user: AuthUserPayload) {
+    return this.fit.getSettings(user.userId);
+  }
+
   @Put('settings')
   settings(@CurrentUser() user: AuthUserPayload, @Body() dto: SettingsDto) {
     return this.fit.setSettings(user.userId, dto);
@@ -135,6 +144,24 @@ export class FitController {
   @Post('programs/start')
   startProgram(@CurrentUser() user: AuthUserPayload, @Body() dto: StartProgramDto) {
     return this.plan.startProgram(user.userId, dto);
+  }
+
+  /* ---------- Videos ---------- */
+
+  /** Los videos de YouTube que la persona pegó en sus ejercicios y rutinas. */
+  @Get('videos')
+  myVideos(@CurrentUser() user: AuthUserPayload) {
+    return this.videos.list(user.userId);
+  }
+
+  @Put('videos')
+  saveVideo(@CurrentUser() user: AuthUserPayload, @Body() dto: VideoDto) {
+    return this.videos.save(user.userId, dto);
+  }
+
+  @Delete('videos/:id')
+  removeVideo(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.videos.remove(user.userId, id);
   }
 
   @Post('programs/stop')

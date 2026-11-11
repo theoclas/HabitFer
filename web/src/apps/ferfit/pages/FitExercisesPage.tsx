@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "../../habitfer/format";
 import { fetchRoutines, updateRoutine } from "../api";
+import { EquipmentModal } from "../components/EquipmentModal";
 import { ExerciseFigure } from "../components/ExerciseFigure";
 import { ExerciseFilters, NO_FILTERS, filterExercises, type Filters } from "../components/ExerciseFilters";
 import { ExerciseSheet } from "../components/ExerciseSheet";
 import { LEVEL_LABELS } from "../format";
-import { useLibrary } from "../hooks";
+import { fitSettings, useLibrary } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
 import type { Exercise, Routine } from "../types";
 
@@ -22,6 +23,8 @@ export function FitExercisesPage() {
   const [routines, setRoutines] = useState<Routine[] | null>(null);
   const [target, setTarget] = useState<string | undefined>();
   const [adding, setAdding] = useState(false);
+  const [gearOpen, setGearOpen] = useState(false);
+  const has = fitSettings.use()?.equipment ?? null;
   // Revisión de las figuras en desarrollo: ?figuras muestra la pose A y la B de cada ejercicio, quietas.
   const debug = import.meta.env.DEV && params.has("figuras");
 
@@ -31,7 +34,7 @@ export function FitExercisesPage() {
       .catch(() => setRoutines([]));
   }, []);
 
-  const list = useMemo(() => (lib ? filterExercises(lib.exercises, filters, lib) : []), [lib, filters]);
+  const list = useMemo(() => (lib ? filterExercises(lib.exercises, filters, lib, has) : []), [lib, filters, has]);
   const open = lib?.exercises.find((e) => e.key === openKey) ?? null;
 
   const addTo = async (ex: Exercise) => {
@@ -93,11 +96,11 @@ export function FitExercisesPage() {
           </p>
         </div>
       </div>
-      <ExerciseFilters lib={lib} value={filters} onChange={setFilters} idPrefix="fit-lib" />
+      <ExerciseFilters lib={lib} value={filters} onChange={setFilters} idPrefix="fit-lib" has={has} onGear={() => setGearOpen(true)} />
       {list.length === 0 ? (
         <div className="fit-empty">
           Nada con esos filtros.
-          <Button onClick={() => setFilters(NO_FILTERS)}>Quitar los filtros</Button>
+          <Button onClick={() => setFilters({ ...NO_FILTERS, mine: false })}>Quitar los filtros</Button>
         </div>
       ) : (
         <div className="fit-exgrid">
@@ -148,6 +151,7 @@ export function FitExercisesPage() {
           )
         }
       />
+      <EquipmentModal open={gearOpen} onClose={() => setGearOpen(false)} />
     </>
   );
 }

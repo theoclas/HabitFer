@@ -664,3 +664,65 @@
 .fit-weeknotes { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 0.92rem; line-height: 1.45; }
 .fit-weeknotes__sessions { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; margin-left: 2px; }
 .fit-linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 0.86rem; color: var(--fit-accent-text); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* ---------- Videos ---------- */
+.fit-video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; }
+.fit-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.fit-video__poster { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; margin: 0; background: #000; cursor: pointer; display: block; }
+.fit-video__poster img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.88; transition: opacity 0.2s ease; }
+.fit-video__poster:hover img { opacity: 1; }
+.fit-video__poster:focus-visible { outline: 3px solid var(--fit-accent); outline-offset: -3px; }
+.fit-video__play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--fit-accent);
+  color: var(--fit-accent-ink);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.fit-videoblock { display: grid; gap: 8px; min-width: 0; }
+.fit-videoblock__paste { display: grid; gap: 8px; }
+
+/* ---------- Cambiar un ejercicio ---------- */
+.fit-swaplist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: min(60vh, 520px); overflow-y: auto; }
+.fit-swap {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  background: var(--fit-surface);
+  border: 1px solid var(--fit-line);
+  border-radius: 14px;
+  padding: 8px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.fit-swap:hover { border-color: var(--fit-accent); }
+.fit-swap:disabled { opacity: 0.6; cursor: wait; }
+.fit-swap__fig { width: 56px; height: 56px; border-radius: 10px; background: var(--fit-sunk); display: grid; place-items: center; }
+.fit-swap__fig .fit-fig { width: 50px; height: 50px; }
+.fit-swap__body { display: grid; gap: 2px; min-width: 0; }
+.fit-swap__body b { color: var(--fit-ink); overflow-wrap: anywhere; }
+.fit-swap__body small { color: var(--fit-muted); font-size: 0.8rem; line-height: 1.35; }
+.fit-ex__swap { justify-self: start; margin-top: 2px; font-size: 0.8rem; }
+.fit-erow__btns { display: grid; gap: 6px; }
+
+/* ---------- Equipo y enfoques ---------- */
+.fit-actgrid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fit-rcard__need { font-size: 0.78rem; font-weight: 700; color: var(--fit-cono); }
+.fit-programlink { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.fit-programlink:hover { border-color: var(--fit-faint); }
+.fit-programlink > .anticon { font-size: 22px; color: var(--fit-accent); flex: none; }
+.fit-programlink > span { display: grid; gap: 2px; min-width: 0; }
+.fit-programlink b { color: var(--fit-ink); }
+.fit-programlink small { color: var(--fit-muted); font-size: 0.84rem; line-height: 1.4; }

@@ -3,7 +3,7 @@ import type { FigureSpec } from '../figure';
 /** Para qué sirve sobre todo. */
 export type Focus = 'fuerza' | 'cardio' | 'core' | 'movilidad' | 'estiramiento';
 /** Lo que hace falta en casa (vacío = nada). */
-export type Equipment = 'silla' | 'pared' | 'colchoneta' | 'mancuernas' | 'banda' | 'escalon';
+export type Equipment = 'silla' | 'pared' | 'colchoneta' | 'mancuernas' | 'banda' | 'escalon' | 'barra';
 export type Muscle =
   | 'piernas'
   | 'gluteos'
@@ -44,6 +44,9 @@ export type ExerciseDef = {
   figure: FigureSpec;
 };
 
+/** Enfoques para buscar rutinas (una rutina puede tener varios). */
+export type Topic = 'bajo-impacto' | 'fuerza' | 'cardio' | 'abdomen' | 'movilidad' | 'yoga' | 'caminata' | 'estirar';
+
 /** Un ejercicio de una rutina lista. */
 export type ReadyItem = { key: string; sets: number; reps?: number; seconds?: number; rest: number };
 
@@ -53,6 +56,8 @@ export type ReadyRoutine = {
   /** Una frase de para qué es. */
   summary: string;
   focus: Focus | 'mixta';
+  /** Enfoques para buscarla. */
+  topics?: Topic[];
   level: 1 | 2 | 3;
   circuit: boolean;
   rounds: number;

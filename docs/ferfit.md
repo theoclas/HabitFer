@@ -78,3 +78,38 @@ Página `/app/ferfit/semana` (pestaña «Semana») y la tarjeta «Hoy te toca» 
 | `POST /api/fit/plan/moves`, `DELETE /api/fit/plan/moves/:id` | Mover una rutina de día y deshacerlo |
 | `POST /api/fit/programs/start`, `POST /api/fit/programs/stop` | Empezar (`programKey`, `weekdays`, `start`) o dejar un programa |
 | `PUT /api/fit/settings` | Meta (días o minutos) y recordatorio; se manda solo lo que cambia |
+
+## Fase 3: videos y más enfoques
+
+- **Videos de YouTube** (`web/src/apps/ferfit/components/VideoPlayer.tsx`): primero solo la portada
+  (`i.ytimg.com`); el reproductor oficial se carga al tocarla, desde `www.youtube-nocookie.com` (modo de privacidad).
+  La política de seguridad de la web (`web/deploy/nginx.conf`) permite ese dominio en `frame-src`: si se cambia el
+  reproductor, cambiarla también.
+- **Videos escogidos** (`api/src/fit/data/videos.ts`): en español, por ejercicio y por rutina lista. Antes de agregar
+  uno, revisar que responda en `https://www.youtube.com/oembed?url=…` (si da 401, el dueño no deja verlo dentro de
+  otras páginas). La prueba `fit-video.spec.ts` revisa que las claves existan.
+- **Tus videos** (`FitVideo`): uno por ejercicio o rutina (`targetType` `exercise` o `routine`, `targetKey` la clave
+  del ejercicio, el id de la rutina propia o la clave de la lista). Al guardarlo, la API saca el id del link
+  (`api/src/fit/youtube.ts`: watch, youtu.be, shorts, embed, live y el minuto con `t=`) y le pregunta a oEmbed el
+  título; si YouTube no responde, se guarda igual sin título.
+- **Enfoques** (`ReadyRoutine.topics`): bajo impacto, fuerza, cardio, abdomen, movilidad, yoga suave, caminata y
+  estirar; los nombres en `TOPIC_LABELS` (`api/src/fit/library.ts`). La prueba revisa que cada enfoque tenga rutinas.
+- **Lo que tienes en casa** (`FitSettings.equipment`, separado por comas; `null` = no lo ha dicho): silla, mancuernas,
+  banda, escalón y barra de puerta. La colchoneta y la pared no cuentan (sirve el piso o cualquier pared). Con eso,
+  «Lo que tengo» en Ejercicios y en el editor, y «Solo lo que puedo hacer» en Rutinas; las que piden algo más dicen
+  «Necesita: …» (`web/src/apps/ferfit/similar.ts`).
+- **Cambiar un ejercicio** (`similarTo` en `similar.ts`): primero la versión más fácil o más difícil, después los que
+  trabajan los mismos músculos con el mismo tipo de enfoque (fuerza con fuerza o abdomen, estiramientos con
+  movilidad), solo con lo que hay en casa. En una rutina propia se cambia ahí mismo; en una lista se guarda una copia
+  en tus rutinas con el cambio. Se queda la dosis si se mide igual (`swapDose`).
+- **Barra de puerta**: la figura dibuja la barra (`{ type: 'bar' }` en `figure.ts`) y hay cuatro ejercicios
+  (colgarse, dominada negativa, dominada y rodillas arriba colgado) y la rutina «Espalda con barra de puerta».
+- **Fotos de free-exercise-db**: no se usan. No se sabe de dónde salieron las fotos; si algún día se quieren, se
+  guardan solo en el servidor y fuera de git.
+
+| Ruta | Para qué |
+|---|---|
+| `GET /api/fit/videos` | Tus videos |
+| `PUT /api/fit/videos` | Guardar tu video (`target`, `key`, `url`); reemplaza el que había |
+| `DELETE /api/fit/videos/:id` | Quitar tu video |
+| `GET /api/fit/settings`, `PUT /api/fit/settings` | Los ajustes, ahora también `equipment` |

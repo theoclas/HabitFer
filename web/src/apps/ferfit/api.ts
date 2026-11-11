@@ -1,5 +1,5 @@
 import { api } from "../../api/client";
-import type { FitSettings, History, Home, Library, Routine, RoutineInput, Week, Workout, WorkoutSave } from "./types";
+import type { FitSettings, History, Home, Library, MyVideo, Routine, RoutineInput, Week, Workout, WorkoutSave } from "./types";
 
 const LIB_KEY = "fit_library";
 
@@ -84,7 +84,29 @@ export async function deleteWorkout(id: string) {
   await api.delete(`/fit/workouts/${encodeURIComponent(id)}`);
 }
 
-/** Cambia solo lo que se mande: la meta (días o minutos) y el recordatorio. */
+export async function fetchFitSettings() {
+  const { data } = await api.get<FitSettings>("/fit/settings");
+  return data;
+}
+
+/* ---------- Videos que pega la persona ---------- */
+
+export async function fetchMyVideos() {
+  const { data } = await api.get<MyVideo[]>("/fit/videos");
+  return data;
+}
+
+/** Pega (o cambia) el video de YouTube de un ejercicio (su clave) o una rutina (su id o su clave de lista). */
+export async function saveMyVideo(input: { target: "exercise" | "routine"; key: string; url: string }) {
+  const { data } = await api.put<MyVideo>("/fit/videos", input);
+  return data;
+}
+
+export async function deleteMyVideo(id: string) {
+  await api.delete(`/fit/videos/${encodeURIComponent(id)}`);
+}
+
+/** Cambia solo lo que se mande: la meta (días o minutos), el recordatorio y el equipo de la casa. */
 export async function saveFitSettings(patch: Partial<FitSettings>) {
   const { data } = await api.put<FitSettings>("/fit/settings", patch);
   return data;

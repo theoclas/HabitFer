@@ -1,9 +1,11 @@
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, ToolOutlined } from "@ant-design/icons";
 import { Input } from "antd";
+import { canDo } from "../similar";
 import type { Exercise, Library } from "../types";
 
-export type Filters = { q: string; focus: string | null; equipment: string | null; easy: boolean };
-export const NO_FILTERS: Filters = { q: "", focus: null, equipment: null, easy: false };
+/** `mine`: solo lo que se puede hacer con lo que hay en casa. */
+export type Filters = { q: string; focus: string | null; equipment: string | null; easy: boolean; mine: boolean };
+export const NO_FILTERS: Filters = { q: "", focus: null, equipment: null, easy: false, mine: true };
 
 const norm = (s: string) =>
   s
@@ -12,9 +14,10 @@ const norm = (s: string) =>
     .replace(/[̀-ͯ]/g, "");
 
 /** Los ejercicios que pasan los filtros (búsqueda sin tildes; «sin equipo» = no necesita nada). */
-export function filterExercises(list: Exercise[], f: Filters, lib: Library): Exercise[] {
+export function filterExercises(list: Exercise[], f: Filters, lib: Library, has: string[] | null = null): Exercise[] {
   const words = norm(f.q).split(/\s+/).filter(Boolean);
   return list.filter((e) => {
+    if (f.mine && !canDo(e, has)) return false;
     if (f.focus && e.focus !== f.focus) return false;
     if (f.equipment === "ninguno" && e.equipment.length > 0) return false;
     if (f.equipment && f.equipment !== "ninguno" && !e.equipment.includes(f.equipment as Exercise["equipment"][number])) return false;
@@ -25,10 +28,19 @@ export function filterExercises(list: Exercise[], f: Filters, lib: Library): Exe
   });
 }
 
-type Props = { lib: Library; value: Filters; onChange: (f: Filters) => void; idPrefix: string };
+type Props = {
+  lib: Library;
+  value: Filters;
+  onChange: (f: Filters) => void;
+  idPrefix: string;
+  /** Lo que hay en casa (null: no lo ha dicho). */
+  has?: string[] | null;
+  /** Abre «Lo que tienes en casa». */
+  onGear?: () => void;
+};
 
-/** Buscar y filtrar por enfoque, equipo y «para empezar». */
-export function ExerciseFilters({ lib, value, onChange, idPrefix }: Props) {
+/** Buscar y filtrar por enfoque, equipo, «para empezar» y lo que hay en casa. */
+export function ExerciseFilters({ lib, value, onChange, idPrefix, has = null, onGear }: Props) {
   const focusOptions = Object.entries(lib.labels.focus).filter(([k]) => k !== "mixta");
   const equipmentOptions: [string, string][] = [["ninguno", "Sin equipo"], ...Object.entries(lib.labels.equipment)];
   const chip = (pressed: boolean, label: string, onClick: () => void, key: string) => (
@@ -52,6 +64,12 @@ export function ExerciseFilters({ lib, value, onChange, idPrefix }: Props) {
         {focusOptions.map(([k, label]) => chip(value.focus === k, label, () => onChange({ ...value, focus: value.focus === k ? null : k }), k))}
       </div>
       <div className="fit-chips" role="group" aria-label="Equipo">
+        {has !== null && chip(value.mine, "Lo que tengo", () => onChange({ ...value, mine: !value.mine }), "mine")}
+        {onGear && (
+          <button type="button" className="fit-chip" onClick={onGear}>
+            <ToolOutlined /> {has === null ? "¿Qué tienes en casa?" : "Mi equipo"}
+          </button>
+        )}
         {chip(value.easy, "Para empezar", () => onChange({ ...value, easy: !value.easy }), "easy")}
         {equipmentOptions.map(([k, label]) => chip(value.equipment === k, label, () => onChange({ ...value, equipment: value.equipment === k ? null : k }), k))}
       </div>

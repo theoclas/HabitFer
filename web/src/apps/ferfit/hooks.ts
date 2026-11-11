@@ -1,6 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
-import { cachedLibrary, fetchLibrary } from "./api";
-import type { Exercise, Library, ReadyRoutine } from "./types";
+import { cachedLibrary, fetchFitSettings, fetchLibrary, fetchMyVideos } from "./api";
+import type { Exercise, FitSettings, Library, MyVideo, ReadyRoutine } from "./types";
+
+/** Un dato compartido entre pantallas: se pide al abrir la primera y todas ven el mismo. */
+function shared<T>(loader: () => Promise<T>) {
+  let value: T | null = null;
+  const subs = new Set<() => void>();
+  const set = (v: T) => {
+    value = v;
+    subs.forEach((s) => s());
+  };
+  function use(): T | null {
+    const [v, setV] = useState<T | null>(value);
+    useEffect(() => {
+      const on = () => setV(value);
+      subs.add(on);
+      loader()
+        .then(set)
+        .catch(() => undefined);
+      return () => {
+        subs.delete(on);
+      };
+    }, []);
+    return v;
+  }
+  return { use, set, get: () => value };
+}
+
+/** Los ajustes de FerFit (la meta, el recordatorio y lo que hay en casa). */
+export const fitSettings = shared<FitSettings>(fetchFitSettings);
+/** Los videos de YouTube que la persona pegó. */
+export const myVideos = shared<MyVideo[]>(fetchMyVideos);
 
 /*
  * La biblioteca (ejercicios con su figura y rutinas listas) se pide una vez por visita. Mientras llega, se usa la

@@ -1,4 +1,4 @@
-import { CloseOutlined, HolderOutlined, PlusOutlined } from "@ant-design/icons";
+import { CloseOutlined, HolderOutlined, PlusOutlined, SwapOutlined } from "@ant-design/icons";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -10,8 +10,9 @@ import { apiErrorMessage } from "../../habitfer/format";
 import { createRoutine, fetchRoutine, updateRoutine } from "../api";
 import { ExerciseFigure } from "../components/ExerciseFigure";
 import { ExerciseFilters, NO_FILTERS, filterExercises, type Filters } from "../components/ExerciseFilters";
+import { SwapModal } from "../components/SwapModal";
 import { minutesText } from "../format";
-import { useLibrary } from "../hooks";
+import { fitSettings, useLibrary } from "../hooks";
 import { FF_BASE } from "../layouts/FerFitShell";
 import type { Exercise, Library } from "../types";
 
@@ -57,6 +58,8 @@ export function FitEditorPage() {
   const [loaded, setLoaded] = useState(!id);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [swapUid, setSwapUid] = useState<string | null>(null);
+  const has = fitSettings.use()?.equipment ?? null;
 
   useEffect(() => {
     if (!id) return;
@@ -104,6 +107,13 @@ export function FitEditorPage() {
 
   const patch = (u: string, p: Partial<Row>) => setRows((cur) => cur.map((r) => (r.uid === u ? { ...r, ...p } : r)));
   const minutes = estimate(rows, circuit, rounds, byKey);
+  const swapRow = rows.find((r) => r.uid === swapUid) ?? null;
+  // Al cambiar un ejercicio se queda la dosis si se mide igual (repeticiones o tiempo).
+  const swapTo = (row: Row, ex: Exercise) => {
+    const mode: Row["mode"] = ex.seconds ? "time" : "reps";
+    patch(row.uid, mode === row.mode ? { exerciseKey: ex.key } : { exerciseKey: ex.key, mode, reps: ex.reps ?? 10, seconds: ex.seconds ?? 30 });
+    setSwapUid(null);
+  };
 
   const save = async () => {
     if (!name.trim()) {
@@ -218,7 +228,15 @@ export function FitEditorPage() {
             <SortableContext items={rows.map((r) => r.uid)} strategy={verticalListSortingStrategy}>
               <ul className="fit-exlist">
                 {rows.map((r) => (
-                  <EditorRow key={r.uid} row={r} ex={byKey.get(r.exerciseKey)} circuit={circuit} onPatch={(p) => patch(r.uid, p)} onRemove={() => setRows((cur) => cur.filter((x) => x.uid !== r.uid))} />
+                  <EditorRow
+                    key={r.uid}
+                    row={r}
+                    ex={byKey.get(r.exerciseKey)}
+                    circuit={circuit}
+                    onPatch={(p) => patch(r.uid, p)}
+                    onSwap={() => setSwapUid(r.uid)}
+                    onRemove={() => setRows((cur) => cur.filter((x) => x.uid !== r.uid))}
+                  />
                 ))}
               </ul>
             </SortableContext>
@@ -236,17 +254,27 @@ export function FitEditorPage() {
       <ExercisePicker
         open={pickerOpen}
         lib={lib}
+        has={has}
         onClose={() => setPickerOpen(false)}
         onAdd={(keys) => {
           setRows((cur) => [...cur, ...keys.flatMap((k) => (byKey.get(k) ? [rowFor(byKey.get(k)!, circuit)] : []))]);
           setPickerOpen(false);
         }}
       />
+      <SwapModal
+        exercise={swapRow ? (byKey.get(swapRow.exerciseKey) ?? null) : null}
+        lib={lib}
+        has={has}
+        onClose={() => setSwapUid(null)}
+        onPick={(ex) => swapRow && swapTo(swapRow, ex)}
+      />
     </div>
   );
 }
 
-function EditorRow({ row, ex, circuit, onPatch, onRemove }: { row: Row; ex?: Exercise; circuit: boolean; onPatch: (p: Partial<Row>) => void; onRemove: () => void }) {
+type RowProps = { row: Row; ex?: Exercise; circuit: boolean; onPatch: (p: Partial<Row>) => void; onSwap: () => void; onRemove: () => void };
+
+function EditorRow({ row, ex, circuit, onPatch, onSwap, onRemove }: RowProps) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: row.uid });
   const name = ex?.name ?? "Ejercicio que ya no existe";
   return (
@@ -284,15 +312,22 @@ function EditorRow({ row, ex, circuit, onPatch, onRemove }: { row: Row; ex?: Exe
           <Select aria-label={`Descanso después de ${name}`} size="small" value={row.restSeconds} options={REST_OPTIONS} onChange={(v) => onPatch({ restSeconds: v })} />
         </div>
       </div>
-      <button type="button" className="fit-icon-btn fit-icon-btn--sm" aria-label={`Quitar ${name}`} onClick={onRemove}>
-        <CloseOutlined />
-      </button>
+      <div className="fit-erow__btns">
+        {ex && (
+          <button type="button" className="fit-icon-btn fit-icon-btn--sm" aria-label={`Cambiar ${name} por otro`} title="Cambiar por otro" onClick={onSwap}>
+            <SwapOutlined />
+          </button>
+        )}
+        <button type="button" className="fit-icon-btn fit-icon-btn--sm" aria-label={`Quitar ${name}`} title="Quitar" onClick={onRemove}>
+          <CloseOutlined />
+        </button>
+      </div>
     </li>
   );
 }
 
 /** Escoger ejercicios de la biblioteca (varios a la vez). */
-function ExercisePicker({ open, lib, onClose, onAdd }: { open: boolean; lib: Library; onClose: () => void; onAdd: (keys: string[]) => void }) {
+function ExercisePicker({ open, lib, has, onClose, onAdd }: { open: boolean; lib: Library; has: string[] | null; onClose: () => void; onAdd: (keys: string[]) => void }) {
   const isMobile = useIsMobile();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [picked, setPicked] = useState<string[]>([]);
@@ -301,7 +336,7 @@ function ExercisePicker({ open, lib, onClose, onAdd }: { open: boolean; lib: Lib
     if (open) setPicked([]);
   }, [open]);
 
-  const list = useMemo(() => filterExercises(lib.exercises, filters, lib), [lib, filters]);
+  const list = useMemo(() => filterExercises(lib.exercises, filters, lib, has), [lib, filters, has]);
   const toggle = (k: string) => setPicked((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   return (
@@ -323,7 +358,7 @@ function ExercisePicker({ open, lib, onClose, onAdd }: { open: boolean; lib: Lib
       }
     >
       <div className="fit-sheet">
-        <ExerciseFilters lib={lib} value={filters} onChange={setFilters} idPrefix="fit-pick" />
+        <ExerciseFilters lib={lib} value={filters} onChange={setFilters} idPrefix="fit-pick" has={has} />
         <div className="fit-exgrid fit-exgrid--picker">
           {list.map((e) => {
             const n = picked.indexOf(e.key);

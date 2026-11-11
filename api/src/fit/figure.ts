@@ -42,7 +42,9 @@ export type PropSpec =
   /** Escalón o cajón: desde x, ancho w y alto h. */
   | { type: 'step'; x: number; w: number; h: number }
   /** Marco de una puerta (dos palos). */
-  | { type: 'door'; x: number };
+  | { type: 'door'; x: number }
+  /** Barra de puerta: a la altura y, desde x y de ancho w. */
+  | { type: 'bar'; x: number; y: number; w: number };
 
 export type FigureSpec = {
   a: PoseSpec;
@@ -230,6 +232,8 @@ function propPath(p: PropSpec): string {
       return `M${p.x},${FLOOR_Y} L${p.x},${FLOOR_Y - p.h} L${p.x + p.w},${FLOOR_Y - p.h} L${p.x + p.w},${FLOOR_Y}`;
     case 'door':
       return `M${p.x},10 L${p.x},${FLOOR_Y} M${p.x + 6},10 L${p.x + 6},${FLOOR_Y}`;
+    case 'bar':
+      return `M${p.x},${p.y} L${p.x + p.w},${p.y} M${p.x},${p.y - 5} L${p.x},${p.y + 5} M${p.x + p.w},${p.y - 5} L${p.x + p.w},${p.y + 5}`;
   }
 }
 

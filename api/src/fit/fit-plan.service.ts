@@ -49,6 +49,9 @@ export type DayItem = Ref & {
 
 export const DEFAULT_SETTINGS = { goalKind: 'days' as const, weeklyGoalDays: 3, weeklyGoalMinutes: 90, remindOn: false, remindAt: '07:00' };
 
+/** Lo que hay en casa: null si no lo ha dicho (se muestra todo). */
+const equipmentOf = (s: FitSettings | null): string[] | null => (s?.equipment == null ? null : s.equipment.split(',').filter(Boolean));
+
 export function settingsView(s: FitSettings | null) {
   return {
     goalKind: (s?.goalKind === 'minutes' ? 'minutes' : 'days') as 'days' | 'minutes',
@@ -56,6 +59,7 @@ export function settingsView(s: FitSettings | null) {
     weeklyGoalMinutes: s?.weeklyGoalMinutes ?? DEFAULT_SETTINGS.weeklyGoalMinutes,
     remindOn: s?.remindOn ?? DEFAULT_SETTINGS.remindOn,
     remindAt: s?.remindAt ?? DEFAULT_SETTINGS.remindAt,
+    equipment: equipmentOf(s),
   };
 }
 

@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { FitPlanService } from './fit-plan.service';
+import { FitVideoService } from './fit-video.service';
 import { FitController } from './fit.controller';
 import { FitService } from './fit.service';
 
 /** FerFit: ejercicio en casa. */
 @Module({
   controllers: [FitController],
-  providers: [FitService, FitPlanService],
+  providers: [FitService, FitPlanService, FitVideoService],
   exports: [FitService, FitPlanService],
 })
 export class FitModule {}

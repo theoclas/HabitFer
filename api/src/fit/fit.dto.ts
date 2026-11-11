@@ -21,6 +21,8 @@ import { DATE_KEY } from '../nutrition/nutrition.dto';
 const DATE_MSG = { message: 'La fecha debe venir como AAAA-MM-DD.' };
 
 export const ACTIVITIES = ['caminar', 'bici', 'futbol', 'nadar', 'bailar', 'otra'] as const;
+/** Lo que puede haber en casa (como en la biblioteca). */
+export const EQUIPMENT_KEYS = ['silla', 'pared', 'colchoneta', 'mancuernas', 'banda', 'escalon', 'barra'] as const;
 export type Activity = (typeof ACTIVITIES)[number];
 
 export class RoutineItemDto {
@@ -260,6 +262,27 @@ export class SettingsDto {
   @IsOptional()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'La hora va como HH:MM.' })
   remindAt?: string;
+
+  /** Lo que hay en casa (vacío: nada). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsIn(EQUIPMENT_KEYS, { each: true, message: 'Ese equipo no está en la lista.' })
+  equipment?: string[];
+}
+
+/** Pegar un video de YouTube en un ejercicio (su clave) o en una rutina (su id o su clave de lista). */
+export class VideoDto {
+  @IsIn(['exercise', 'routine'])
+  target!: 'exercise' | 'routine';
+
+  @Matches(/^[A-Za-z0-9_-]{1,60}$/, { message: 'No sé a qué ejercicio o rutina va.' })
+  key!: string;
+
+  @IsString()
+  @MinLength(5, { message: 'Pega el link del video.' })
+  @MaxLength(300, { message: 'Ese link es demasiado largo.' })
+  url!: string;
 }
 
 /** Un día del plan de la semana (0 = lunes … 6 = domingo) con su rutina. Un día sin rutina es descanso. */
